@@ -161,7 +161,7 @@ npm run vendor                              # update bundled libraries and regen
 | `dist/sample-site.html` | `sample-docs/` exported as a site (example output) |
 | `sample-docs/` `sample-docs-en/` | Sample documents for trying mdfolio (Japanese and English) |
 | `sample.en.md` `sample.md` | A self-contained, single-file sample document (English and Japanese) |
-| `CHANGELOG.en.md` `CHANGELOG.md` | Change history (English and Japanese) |
+| `CHANGELOG.md` | Change history (Japanese only) |
 | `src/` | Source (`core.js` logic independent of the screen, `md.js` Markdown extensions, `i18n.js` UI text, `app.js` screen, `app.css` screen parts, `document.css` document body and colors) |
 | `vendor/` | Bundled libraries (as distributed) and the list `manifest.json` |
 | `tools/` | Build, export and library updates. `tools/folder/` holds the update command and notes for the folder version. `tools/dev/` holds the conversion for embedding (`make-hosted.mjs`), zip creation (`make-zip.py`), assembly of the public pages (`make-pages.mjs`) and test summaries |

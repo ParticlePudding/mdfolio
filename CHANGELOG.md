@@ -1,8 +1,12 @@
-**日本語** | [English](CHANGELOG.en.md)
-
 # 変更履歴
 
 mdfolio の版ごとの変更です。詳しい経緯は `docs/SPEC.md`（改訂履歴）、`docs/REVIEW.md`、`docs/TEST_REPORT.md` にあります。
+
+## 次の版（未リリース）
+
+### 変更
+
+- 英語の変更履歴（`CHANGELOG.en.md`）をなくし、変更履歴をこのファイル（日本語）だけにしました。
 
 ## 1.2.0 — 2026-11-16
 

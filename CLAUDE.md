@@ -1,6 +1,6 @@
 # mdfolio — Claude Code 向けの引き継ぎメモ
 
-ローカルの HTML / JavaScript だけで動く Markdown 文書ビューア。現在の版は 1.2.0。変更の一覧は `CHANGELOG.md`（英語は `CHANGELOG.en.md`）。
+ローカルの HTML / JavaScript だけで動く Markdown 文書ビューア。現在の版は 1.2.0。変更の一覧は `CHANGELOG.md`（日本語だけ。英語版は作らない。依頼者の指示）。
 詳しい仕様は `docs/SPEC.md`、設計判断の経緯は `docs/REVIEW.md`、テスト結果は `docs/TEST_REPORT.md`。
 
 ## 依頼者について・進め方
@@ -42,7 +42,7 @@ GitHub: https://github.com/ParticlePudding/mdfolio （公開リポジトリ）�
 公開ページ https://particlepudding.github.io/mdfolio/ は `gh-pages` ブランチから配信する。`main` に送ると
 GitHub Actions（`.github/workflows/pages.yml`）が、ビルド → 単体テスト → `make-pages.mjs` → `gh-pages` の置き換えを行う
 （手で `gh-pages` に送らない。`.nojekyll` は `make-pages.mjs` が作る。消すと `_sidebar.md` が公開されない）。
-版を上げる手順: `package.json`・`package-lock.json`・`src/core.js` の版、README の版、`CHANGELOG.md` と `CHANGELOG.en.md` に
+版を上げる手順: `package.json`・`package-lock.json`・`src/core.js` の版、README の版、`CHANGELOG.md` に
 「## <版> — 日付」の節 → ビルド・テスト → `main` に送る → 依頼者の了承を得て、依頼者が GitHub の Actions の画面で
 「Release」→「Run workflow」を押す（この開発環境からはタグを送れない。GitHub が 403 で拒む）。
 `.github/workflows/release.yml` がタグ `v<版>` とリリース（`mdfolio.html` と `mdfolio-<版>.zip`、説明は変更履歴から）を作る。

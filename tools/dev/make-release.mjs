@@ -7,7 +7,7 @@
  * 先に npm run build を実行しておくこと。作るもの:
  *   mdfolio.html            単一 HTML 版（dist/mdfolio.html の写し。これ 1 つで動く）
  *   mdfolio-<版>.zip        配布用の zip（中身はリポジトリと同じ並び。README の手順がそのまま使える）
- *   notes.md                リリースの説明（CHANGELOG.md と CHANGELOG.en.md の、その版の部分）
+ *   notes.md                リリースの説明（CHANGELOG.md の、その版の部分）
  *
  * zip は tools/dev/make-zip.py で作る（日本語のファイル名に UTF-8 の印を付ける）。Python 3 が必要。
  */
@@ -39,7 +39,7 @@ export function sectionOf(text, ver) {
 export const CONTENTS = [
   'dist/mdfolio.html', 'dist/mdfolio', 'tools/build-site.mjs',
   'sample-docs', 'sample-docs-en', 'sample.md', 'sample.en.md',
-  'README.md', 'README.en.md', 'CHANGELOG.md', 'CHANGELOG.en.md', 'LICENSE', 'THIRD-PARTY-NOTICES.txt'
+  'README.md', 'README.en.md', 'CHANGELOG.md', 'LICENSE', 'THIRD-PARTY-NOTICES.txt'
 ];
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
@@ -47,8 +47,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   const generator = /<meta name="generator" content="mdfolio ([^"]+)">/.exec(fs.readFileSync(path.join(ROOT, 'dist/mdfolio.html'), 'utf8'));
   if (!generator || generator[1] !== version) fail(`dist/mdfolio.html の版（${generator && generator[1]}）が package.json の版（${version}）と一致しません。npm run build を実行してください`);
   const ja = sectionOf(fs.readFileSync(path.join(ROOT, 'CHANGELOG.md'), 'utf8'), version);
-  const en = sectionOf(fs.readFileSync(path.join(ROOT, 'CHANGELOG.en.md'), 'utf8'), version);
-  if (!ja || !en) fail(`CHANGELOG.md と CHANGELOG.en.md の両方に「## ${version}」の節が必要です`);
+  if (!ja) fail(`CHANGELOG.md に「## ${version}」の節が必要です`);
 
   fs.rmSync(out, { recursive: true, force: true });
   fs.mkdirSync(out, { recursive: true });
@@ -57,10 +56,10 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   execFileSync('python3', [path.join(ROOT, 'tools/dev/make-zip.py'), zip, `mdfolio-${version}`, ...CONTENTS.map((p) => path.join(ROOT, p) + '=' + p)], { stdio: ['ignore', 'inherit', 'inherit'] });
 
   const notes = [
-    '## 日本語', '', ja, '',
+    ja, '',
     '添付: `mdfolio.html`（単一 HTML 版。これ 1 つで動きます）、`mdfolio-' + version + '.zip`（フォルダ版、見本、説明書などの一式）。', '',
-    '## English', '', en, '',
-    'Assets: `mdfolio.html` (single-HTML version; this one file is all you need) and `mdfolio-' + version + '.zip` (folder version, samples, documentation and more).', ''
+    '---', '',
+    'Assets: `mdfolio.html` (single-HTML version; this one file is all you need) and `mdfolio-' + version + '.zip` (folder version, samples, documentation and more). The change history is in Japanese only (`CHANGELOG.md`); see `README.en.md` for an English overview.', ''
   ].join('\n');
   fs.writeFileSync(path.join(out, 'notes.md'), notes);
   console.log(`${path.relative(ROOT, out) || out}: mdfolio.html, mdfolio-${version}.zip, notes.md`);

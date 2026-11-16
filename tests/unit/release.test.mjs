@@ -35,9 +35,9 @@ describe('リリース', () => {
     assert.equal(sectionOf(text, '9.9.9'), null);
   });
 
-  test('今の版の節が、日本語と英語の変更履歴の両方にある', () => {
+  test('今の版の節が変更履歴にあり、変更履歴は 1 つだけ（日本語）', () => {
     assert.ok(sectionOf(fs.readFileSync(path.join(ROOT, 'CHANGELOG.md'), 'utf8'), version));
-    assert.ok(sectionOf(fs.readFileSync(path.join(ROOT, 'CHANGELOG.en.md'), 'utf8'), version));
+    assert.ok(!fs.existsSync(path.join(ROOT, 'CHANGELOG.en.md')));
   });
 
   test('単一 HTML、zip、説明を作る。zip はリポジトリと同じ並びで、README の手順に要るものを含む（AU-3）', { skip: !hasPython }, () => {
@@ -51,11 +51,12 @@ describe('リリース', () => {
     assert.ok(names.every((n) => n.startsWith(top)), '最上位のフォルダは 1 つ');
     for (const p of ['dist/mdfolio.html', 'dist/mdfolio/index.html', 'dist/mdfolio/tools/update.mjs', 'dist/mdfolio/README.txt', 'dist/mdfolio/はじめに.txt',
       'tools/build-site.mjs', 'sample-docs/guide/基本操作.md', 'sample-docs-en/guide/basics.md', 'sample.md', 'sample.en.md',
-      'README.md', 'README.en.md', 'CHANGELOG.md', 'CHANGELOG.en.md', 'LICENSE', 'THIRD-PARTY-NOTICES.txt']) assert.ok(names.includes(top + p), p);
+      'README.md', 'README.en.md', 'CHANGELOG.md', 'LICENSE', 'THIRD-PARTY-NOTICES.txt']) assert.ok(names.includes(top + p), p);
+    assert.ok(!names.includes(top + 'CHANGELOG.en.md'));
     assert.ok(!names.some((n) => /node_modules|\/\.git\/|\/src\/|\/tests\//.test(n)), '開発用のファイルを含まない');
-    assert.equal(CONTENTS.length, 13);
+    assert.equal(CONTENTS.length, 12);
     const notes = fs.readFileSync(path.join(out, 'notes.md'), 'utf8');
-    assert.ok(notes.includes('## 日本語') && notes.includes('## English'));
+    assert.ok(notes.includes('### ') && notes.includes('Assets:'));
     assert.ok(!notes.includes(`## ${version}`), '節の見出しは入れない');
     fs.rmSync(out, { recursive: true, force: true });
   });

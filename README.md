@@ -158,7 +158,7 @@ npm run vendor                              # 同梱ライブラリの更新と�
 | `dist/sample-site.html` | `sample-docs/` を書き出したもの（書き出し結果の見本） |
 | `sample-docs/` `sample-docs-en/` | 動作確認用の文書（フォルダ。日本語と英語） |
 | `sample.md` `sample.en.md` | 動作確認用の文書（1 ファイルで完結するもの。日本語と英語） |
-| `CHANGELOG.md` `CHANGELOG.en.md` | 変更履歴（日本語と英語） |
+| `CHANGELOG.md` | 変更履歴 |
 | `src/` | ソース（`core.js` 画面に依存しない処理、`md.js` Markdown の拡張、`i18n.js` 文言、`app.js` 画面、`app.css` 画面の部品、`document.css` 本文と配色） |
 | `vendor/` | 同梱ライブラリ（配布物そのまま）と目録 `manifest.json` |
 | `tools/` | ビルド、書き出し、ライブラリ更新。`tools/folder/` はフォルダ版に入れる更新コマンドと説明。`tools/dev/` は、埋め込み用の変換（`make-hosted.mjs`）、zip の作成（`make-zip.py`）、公開ページの組み立て（`make-pages.mjs`）、テスト結果の集計 |

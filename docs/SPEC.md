@@ -406,7 +406,7 @@ form-action 'none'; base-uri 'none'
 | `sample-docs/` | 動作確認用のサンプル文書（フォルダ） |
 | `sample-docs-en/` | 同じ内容の英語のサンプル文書（8.7） |
 | `sample.md` `sample.en.md` | 動作確認用のサンプル文書（1 ファイルで完結するもの。日本語と英語） |
-| `CHANGELOG.md` `CHANGELOG.en.md` | 変更履歴（日本語と英語） |
+| `CHANGELOG.md` | 変更履歴（日本語だけ） |
 | `src/` `vendor/` `tools/` `tests/` | ソース、同梱ライブラリ、ビルド・書き出しツール、テスト |
 | `docs/` | 仕様書・レビュー記録・テスト報告書 |
 | `README.md` `LICENSE` `THIRD-PARTY-NOTICES.txt` | 使い方、ライセンス |
@@ -594,8 +594,8 @@ GitHub の自動実行の仕組み（GitHub Actions）で、公開ページの�
 | ID | 優先度 | 内容 |
 |---|---|---|
 | AU-1 | 必須 | `main` が更新されたら、単体テスト → ビルド → 公開用の一式の組み立て（`make-pages.mjs`）を行い、`gh-pages` ブランチを置き換える。どれかが失敗したら公開ページは変えない |
-| AU-2 | 必須 | `v` で始まるタグ（例: `v1.2.0`）が付いたとき、または GitHub の Actions の画面から手で始めたとき（`main` の最新に `v<package.json の版>` のタグを作る。同じ版のリリースがすでにあれば止める）、タグの版が `package.json` の版と一致することを確かめ、単体テストとビルドのあと、GitHub のリリースを作る。リリースの説明には変更履歴（`CHANGELOG.md` と `CHANGELOG.en.md`）のその版の部分を使う |
-| AU-3 | 必須 | リリースに添付するファイルは、`mdfolio.html`（単一 HTML 版。これ 1 つで動く）と、配布用の zip `mdfolio-<版>.zip` の 2 つ。zip の中身は、単一 HTML 版、フォルダ版（`mdfolio/`）、見本（`sample-docs/`、`sample-docs-en/`、`sample.md`、`sample.en.md`）、`README.md`、`README.en.md`、`CHANGELOG.md`、`CHANGELOG.en.md`、`LICENSE`、`THIRD-PARTY-NOTICES.txt`。日本語のファイル名に UTF-8 の印を付ける（`make-zip.py`） |
+| AU-2 | 必須 | `v` で始まるタグ（例: `v1.2.0`）が付いたとき、または GitHub の Actions の画面から手で始めたとき（`main` の最新に `v<package.json の版>` のタグを作る。同じ版のリリースがすでにあれば止める）、タグの版が `package.json` の版と一致することを確かめ、単体テストとビルドのあと、GitHub のリリースを作る。リリースの説明には変更履歴（`CHANGELOG.md`）のその版の部分を使う |
+| AU-3 | 必須 | リリースに添付するファイルは、`mdfolio.html`（単一 HTML 版。これ 1 つで動く）と、配布用の zip `mdfolio-<版>.zip` の 2 つ。zip の中身は、単一 HTML 版、フォルダ版（`mdfolio/`）、見本（`sample-docs/`、`sample-docs-en/`、`sample.md`、`sample.en.md`）、`README.md`、`README.en.md`、`CHANGELOG.md`、`LICENSE`、`THIRD-PARTY-NOTICES.txt`。日本語のファイル名に UTF-8 の印を付ける（`make-zip.py`） |
 | AU-4 | 必須 | 自動実行で使う権限は、`gh-pages` ブランチへの書き込みとリリースの作成に必要な範囲（`contents: write`）だけにする。外部のサービスの部品（第三者のアクション）は、GitHub 公式のもの（`actions/checkout`、`actions/setup-node`）だけを使う |
 | AU-5 | 必須 | 配布用の zip と、リリースの説明の組み立ては `tools/dev/make-release.mjs` で行い、手元でも同じものを作れるようにする |
 
@@ -665,3 +665,4 @@ GitHub の自動実行の仕組み（GitHub Actions）で、公開ページの�
 | 1.5 | 2026-11-16 | 公開ページと文書の英語版を追加（8.7、8.1、8.3）。アプリの動作は変えていない |
 | 1.6 | 2026-11-16 | 公開ページの案内にもライセンス表記の全文を載せる（PG-9） |
 | 1.7 | 2026-11-16 | アプリ 1.2.0。名前を「mdfolio」に確定（「仮称」を外す）。フォルダ版の英語対応（FD-9、FD-10）。英語の 1 ファイルの見本 `sample.en.md` と変更履歴を追加（8.1）。公開ページとリリースの自動化（8.8）。1.0.1 のお試し用の写し（`dist/hosted/`）を削除。既知の制約に Mermaid の図の種類と書き出しの CSS を追記（11 章）。英語の文章の見直しと、画面の英語の単数・複数の出し分け（`i18n.js` の `{0:item|items}`）。検討していた「更新コマンドの Node.js 以外の版」「書き出す CSS の指定」「配色のコントラストの検査」は、依頼者と相談のうえ行わない |
+| 1.8 | 2026-11-16 | 変更履歴を日本語の `CHANGELOG.md` 1 つにする（英語版をなくす。依頼者の指示。管理の手間を減らすため）（8.1、8.8） |
