@@ -594,7 +594,7 @@ GitHub の自動実行の仕組み（GitHub Actions）で、公開ページの�
 | ID | 優先度 | 内容 |
 |---|---|---|
 | AU-1 | 必須 | `main` が更新されたら、単体テスト → ビルド → 公開用の一式の組み立て（`make-pages.mjs`）を行い、`gh-pages` ブランチを置き換える。どれかが失敗したら公開ページは変えない |
-| AU-2 | 必須 | `v` で始まるタグ（例: `v1.2.0`）が付いたら、タグの版が `package.json` の版と一致することを確かめ、単体テストとビルドのあと、GitHub のリリースを作る。リリースの説明には変更履歴（`CHANGELOG.md` と `CHANGELOG.en.md`）のその版の部分を使う |
+| AU-2 | 必須 | `v` で始まるタグ（例: `v1.2.0`）が付いたとき、または GitHub の Actions の画面から手で始めたとき（`main` の最新に `v<package.json の版>` のタグを作る。同じ版のリリースがすでにあれば止める）、タグの版が `package.json` の版と一致することを確かめ、単体テストとビルドのあと、GitHub のリリースを作る。リリースの説明には変更履歴（`CHANGELOG.md` と `CHANGELOG.en.md`）のその版の部分を使う |
 | AU-3 | 必須 | リリースに添付するファイルは、`mdfolio.html`（単一 HTML 版。これ 1 つで動く）と、配布用の zip `mdfolio-<版>.zip` の 2 つ。zip の中身は、単一 HTML 版、フォルダ版（`mdfolio/`）、見本（`sample-docs/`、`sample-docs-en/`、`sample.md`、`sample.en.md`）、`README.md`、`README.en.md`、`CHANGELOG.md`、`CHANGELOG.en.md`、`LICENSE`、`THIRD-PARTY-NOTICES.txt`。日本語のファイル名に UTF-8 の印を付ける（`make-zip.py`） |
 | AU-4 | 必須 | 自動実行で使う権限は、`gh-pages` ブランチへの書き込みとリリースの作成に必要な範囲（`contents: write`）だけにする。外部のサービスの部品（第三者のアクション）は、GitHub 公式のもの（`actions/checkout`、`actions/setup-node`）だけを使う |
 | AU-5 | 必須 | 配布用の zip と、リリースの説明の組み立ては `tools/dev/make-release.mjs` で行い、手元でも同じものを作れるようにする |

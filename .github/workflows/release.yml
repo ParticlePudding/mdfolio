@@ -1,10 +1,14 @@
-# v で始まるタグ（例: v1.2.0）が付いたら、リリースを作る（SPEC 8.8 AU-2、AU-3）
-# Create a GitHub release when a tag such as v1.2.0 is pushed.
+# リリースを作る（SPEC 8.8 AU-2、AU-3）。次のどちらでも動く。
+#   - v で始まるタグ（例: v1.2.0）が送られたとき
+#   - GitHub の Actions の画面で「Run workflow」を押したとき（main の最新から、package.json の版のタグを作る）
+# Create a GitHub release when a tag such as v1.2.0 is pushed, or when started by hand from the Actions tab
+# (then the tag v<package.json version> is created on the latest main).
 name: Release
 
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -18,8 +22,15 @@ jobs:
         with:
           node-version: 22
       - name: Check version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           v="$(node -p "require('./package.json').version")"
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            if [ "$GITHUB_REF_NAME" != "main" ]; then echo "main から実行してください / Run from main"; exit 1; fi
+            if gh release view "v$v" >/dev/null 2>&1; then echo "v$v のリリースはすでにあります / Release v$v already exists"; exit 1; fi
+            exit 0
+          fi
           if [ "v$v" != "$GITHUB_REF_NAME" ]; then
             echo "タグ $GITHUB_REF_NAME と package.json の版 $v が一致しません / Tag and package.json version differ"
             exit 1
@@ -35,5 +46,11 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           v="$(node -p "require('./package.json').version")"
-          gh release create "$GITHUB_REF_NAME" tmp/release/mdfolio.html "tmp/release/mdfolio-$v.zip" \
-            --title "mdfolio $v" --notes-file tmp/release/notes.md --verify-tag
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            # タグはここで作る（main の今の記録に付ける）
+            gh release create "v$v" tmp/release/mdfolio.html "tmp/release/mdfolio-$v.zip" \
+              --title "mdfolio $v" --notes-file tmp/release/notes.md --target "$GITHUB_SHA"
+          else
+            gh release create "$GITHUB_REF_NAME" tmp/release/mdfolio.html "tmp/release/mdfolio-$v.zip" \
+              --title "mdfolio $v" --notes-file tmp/release/notes.md --verify-tag
+          fi

@@ -43,8 +43,9 @@ GitHub: https://github.com/ParticlePudding/mdfolio （公開リポジトリ）�
 GitHub Actions（`.github/workflows/pages.yml`）が、ビルド → 単体テスト → `make-pages.mjs` → `gh-pages` の置き換えを行う
 （手で `gh-pages` に送らない。`.nojekyll` は `make-pages.mjs` が作る。消すと `_sidebar.md` が公開されない）。
 版を上げる手順: `package.json`・`package-lock.json`・`src/core.js` の版、README の版、`CHANGELOG.md` と `CHANGELOG.en.md` に
-「## <版> — 日付」の節 → ビルド・テスト → `main` に送る → 依頼者の了承を得て `v<版>` のタグを送る。
-タグで `.github/workflows/release.yml` がリリース（`mdfolio.html` と `mdfolio-<版>.zip`、説明は変更履歴から）を作る。
+「## <版> — 日付」の節 → ビルド・テスト → `main` に送る → 依頼者の了承を得て、依頼者が GitHub の Actions の画面で
+「Release」→「Run workflow」を押す（この開発環境からはタグを送れない。GitHub が 403 で拒む）。
+`.github/workflows/release.yml` がタグ `v<版>` とリリース（`mdfolio.html` と `mdfolio-<版>.zip`、説明は変更履歴から）を作る。
 日本語と英語の両対応（SPEC 8.7）: 見本文書は `sample-docs/` と `sample-docs-en/`、README は `README.md` と `README.en.md`。
 片方を変えたらもう片方も直す（構成とリンクは `tests/unit/samples.test.mjs` が確かめる）。英語の文書で画面の部品を書くときは
 `src/i18n.js` の `en` の言葉を使う。仕様書・レビュー記録・テスト報告書は日本語だけ。
