@@ -1,0 +1,313 @@
+{
+  "name": "mdfolio",
+  "version": "1.1.0",
+  "file": "mdfolio.html",
+  "bytes": 4335042,
+  "sha256": "c7336dda52d593af31a2022bfb8fda9dbf18a0f0ab4e0318ef7795d36d1cc1af",
+  "without": [],
+  "csp": "default-src 'none'; script-src 'sha256-dcRAgsEz4TeMASNSI+H+F8tGUTG9gCWKHlzB47z8uMs=' 'sha256-zgNBx3+xtNq5wKO7UpFJUQtnqbz6pbSx1tWxHwl20u4=' 'sha256-+hQEmLjPyDAsvl58sb28H5Urw4s/oljt4J5z7b+adLw=' 'sha256-xB9SNgkbg/UkxJQPl6FrKxSnbyH/hK6k/WtmQh2KKpo='; style-src 'unsafe-inline'; img-src data: blob: http: https:; media-src data: blob: http: https:; font-src data:; connect-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; form-action 'none'; base-uri 'none'",
+  "blocks": [
+    {
+      "id": "mdv-config",
+      "type": "application/json",
+      "bytes": 143
+    },
+    {
+      "id": "mdv-site",
+      "type": "application/json",
+      "bytes": 4
+    },
+    {
+      "id": "mdv-res-help-ja",
+      "type": "application/json",
+      "bytes": 6838
+    },
+    {
+      "id": "mdv-res-help-en",
+      "type": "application/json",
+      "bytes": 5175
+    },
+    {
+      "id": "mdv-res-licenses",
+      "type": "application/json",
+      "bytes": 101714
+    },
+    {
+      "id": "mdv-res-katex-css",
+      "type": "application/json",
+      "bytes": 368955
+    },
+    {
+      "id": "mdv-lib-katex",
+      "type": "application/json",
+      "bytes": 294012
+    },
+    {
+      "id": "mdv-lib-mermaid",
+      "type": "application/json",
+      "bytes": 2971459
+    },
+    {
+      "id": "mdv-js-vendor",
+      "type": "text/javascript",
+      "bytes": 356246
+    },
+    {
+      "id": "mdv-js-app",
+      "type": "text/javascript",
+      "bytes": 193002
+    }
+  ],
+  "scripts": [
+    {
+      "id": "mdv-js-vendor",
+      "sha256Base64": "dcRAgsEz4TeMASNSI+H+F8tGUTG9gCWKHlzB47z8uMs="
+    },
+    {
+      "id": "mdv-js-app",
+      "sha256Base64": "zgNBx3+xtNq5wKO7UpFJUQtnqbz6pbSx1tWxHwl20u4="
+    },
+    {
+      "id": "mdv-lib-katex",
+      "sha256Base64": "+hQEmLjPyDAsvl58sb28H5Urw4s/oljt4J5z7b+adLw="
+    },
+    {
+      "id": "mdv-lib-mermaid",
+      "sha256Base64": "xB9SNgkbg/UkxJQPl6FrKxSnbyH/hK6k/WtmQh2KKpo="
+    }
+  ],
+  "inlineSources": [
+    {
+      "name": "vendor/markdown-it/markdown-it.umd.min.js",
+      "bytes": 100751,
+      "escapes": 4
+    },
+    {
+      "name": "vendor/markdown-it-footnote/markdown-it-footnote.min.js",
+      "bytes": 5624,
+      "escapes": 0
+    },
+    {
+      "name": "vendor/dompurify/purify.min.js",
+      "bytes": 29796,
+      "escapes": 2
+    },
+    {
+      "name": "vendor/highlightjs/highlight.min.js",
+      "bytes": 129260,
+      "escapes": 2
+    },
+    {
+      "name": "vendor/highlightjs/languages/powershell.min.js",
+      "bytes": 4448,
+      "escapes": 0
+    },
+    {
+      "name": "vendor/highlightjs/languages/dos.min.js",
+      "bytes": 1433,
+      "escapes": 0
+    },
+    {
+      "name": "vendor/highlightjs/languages/dockerfile.min.js",
+      "bytes": 521,
+      "escapes": 0
+    },
+    {
+      "name": "vendor/highlightjs/languages/nginx.min.js",
+      "bytes": 1622,
+      "escapes": 0
+    },
+    {
+      "name": "vendor/highlightjs/languages/apache.min.js",
+      "bytes": 1064,
+      "escapes": 0
+    },
+    {
+      "name": "vendor/highlightjs/languages/cmake.min.js",
+      "bytes": 2593,
+      "escapes": 0
+    },
+    {
+      "name": "vendor/highlightjs/languages/matlab.min.js",
+      "bytes": 2355,
+      "escapes": 0
+    },
+    {
+      "name": "vendor/highlightjs/languages/latex.min.js",
+      "bytes": 3476,
+      "escapes": 0
+    },
+    {
+      "name": "vendor/highlightjs/languages/protobuf.min.js",
+      "bytes": 785,
+      "escapes": 0
+    },
+    {
+      "name": "vendor/highlightjs/languages/vbscript.min.js",
+      "bytes": 1950,
+      "escapes": 0
+    },
+    {
+      "name": "vendor/highlightjs/languages/armasm.min.js",
+      "bytes": 3461,
+      "escapes": 0
+    },
+    {
+      "name": "vendor/highlightjs/languages/verilog.min.js",
+      "bytes": 6110,
+      "escapes": 0
+    },
+    {
+      "name": "vendor/highlightjs/languages/vhdl.min.js",
+      "bytes": 2052,
+      "escapes": 0
+    },
+    {
+      "name": "vendor/highlightjs/languages/fortran.min.js",
+      "bytes": 5829,
+      "escapes": 0
+    },
+    {
+      "name": "vendor/highlightjs/languages/scala.min.js",
+      "bytes": 2155,
+      "escapes": 0
+    },
+    {
+      "name": "vendor/highlightjs/languages/dart.min.js",
+      "bytes": 2583,
+      "escapes": 0
+    },
+    {
+      "name": "vendor/highlightjs/languages/haskell.min.js",
+      "bytes": 2271,
+      "escapes": 0
+    },
+    {
+      "name": "vendor/highlightjs/languages/julia.min.js",
+      "bytes": 4081,
+      "escapes": 0
+    },
+    {
+      "name": "vendor/highlightjs/languages/groovy.min.js",
+      "bytes": 2151,
+      "escapes": 0
+    },
+    {
+      "name": "vendor/highlightjs/languages/gradle.min.js",
+      "bytes": 1936,
+      "escapes": 0
+    },
+    {
+      "name": "vendor/highlightjs/languages/properties.min.js",
+      "bytes": 638,
+      "escapes": 0
+    },
+    {
+      "name": "vendor/highlightjs/languages/http.min.js",
+      "bytes": 914,
+      "escapes": 0
+    },
+    {
+      "name": "vendor/highlightjs/languages/delphi.min.js",
+      "bytes": 2453,
+      "escapes": 0
+    },
+    {
+      "name": "vendor/highlightjs/languages/erlang.min.js",
+      "bytes": 2618,
+      "escapes": 0
+    },
+    {
+      "name": "vendor/highlightjs/languages/elixir.min.js",
+      "bytes": 2563,
+      "escapes": 0
+    },
+    {
+      "name": "vendor/highlightjs/languages/clojure.min.js",
+      "bytes": 4189,
+      "escapes": 0
+    },
+    {
+      "name": "vendor/highlightjs/languages/lisp.min.js",
+      "bytes": 1247,
+      "escapes": 0
+    },
+    {
+      "name": "vendor/highlightjs/languages/scheme.min.js",
+      "bytes": 3372,
+      "escapes": 0
+    },
+    {
+      "name": "vendor/highlightjs/languages/awk.min.js",
+      "bytes": 741,
+      "escapes": 0
+    },
+    {
+      "name": "vendor/highlightjs/languages/tcl.min.js",
+      "bytes": 2011,
+      "escapes": 0
+    },
+    {
+      "name": "vendor/highlightjs/languages/vim.min.js",
+      "bytes": 8690,
+      "escapes": 0
+    },
+    {
+      "name": "vendor/highlightjs/languages/glsl.min.js",
+      "bytes": 8400,
+      "escapes": 0
+    },
+    {
+      "name": "src/core.js",
+      "bytes": 46628,
+      "escapes": 6
+    },
+    {
+      "name": "src/md.js",
+      "bytes": 15836,
+      "escapes": 0
+    },
+    {
+      "name": "src/i18n.js",
+      "bytes": 15397,
+      "escapes": 0
+    },
+    {
+      "name": "src/app.js",
+      "bytes": 115135,
+      "escapes": 2
+    }
+  ],
+  "vendor": [
+    {
+      "package": "markdown-it",
+      "version": "15.0.3",
+      "license": "MIT"
+    },
+    {
+      "package": "markdown-it-footnote",
+      "version": "4.0.0",
+      "license": "MIT"
+    },
+    {
+      "package": "dompurify",
+      "version": "3.4.17",
+      "license": "(MPL-2.0 OR Apache-2.0)"
+    },
+    {
+      "package": "@highlightjs/cdn-assets",
+      "version": "11.12.0",
+      "license": "BSD-3-Clause"
+    },
+    {
+      "package": "katex",
+      "version": "0.19.1",
+      "license": "MIT"
+    },
+    {
+      "package": "@mermaid-js/tiny",
+      "version": "12.3.0",
+      "license": "MIT"
+    }
+  ]
+}

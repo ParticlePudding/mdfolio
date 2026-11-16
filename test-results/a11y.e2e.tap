@@ -1,0 +1,142 @@
+TAP version 13
+# Subtest: 自動検査（axe-core）
+    # Subtest: 主要な画面で違反がない（ライト）
+    ok 1 - 主要な画面で違反がない（ライト）
+      ---
+      duration_ms: 6075.42248
+      type: 'test'
+      ...
+    # Subtest: 主要な画面で違反がない（ダーク）
+    ok 2 - 主要な画面で違反がない（ダーク）
+      ---
+      duration_ms: 5815.441677
+      type: 'test'
+      ...
+    # Subtest: 狭い画面（ドロワー・折りたたみ目次）でも違反がない
+    ok 3 - 狭い画面（ドロワー・折りたたみ目次）でも違反がない
+      ---
+      duration_ms: 1518.312154
+      type: 'test'
+      ...
+    1..3
+ok 1 - 自動検査（axe-core）
+  ---
+  duration_ms: 13482.521644
+  type: 'suite'
+  ...
+# Subtest: 配色のコントラスト（4.5:1 以上）
+    # Subtest: 文字と背景のコントラスト比が 4.5:1 以上（ライト）
+    ok 1 - 文字と背景のコントラスト比が 4.5:1 以上（ライト）
+      ---
+      duration_ms: 1640.627649
+      type: 'test'
+      ...
+    # 328 件を確認。最小は 4.54:1（すべての表示部品 / .markdown-alert-tip .markdown-alert-title）
+    # Subtest: 文字と背景のコントラスト比が 4.5:1 以上（ダーク）
+    ok 2 - 文字と背景のコントラスト比が 4.5:1 以上（ダーク）
+      ---
+      duration_ms: 1729.115721
+      type: 'test'
+      ...
+    # 328 件を確認。最小は 5.3:1（検索 / .mdv-search-item .mdv-search-item-path）
+    # Subtest: 狭い画面の折りたたみ目次と、印刷時の配色
+    ok 3 - 狭い画面の折りたたみ目次と、印刷時の配色
+      ---
+      duration_ms: 397.448094
+      type: 'test'
+      ...
+    1..3
+ok 2 - 配色のコントラスト（4.5:1 以上）
+  ---
+  duration_ms: 3767.839177
+  type: 'suite'
+  ...
+# Subtest: キーボードだけで操作できる
+    # Subtest: Tab の順序: 本文へ移動 → ヘッダー → サイドバー → 本文
+    ok 1 - Tab の順序: 本文へ移動 → ヘッダー → サイドバー → 本文
+      ---
+      duration_ms: 721.822537
+      type: 'test'
+      ...
+    # Subtest: メニュー: Enter・↓ で開き、矢印・Home・End で移動、Esc・Tab で閉じる
+    ok 2 - メニュー: Enter・↓ で開き、矢印・Home・End で移動、Esc・Tab で閉じる
+      ---
+      duration_ms: 583.91582
+      type: 'test'
+      ...
+    # Subtest: ダイアログ: 開くと中へ、Tab は中だけを巡り、Esc で閉じて元のボタンへ戻る
+    ok 3 - ダイアログ: 開くと中へ、Tab は中だけを巡り、Esc で閉じて元のボタンへ戻る
+      ---
+      duration_ms: 626.696016
+      type: 'test'
+      ...
+    # Subtest: 文書一覧: Enter で開くと本文へフォーカスが移る。フォルダは Enter で開閉する
+    ok 4 - 文書一覧: Enter で開くと本文へフォーカスが移る。フォルダは Enter で開閉する
+      ---
+      duration_ms: 788.839795
+      type: 'test'
+      ...
+    # Subtest: 本文: コピーのボタン・横に長い表・折りたたみを操作できる
+    ok 5 - 本文: コピーのボタン・横に長い表・折りたたみを操作できる
+      ---
+      duration_ms: 900.341556
+      type: 'test'
+      ...
+    # Subtest: 画面の幅が変わったら、はみ出しているかどうかを判定し直す
+    ok 6 - 画面の幅が変わったら、はみ出しているかどうかを判定し直す
+      ---
+      duration_ms: 1289.660722
+      type: 'test'
+      ...
+    # Subtest: 横に長いコードも、フォーカスしてスクロールできる
+    ok 7 - 横に長いコードも、フォーカスしてスクロールできる
+      ---
+      duration_ms: 883.547184
+      type: 'test'
+      ...
+    # Subtest: サイドバーのタブ: 左右の矢印で切り替えられる
+    ok 8 - サイドバーのタブ: 左右の矢印で切り替えられる
+      ---
+      duration_ms: 898.792957
+      type: 'test'
+      ...
+    # Subtest: フォーカスの位置が見える
+    ok 9 - フォーカスの位置が見える
+      ---
+      duration_ms: 1088.718051
+      type: 'test'
+      ...
+    1..9
+ok 3 - キーボードだけで操作できる
+  ---
+  duration_ms: 7783.360784
+  type: 'suite'
+  ...
+# Subtest: 動きを減らす設定・読み上げのための情報
+    # Subtest: 「視差効果を減らす」設定では、アニメーションと滑らかなスクロールを使わない
+    ok 1 - 「視差効果を減らす」設定では、アニメーションと滑らかなスクロールを使わない
+      ---
+      duration_ms: 878.511169
+      type: 'test'
+      ...
+    # Subtest: 画面の区分（ランドマーク）と名前
+    ok 2 - 画面の区分（ランドマーク）と名前
+      ---
+      duration_ms: 630.395246
+      type: 'test'
+      ...
+    1..2
+ok 4 - 動きを減らす設定・読み上げのための情報
+  ---
+  duration_ms: 1509.217722
+  type: 'suite'
+  ...
+1..4
+# tests 17
+# suites 4
+# pass 17
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 27132.222452

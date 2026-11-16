@@ -1,0 +1,66 @@
+TAP version 13
+# Subtest: フォルダ版のビルド
+    # Subtest: スクリプトとリソースは単一 HTML と同じ中身。CSS はソースのまま
+    ok 1 - スクリプトとリソースは単一 HTML と同じ中身。CSS はソースのまま
+      ---
+      duration_ms: 108.693032
+      type: 'test'
+      ...
+    # Subtest: index.html: CSP はスクリプトを lib/・data/ と同じ場所に限り、インラインのスクリプトは設定（JSON）だけ
+    ok 2 - index.html: CSP はスクリプトを lib/・data/ と同じ場所に限り、インラインのスクリプトは設定（JSON）だけ
+      ---
+      duration_ms: 0.684226
+      type: 'test'
+      ...
+    1..2
+ok 1 - フォルダ版のビルド
+  ---
+  duration_ms: 109.915978
+  type: 'suite'
+  ...
+# Subtest: 更新コマンド
+    # Subtest: 作るサイトデータは、コマンドライン版の書き出し（build-site）と同じ
+    ok 1 - 作るサイトデータは、コマンドライン版の書き出し（build-site）と同じ
+      ---
+      duration_ms: 303.507775
+      type: 'test'
+      ...
+    # Subtest: タイトルとホームは、指定しなければ前回の指定を引き継ぐ。"" で消せる。ホームの文書がなくなったら自動で選び直す
+    ok 2 - タイトルとホームは、指定しなければ前回の指定を引き継ぐ。"" で消せる。ホームの文書がなくなったら自動で選び直す
+      ---
+      duration_ms: 469.587799
+      type: 'test'
+      ...
+    # Subtest: CSS の写しを作る。文書がない・文書フォルダがないときは、文書なしのデータにする
+    ok 3 - CSS の写しを作る。文書がない・文書フォルダがないときは、文書なしのデータにする
+      ---
+      duration_ms: 179.854416
+      type: 'test'
+      ...
+    # Subtest: 誤りは理由を示して終了コード 1。data/ のファイルは壊さない
+    ok 4 - 誤りは理由を示して終了コード 1。data/ のファイルは壊さない
+      ---
+      duration_ms: 273.49213
+      type: 'test'
+      ...
+    # Subtest: --help で使い方を表示する
+    ok 5 - --help で使い方を表示する
+      ---
+      duration_ms: 44.514754
+      type: 'test'
+      ...
+    1..5
+ok 2 - 更新コマンド
+  ---
+  duration_ms: 1271.565806
+  type: 'suite'
+  ...
+1..2
+# tests 7
+# suites 2
+# pass 7
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1475.502793

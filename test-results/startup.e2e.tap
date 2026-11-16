@@ -1,0 +1,123 @@
+TAP version 13
+# Subtest: 起動
+    # Subtest: 開始画面が表示され、エラー・CSP 違反・通信がない（FR-901, SEC-5, NFR-1）
+    ok 1 - 開始画面が表示され、エラー・CSP 違反・通信がない（FR-901, SEC-5, NFR-1）
+      ---
+      duration_ms: 399.040718
+      type: 'test'
+      ...
+    # Subtest: CSP: スクリプトはハッシュのみ許可、通信先なし（SEC-4）
+    ok 2 - CSP: スクリプトはハッシュのみ許可、通信先なし（SEC-4）
+      ---
+      duration_ms: 308.094396
+      type: 'test'
+      ...
+    # Subtest: CSP: 注入されたスクリプト・イベントハンドラ・eval・通信は実行されない（SEC-4, SEC-5）
+    ok 3 - CSP: 注入されたスクリプト・イベントハンドラ・eval・通信は実行されない（SEC-4, SEC-5）
+      ---
+      duration_ms: 1031.778886
+      type: 'test'
+      ...
+    # Subtest: 画面の言語はブラウザの言語設定に従う（FR-502）
+    ok 4 - 画面の言語はブラウザの言語設定に従う（FR-502）
+      ---
+      duration_ms: 556.255838
+      type: 'test'
+      ...
+    1..4
+ok 1 - 起動
+  ---
+  duration_ms: 2379.678316
+  type: 'suite'
+  ...
+# Subtest: ヘルプ・ライセンス
+    # Subtest: 開始画面から使い方を開き、戻れる（FR-801）
+    ok 1 - 開始画面から使い方を開き、戻れる（FR-801）
+      ---
+      duration_ms: 508.569247
+      type: 'test'
+      ...
+    # Subtest: 英語の画面では英語のヘルプを表示する
+    ok 2 - 英語の画面では英語のヘルプを表示する
+      ---
+      duration_ms: 343.316749
+      type: 'test'
+      ...
+    # Subtest: ライセンスとバージョンを表示できる（FR-802）
+    ok 3 - ライセンスとバージョンを表示できる（FR-802）
+      ---
+      duration_ms: 477.543714
+      type: 'test'
+      ...
+    1..3
+ok 2 - ヘルプ・ライセンス
+  ---
+  duration_ms: 1329.932284
+  type: 'suite'
+  ...
+# Subtest: 閲覧モードでの URL
+    # Subtest: ハッシュ付きで開くと開始画面になり、読み込み後にその文書・位置へ移動する（FR-304）
+    ok 1 - ハッシュ付きで開くと開始画面になり、読み込み後にその文書・位置へ移動する（FR-304）
+      ---
+      duration_ms: 435.783952
+      type: 'test'
+      ...
+    # Subtest: 読み込んだフォルダにない文書を指していた場合はホームを表示する
+    ok 2 - 読み込んだフォルダにない文書を指していた場合はホームを表示する
+      ---
+      duration_ms: 428.092645
+      type: 'test'
+      ...
+    1..2
+ok 3 - 閲覧モードでの URL
+  ---
+  duration_ms: 864.283528
+  type: 'suite'
+  ...
+# Subtest: 設定ブロック（FR-701）
+    # Subtest: タイトル・言語・テーマ・ホーム文書の既定を指定できる
+    ok 1 - タイトル・言語・テーマ・ホーム文書の既定を指定できる
+      ---
+      duration_ms: 495.396464
+      type: 'test'
+      ...
+    # Subtest: 壊れた設定ブロックでも既定値で動く
+    ok 2 - 壊れた設定ブロックでも既定値で動く
+      ---
+      duration_ms: 441.627508
+      type: 'test'
+      ...
+    # Subtest: 未対応の形式のサイトデータは読み込まず、通知して閲覧モードで起動する（仕様 5.5）
+    ok 3 - 未対応の形式のサイトデータは読み込まず、通知して閲覧モードで起動する（仕様 5.5）
+      ---
+      duration_ms: 343.407611
+      type: 'test'
+      ...
+    1..3
+ok 4 - 設定ブロック（FR-701）
+  ---
+  duration_ms: 1280.872182
+  type: 'suite'
+  ...
+# Subtest: 保存領域が使えない環境（FR-702, NFR-7）
+    # Subtest: localStorage / IndexedDB が例外を投げても動作する
+    ok 1 - localStorage / IndexedDB が例外を投げても動作する
+      ---
+      duration_ms: 518.552645
+      type: 'test'
+      ...
+    1..1
+ok 5 - 保存領域が使えない環境（FR-702, NFR-7）
+  ---
+  duration_ms: 518.810427
+  type: 'suite'
+  ...
+1..5
+# tests 13
+# suites 5
+# pass 13
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 6886.95703

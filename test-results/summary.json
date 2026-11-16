@@ -1,0 +1,198 @@
+{
+  "files": {
+    "tests/unit/build.test.mjs": {
+      "kind": "unit",
+      "tests": 19,
+      "pass": 19,
+      "fail": 0,
+      "skipped": 0,
+      "seconds": 1.2,
+      "notes": [
+        "dist/mdfolio.html: 4335042 バイト（4.13 MB）"
+      ]
+    },
+    "tests/unit/cli.test.mjs": {
+      "kind": "unit",
+      "tests": 15,
+      "pass": 15,
+      "fail": 0,
+      "skipped": 0,
+      "seconds": 3.7,
+      "notes": []
+    },
+    "tests/unit/core.test.mjs": {
+      "kind": "unit",
+      "tests": 82,
+      "pass": 82,
+      "fail": 0,
+      "skipped": 0,
+      "seconds": 0.2,
+      "notes": []
+    },
+    "tests/unit/md.test.mjs": {
+      "kind": "unit",
+      "tests": 43,
+      "pass": 43,
+      "fail": 0,
+      "skipped": 0,
+      "seconds": 0.4,
+      "notes": []
+    },
+    "tests/e2e/a11y.e2e.mjs": {
+      "kind": "e2e",
+      "tests": 17,
+      "pass": 17,
+      "fail": 0,
+      "skipped": 0,
+      "seconds": 27.2,
+      "notes": [
+        "328 件を確認。最小は 4.54:1（すべての表示部品 / .markdown-alert-tip .markdown-alert-title）",
+        "328 件を確認。最小は 5.3:1（検索 / .mdv-search-item .mdv-search-item-path）"
+      ]
+    },
+    "tests/e2e/export.e2e.mjs": {
+      "kind": "e2e",
+      "tests": 20,
+      "pass": 20,
+      "fail": 0,
+      "skipped": 0,
+      "seconds": 13.8,
+      "notes": []
+    },
+    "tests/e2e/fsa.e2e.mjs": {
+      "kind": "e2e",
+      "tests": 11,
+      "pass": 11,
+      "fail": 0,
+      "skipped": 0,
+      "seconds": 28.2,
+      "notes": []
+    },
+    "tests/e2e/navigate.e2e.mjs": {
+      "kind": "e2e",
+      "tests": 23,
+      "pass": 23,
+      "fail": 0,
+      "skipped": 0,
+      "seconds": 12.7,
+      "notes": []
+    },
+    "tests/e2e/open.e2e.mjs": {
+      "kind": "e2e",
+      "tests": 22,
+      "pass": 22,
+      "fail": 0,
+      "skipped": 0,
+      "seconds": 13.4,
+      "notes": []
+    },
+    "tests/e2e/perf.e2e.mjs": {
+      "kind": "e2e",
+      "tests": 4,
+      "pass": 4,
+      "fail": 0,
+      "skipped": 0,
+      "seconds": 39,
+      "notes": [
+        "起動（開始画面の構築まで）: 149 ms（目標 1000 ms 以内） 7 回の中央値。最大 162 ms",
+        "起動（最初の描画まで）: 196 ms（目標 1000 ms 以内） 7 回の中央値。最大 216 ms",
+        "1MB の文書の表示: 2023 ms（目標 3000 ms 以内） 1.00 MB、見出し・表・コードブロック各 1653 個。5 回の中央値。最大 2135 ms",
+        "1MB の文書: コードの色分け完了まで（参考）: 6089 ms",
+        "1,000 文書: ツリー表示: 67 ms（目標 2000 ms 以内） 「フォルダを開く」から、一覧と最初の文書が表示されるまで",
+        "1,000 文書: 索引作成: 720 ms（目標 10000 ms 以内） 「フォルダを開く」から、全文検索の索引ができるまで",
+        "1,000 文書: 検索応答: 173 ms（目標 300 ms 以内） 入力から結果の表示まで（入力待ち 150 ms を含む）。5 種類の検索語の最大値。中央値 165 ms",
+        "1,000 文書（実ファイル）: ツリー表示: 433 ms（目標 2000 ms 以内） ファイルの受け渡しにかかる時間を含む",
+        "1,000 文書（実ファイル）: 索引作成: 1553 ms（目標 10000 ms 以内） ファイルの受け渡しにかかる時間を含む"
+      ]
+    },
+    "tests/e2e/render.e2e.mjs": {
+      "kind": "e2e",
+      "tests": 19,
+      "pass": 19,
+      "fail": 0,
+      "skipped": 0,
+      "seconds": 15.6,
+      "notes": []
+    },
+    "tests/e2e/search.e2e.mjs": {
+      "kind": "e2e",
+      "tests": 17,
+      "pass": 17,
+      "fail": 0,
+      "skipped": 0,
+      "seconds": 16.7,
+      "notes": []
+    },
+    "tests/e2e/security.e2e.mjs": {
+      "kind": "e2e",
+      "tests": 14,
+      "pass": 14,
+      "fail": 0,
+      "skipped": 0,
+      "seconds": 25.7,
+      "notes": []
+    },
+    "tests/e2e/settings.e2e.mjs": {
+      "kind": "e2e",
+      "tests": 16,
+      "pass": 16,
+      "fail": 0,
+      "skipped": 0,
+      "seconds": 13.3,
+      "notes": []
+    },
+    "tests/e2e/startup.e2e.mjs": {
+      "kind": "e2e",
+      "tests": 13,
+      "pass": 13,
+      "fail": 0,
+      "skipped": 0,
+      "seconds": 6.9,
+      "notes": []
+    },
+    "tests/e2e/embed.e2e.mjs": {
+      "kind": "e2e",
+      "tests": 15,
+      "pass": 15,
+      "fail": 0,
+      "skipped": 0,
+      "seconds": 31,
+      "notes": []
+    },
+    "tests/unit/package.test.mjs": {
+      "kind": "unit",
+      "tests": 9,
+      "pass": 9,
+      "fail": 0,
+      "skipped": 0,
+      "seconds": 1.8,
+      "notes": []
+    },
+    "tests/unit/folder.test.mjs": {
+      "kind": "unit",
+      "tests": 7,
+      "pass": 7,
+      "fail": 0,
+      "skipped": 0,
+      "seconds": 1.5,
+      "notes": []
+    },
+    "tests/e2e/folder.e2e.mjs": {
+      "kind": "e2e",
+      "tests": 13,
+      "pass": 13,
+      "fail": 0,
+      "skipped": 0,
+      "seconds": 13.4,
+      "notes": []
+    }
+  },
+  "total": {
+    "tests": 379,
+    "pass": 379,
+    "fail": 0,
+    "skipped": 0
+  },
+  "date": "2026-11-14T16:01:05.379Z",
+  "node": "v22.23.4"
+}

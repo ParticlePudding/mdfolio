@@ -1,0 +1,128 @@
+TAP version 13
+# Subtest: 保存を使わない設定（allowDownloads: false）
+    # Subtest: 書き出しを出さない。添付は保存せず、保存できないことを伝える
+    ok 1 - 書き出しを出さない。添付は保存せず、保存できないことを伝える
+      ---
+      duration_ms: 1041.071102
+      type: 'test'
+      ...
+    # Subtest: 既定（true）では、これまでどおり保存できる
+    ok 2 - 既定（true）では、これまでどおり保存できる
+      ---
+      duration_ms: 630.970524
+      type: 'test'
+      ...
+    1..2
+ok 1 - 保存を使わない設定（allowDownloads: false）
+  ---
+  duration_ms: 1771.001311
+  type: 'suite'
+  ...
+# Subtest: 外部の画像を常に読み込まない設定（lockExternalImages: true）
+    # Subtest: 切り替えの項目を出さない。保存済みの「表示する」設定や allowExternalImages より優先する
+    ok 1 - 切り替えの項目を出さない。保存済みの「表示する」設定や allowExternalImages より優先する
+      ---
+      duration_ms: 613.928734
+      type: 'test'
+      ...
+    1..1
+ok 2 - 外部の画像を常に読み込まない設定（lockExternalImages: true）
+  ---
+  duration_ms: 614.86188
+  type: 'suite'
+  ...
+# Subtest: お試し用の公開ページの表示（hosted: true）
+    # Subtest: 指定がなければ、開始画面と使い方はこれまでどおり。書き出した HTML には引き継がない
+    ok 1 - 指定がなければ、開始画面と使い方はこれまでどおり。書き出した HTML には引き継がない
+      ---
+      duration_ms: 1157.156542
+      type: 'test'
+      ...
+    # Subtest: 英語の画面でも、同じ内容を伝える
+    ok 2 - 英語の画面でも、同じ内容を伝える
+      ---
+      duration_ms: 464.690464
+      type: 'test'
+      ...
+    1..2
+ok 3 - お試し用の公開ページの表示（hosted: true）
+  ---
+  duration_ms: 1622.323576
+  type: 'suite'
+  ...
+# Subtest: サンドボックス化されたフレームの中での動作
+    # Subtest: サンプルを表示するページ: 画像・数式・図・検索・移動が使え、動かない操作は出さない
+    ok 1 - サンプルを表示するページ: 画像・数式・図・検索・移動が使え、動かない操作は出さない
+      ---
+      duration_ms: 1817.899948
+      type: 'test'
+      ...
+    # Subtest: ビューア: ファイルを選んで開ける。フォルダの選択は <input> 方式に切り替わる
+    ok 2 - ビューア: ファイルを選んで開ける。フォルダの選択は <input> 方式に切り替わる
+      ---
+      duration_ms: 1326.512533
+      type: 'test'
+      ...
+    # Subtest: コードのコピー: クリップボード API が許可されていないフレームでも、コピーできる。失敗したときは失敗と伝える
+    ok 3 - コードのコピー: クリップボード API が許可されていないフレームでも、コピーできる。失敗したときは失敗と伝える
+      ---
+      duration_ms: 3652.607678
+      type: 'test'
+      ...
+    # Subtest: 狭い画面（スマートフォン相当）のフレームでも、横にはみ出さない
+    ok 4 - 狭い画面（スマートフォン相当）のフレームでも、横にはみ出さない
+      ---
+      duration_ms: 1436.551046
+      type: 'test'
+      ...
+    # Subtest: 保存領域も URL の書き換えも使えないフレーム（sandbox="allow-scripts" の srcdoc）でも、リンクで移動できる
+    ok 5 - 保存領域も URL の書き換えも使えないフレーム（sandbox="allow-scripts" の srcdoc）でも、リンクで移動できる
+      ---
+      duration_ms: 7851.06697
+      type: 'test'
+      ...
+    # Subtest: 配布用の HTML（CSP 付き）をそのまま srcdoc で埋め込んでも、表示とリンクでの移動ができる
+    ok 6 - 配布用の HTML（CSP 付き）をそのまま srcdoc で埋め込んでも、表示とリンクでの移動ができる
+      ---
+      duration_ms: 4025.047384
+      type: 'test'
+      ...
+    # Subtest: 保存領域が使えないフレームでも、ビューアでファイルを開ける
+    ok 7 - 保存領域が使えないフレームでも、ビューアでファイルを開ける
+      ---
+      duration_ms: 2895.707904
+      type: 'test'
+      ...
+    # Subtest: nonce 方式の CSP で配信する環境でも、あとから読み込むライブラリ（数式・図）が動く
+    ok 8 - nonce 方式の CSP で配信する環境でも、あとから読み込むライブラリ（数式・図）が動く
+      ---
+      duration_ms: 906.345656
+      type: 'test'
+      ...
+    # Subtest: 変換で書き換えたスクリプト（置換文字のエスケープ）でも、不正な入力の表示結果は変わらない
+    ok 9 - 変換で書き換えたスクリプト（置換文字のエスケープ）でも、不正な入力の表示結果は変わらない
+      ---
+      duration_ms: 721.672385
+      type: 'test'
+      ...
+    # Subtest: （比較）調整していない HTML をこのフレームに入れると、添付の保存はブラウザーに止められる
+    ok 10 - （比較）調整していない HTML をこのフレームに入れると、添付の保存はブラウザーに止められる
+      ---
+      duration_ms: 1366.232903
+      type: 'test'
+      ...
+    1..10
+ok 4 - サンドボックス化されたフレームの中での動作
+  ---
+  duration_ms: 26384.009379
+  type: 'suite'
+  ...
+1..4
+# tests 15
+# suites 4
+# pass 15
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 30938.256615

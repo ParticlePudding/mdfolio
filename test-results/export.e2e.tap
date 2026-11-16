@@ -1,0 +1,172 @@
+TAP version 13
+# Subtest: 書き出しダイアログ（FR-601）
+    # Subtest: タイトル・ホーム文書を指定でき、文書数・添付数・概算サイズを確認できる
+    ok 1 - タイトル・ホーム文書を指定でき、文書数・添付数・概算サイズを確認できる
+      ---
+      duration_ms: 744.342933
+      type: 'test'
+      ...
+    # Subtest: 書き出すと HTML が 1 つ保存され、完了を通知する
+    ok 2 - 書き出すと HTML が 1 つ保存され、完了を通知する
+      ---
+      duration_ms: 856.760647
+      type: 'test'
+      ...
+    1..2
+ok 1 - 書き出しダイアログ（FR-601）
+  ---
+  duration_ms: 1679.497138
+  type: 'suite'
+  ...
+# Subtest: 書き出した HTML の中身（FR-601, FR-602, 仕様 5.5, 8.2）
+    # Subtest: ビューアと同じ CSP・同じスクリプトで、設定とサイトデータだけが異なる
+    ok 1 - ビューアと同じ CSP・同じスクリプトで、設定とサイトデータだけが異なる
+      ---
+      duration_ms: 64.819463
+      type: 'test'
+      ...
+    # Subtest: すべての文書と、参照されている添付だけを埋め込む
+    ok 2 - すべての文書と、参照されている添付だけを埋め込む
+      ---
+      duration_ms: 19.568309
+      type: 'test'
+      ...
+    1..2
+ok 2 - 書き出した HTML の中身（FR-601, FR-602, 仕様 5.5, 8.2）
+  ---
+  duration_ms: 84.633931
+  type: 'suite'
+  ...
+# Subtest: サイトモード（FR-104, シナリオ S3）
+    # Subtest: 開くだけで文書が表示される。操作・通信・エラーなし
+    ok 1 - 開くだけで文書が表示される。操作・通信・エラーなし
+      ---
+      duration_ms: 412.670525
+      type: 'test'
+      ...
+    # Subtest: メニューに「開く」「再読み込み」「書き出し」を出さない。ドロップも受け付けない
+    ok 2 - メニューに「開く」「再読み込み」「書き出し」を出さない。ドロップも受け付けない
+      ---
+      duration_ms: 797.32822
+      type: 'test'
+      ...
+    # Subtest: リンク・検索・戻る・添付のダウンロードが使える
+    ok 3 - リンク・検索・戻る・添付のダウンロードが使える
+      ---
+      duration_ms: 846.086899
+      type: 'test'
+      ...
+    # Subtest: ハッシュ付きの URL を直接開くと、その文書・位置が表示される（FR-304）
+    ok 4 - ハッシュ付きの URL を直接開くと、その文書・位置が表示される（FR-304）
+      ---
+      duration_ms: 506.889722
+      type: 'test'
+      ...
+    # Subtest: 数式・図・ライセンス表記も含まれている（FR-802）
+    ok 5 - 数式・図・ライセンス表記も含まれている（FR-802）
+      ---
+      duration_ms: 797.201077
+      type: 'test'
+      ...
+    # Subtest: サイトの設定（ホーム文書）が反映される
+    ok 6 - サイトの設定（ホーム文書）が反映される
+      ---
+      duration_ms: 1089.806943
+      type: 'test'
+      ...
+    1..6
+ok 3 - サイトモード（FR-104, シナリオ S3）
+  ---
+  duration_ms: 4450.899983
+  type: 'suite'
+  ...
+# Subtest: 未使用ライブラリの除外（FR-603）
+    # Subtest: 数式も図も使っていなければ、KaTeX と Mermaid を省く
+    ok 1 - 数式も図も使っていなければ、KaTeX と Mermaid を省く
+      ---
+      duration_ms: 858.588762
+      type: 'test'
+      ...
+    # Subtest: 数式だけを使っていれば KaTeX だけを残す
+    ok 2 - 数式だけを使っていれば KaTeX だけを残す
+      ---
+      duration_ms: 760.547797
+      type: 'test'
+      ...
+    # Subtest: 図だけを使っていれば Mermaid だけを残す
+    ok 3 - 図だけを使っていれば Mermaid だけを残す
+      ---
+      duration_ms: 1339.380691
+      type: 'test'
+      ...
+    # Subtest: ライブラリが含まれない HTML では、数式・図の原文を表示する（FR-205, FR-206）
+    ok 4 - ライブラリが含まれない HTML では、数式・図の原文を表示する（FR-205, FR-206）
+      ---
+      duration_ms: 500.112509
+      type: 'test'
+      ...
+    1..4
+ok 4 - 未使用ライブラリの除外（FR-603）
+  ---
+  duration_ms: 3459.087332
+  type: 'suite'
+  ...
+# Subtest: 添付と文書の扱い（FR-602）
+    # Subtest: 20MB を超える添付は埋め込まず、件数を通知する
+    ok 1 - 20MB を超える添付は埋め込まず、件数を通知する
+      ---
+      duration_ms: 586.564892
+      type: 'test'
+      ...
+    # Subtest: 読み込めない文書は含めず、件数を通知する。合計が大きい場合は警告する
+    ok 2 - 読み込めない文書は含めず、件数を通知する。合計が大きい場合は警告する
+      ---
+      duration_ms: 619.983699
+      type: 'test'
+      ...
+    # Subtest: 文書に </script> や <!-- が含まれていても、安全に埋め込まれる
+    ok 3 - 文書に </script> や <!-- が含まれていても、安全に埋め込まれる
+      ---
+      duration_ms: 880.804939
+      type: 'test'
+      ...
+    1..3
+ok 5 - 添付と文書の扱い（FR-602）
+  ---
+  duration_ms: 2087.798275
+  type: 'suite'
+  ...
+# Subtest: コマンドライン版（FR-604）
+    # Subtest: アプリ内の書き出しと同じ内容の HTML を生成する
+    ok 1 - アプリ内の書き出しと同じ内容の HTML を生成する
+      ---
+      duration_ms: 543.718018
+      type: 'test'
+      ...
+    # Subtest: オプション（--home, --lang, --theme, --allow-external-images）と、未使用ライブラリの除外
+    ok 2 - オプション（--home, --lang, --theme, --allow-external-images）と、未使用ライブラリの除外
+      ---
+      duration_ms: 396.723229
+      type: 'test'
+      ...
+    # Subtest: 誤った指定はエラーで終了する
+    ok 3 - 誤った指定はエラーで終了する
+      ---
+      duration_ms: 533.715908
+      type: 'test'
+      ...
+    1..3
+ok 6 - コマンドライン版（FR-604）
+  ---
+  duration_ms: 1474.530598
+  type: 'suite'
+  ...
+1..6
+# tests 20
+# suites 6
+# pass 20
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 13744.373016

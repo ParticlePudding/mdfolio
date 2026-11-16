@@ -1,0 +1,78 @@
+TAP version 13
+# Subtest: zip の作成（tools/dev/make-zip.py）
+    # Subtest: 日本語のファイル名に、UTF-8 であることを示す印を付ける（付けないと Windows で文字化けする）
+    ok 1 - 日本語のファイル名に、UTF-8 であることを示す印を付ける（付けないと Windows で文字化けする）
+      ---
+      duration_ms: 50.33112
+      type: 'test'
+      ...
+    # Subtest: 引数が足りないときは、使い方を表示して終わる
+    ok 2 - 引数が足りないときは、使い方を表示して終わる
+      ---
+      duration_ms: 33.39427
+      type: 'test'
+      ...
+    1..2
+ok 1 - zip の作成（tools/dev/make-zip.py）
+  ---
+  duration_ms: 84.608902
+  type: 'suite'
+  ...
+# Subtest: 外部のホスティング環境に置くための変換（tools/dev/make-hosted.mjs）
+    # Subtest: CSP の指定を取り除き、保存と外部画像を使わない設定にする。ほかは変えない
+    ok 1 - CSP の指定を取り除き、保存と外部画像を使わない設定にする。ほかは変えない
+      ---
+      duration_ms: 187.377683
+      type: 'test'
+      ...
+    # Subtest: 置換文字（U+FFFD）を含まない HTML にする。スクリプトでは、同じ意味のエスケープに書き換える
+    ok 2 - 置換文字（U+FFFD）を含まない HTML にする。スクリプトでは、同じ意味のエスケープに書き換える
+      ---
+      duration_ms: 189.793349
+      type: 'test'
+      ...
+    # Subtest: 文書のデータに置換文字が含まれていても、読み取った内容は変わらない
+    ok 3 - 文書のデータに置換文字が含まれていても、読み取った内容は変わらない
+      ---
+      duration_ms: 172.448158
+      type: 'test'
+      ...
+    # Subtest: 意味を変えずに書き換えられると言い切れない場所に置換文字がある場合は、変換をやめる
+    ok 4 - 意味を変えずに書き換えられると言い切れない場所に置換文字がある場合は、変換をやめる
+      ---
+      duration_ms: 384.503407
+      type: 'test'
+      ...
+    # Subtest: --title はサイトのタイトルと <title> を、--page-title は <title> だけを変える
+    ok 5 - --title はサイトのタイトルと <title> を、--page-title は <title> だけを変える
+      ---
+      duration_ms: 269.230452
+      type: 'test'
+      ...
+    # Subtest: 外部の画像を許可する設定の HTML を変換しても、許可は引き継がない
+    ok 6 - 外部の画像を許可する設定の HTML を変換しても、許可は引き継がない
+      ---
+      duration_ms: 179.67174
+      type: 'test'
+      ...
+    # Subtest: 誤った指定は、理由を示して終了コード 1 で終わり、何も書き出さない
+    ok 7 - 誤った指定は、理由を示して終了コード 1 で終わり、何も書き出さない
+      ---
+      duration_ms: 175.893524
+      type: 'test'
+      ...
+    1..7
+ok 2 - 外部のホスティング環境に置くための変換（tools/dev/make-hosted.mjs）
+  ---
+  duration_ms: 1559.846775
+  type: 'suite'
+  ...
+1..2
+# tests 9
+# suites 2
+# pass 9
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1746.017216

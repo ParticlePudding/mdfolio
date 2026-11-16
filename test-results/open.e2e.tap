@@ -1,0 +1,191 @@
+TAP version 13
+# Subtest: フォルダを開く（FR-101, FR-105, FR-106）
+    # Subtest: <input> 方式: 配下を再帰的に読み込み、ホーム文書を表示する
+    ok 1 - <input> 方式: 配下を再帰的に読み込み、ホーム文書を表示する
+      ---
+      duration_ms: 487.773346
+      type: 'test'
+      ...
+    # Subtest: . で始まる要素と node_modules は読み込まない。添付は一覧に持つだけで表示しない
+    ok 2 - . で始まる要素と node_modules は読み込まない。添付は一覧に持つだけで表示しない
+      ---
+      duration_ms: 442.202815
+      type: 'test'
+      ...
+    # Subtest: 「フォルダを開く」ボタン → ファイル選択ダイアログ（File System Access API がない場合）
+    ok 3 - 「フォルダを開く」ボタン → ファイル選択ダイアログ（File System Access API がない場合）
+      ---
+      duration_ms: 408.284066
+      type: 'test'
+      ...
+    # Subtest: showDirectoryPicker が拒否された場合は <input> 方式に自動で切り替える
+    ok 4 - showDirectoryPicker が拒否された場合は <input> 方式に自動で切り替える
+      ---
+      duration_ms: 383.069036
+      type: 'test'
+      ...
+    # Subtest: 利用者がフォルダ選択をキャンセルした場合は何もしない
+    ok 5 - 利用者がフォルダ選択をキャンセルした場合は何もしない
+      ---
+      duration_ms: 787.991811
+      type: 'test'
+      ...
+    # Subtest: showDirectoryPicker 方式: ハンドルから読み込み、走査の進捗を表示する
+    ok 6 - showDirectoryPicker 方式: ハンドルから読み込み、走査の進捗を表示する
+      ---
+      duration_ms: 660.450107
+      type: 'test'
+      ...
+    1..6
+ok 1 - フォルダを開く（FR-101, FR-105, FR-106）
+  ---
+  duration_ms: 3253.277266
+  type: 'suite'
+  ...
+# Subtest: ファイルを開く（FR-102, FR-112）
+    # Subtest: 単一ファイル: 表示できるが、画像は解決できない旨を示す
+    ok 1 - 単一ファイル: 表示できるが、画像は解決できない旨を示す
+      ---
+      duration_ms: 366.47962
+      type: 'test'
+      ...
+    # Subtest: 複数ファイル: 文書間のリンクと、一緒に選んだ画像が使える
+    ok 2 - 複数ファイル: 文書間のリンクと、一緒に選んだ画像が使える
+      ---
+      duration_ms: 409.689308
+      type: 'test'
+      ...
+    1..2
+ok 2 - ファイルを開く（FR-102, FR-112）
+  ---
+  duration_ms: 776.802784
+  type: 'suite'
+  ...
+# Subtest: ドラッグ＆ドロップ（FR-103）
+    # Subtest: ファイルのドロップ
+    ok 1 - ファイルのドロップ
+      ---
+      duration_ms: 330.792668
+      type: 'test'
+      ...
+    # Subtest: フォルダを 1 つドロップ: そのフォルダがルートになる（エントリ方式）
+    ok 2 - フォルダを 1 つドロップ: そのフォルダがルートになる（エントリ方式）
+      ---
+      duration_ms: 317.837453
+      type: 'test'
+      ...
+    # Subtest: 複数の項目をドロップ: ルート直下に並べる
+    ok 3 - 複数の項目をドロップ: ルート直下に並べる
+      ---
+      duration_ms: 311.550473
+      type: 'test'
+      ...
+    # Subtest: フォルダを 1 つドロップ（ハンドル方式、Edge / Chrome）
+    ok 4 - フォルダを 1 つドロップ（ハンドル方式、Edge / Chrome）
+      ---
+      duration_ms: 328.911992
+      type: 'test'
+      ...
+    # Subtest: ドラッグ中の表示: 開始画面ではトンボが寄り、文書表示中はドロップ案内を重ねる
+    ok 5 - ドラッグ中の表示: 開始画面ではトンボが寄り、文書表示中はドロップ案内を重ねる
+      ---
+      duration_ms: 376.990424
+      type: 'test'
+      ...
+    1..5
+ok 3 - ドラッグ＆ドロップ（FR-103）
+  ---
+  duration_ms: 1666.598578
+  type: 'suite'
+  ...
+# Subtest: 置き換えと、文書がない場合（FR-111, FR-902）
+    # Subtest: Markdown 文書がないフォルダ: 通知し、開始画面のまま
+    ok 1 - Markdown 文書がないフォルダ: 通知し、開始画面のまま
+      ---
+      duration_ms: 339.587065
+      type: 'test'
+      ...
+    # Subtest: 文書セットを開いているときに文書のないフォルダを開いても、表示を維持する
+    ok 2 - 文書セットを開いているときに文書のないフォルダを開いても、表示を維持する
+      ---
+      duration_ms: 464.821289
+      type: 'test'
+      ...
+    # Subtest: 別のフォルダを開くと確認なしで置き換わり、ホーム文書を表示する
+    ok 3 - 別のフォルダを開くと確認なしで置き換わり、ホーム文書を表示する
+      ---
+      duration_ms: 495.523619
+      type: 'test'
+      ...
+    1..3
+ok 4 - 置き換えと、文書がない場合（FR-111, FR-902）
+  ---
+  duration_ms: 1300.349804
+  type: 'suite'
+  ...
+# Subtest: 文字コード（FR-107）
+    # Subtest: Shift_JIS・UTF-16（BOM）・BOM 付き UTF-8 を自動判定する
+    ok 1 - Shift_JIS・UTF-16（BOM）・BOM 付き UTF-8 を自動判定する
+      ---
+      duration_ms: 668.296101
+      type: 'test'
+      ...
+    1..1
+ok 5 - 文字コード（FR-107）
+  ---
+  duration_ms: 668.488931
+  type: 'suite'
+  ...
+# Subtest: 上限（FR-110）
+    # Subtest: 文書は 5,000 件まで。超えた分は読み込まず通知する
+    ok 1 - 文書は 5,000 件まで。超えた分は読み込まず通知する
+      ---
+      duration_ms: 580.113701
+      type: 'test'
+      ...
+    # Subtest: 走査は 50,000 件まで。途中で打ち切って通知する
+    ok 2 - 走査は 50,000 件まで。途中で打ち切って通知する
+      ---
+      duration_ms: 620.930621
+      type: 'test'
+      ...
+    # Subtest: 10MB を超える文書は変換せず、テキストとして表示する
+    ok 3 - 10MB を超える文書は変換せず、テキストとして表示する
+      ---
+      duration_ms: 3053.739332
+      type: 'test'
+      ...
+    1..3
+ok 6 - 上限（FR-110）
+  ---
+  duration_ms: 4255.169159
+  type: 'suite'
+  ...
+# Subtest: 読み込めないファイル（FR-901）
+    # Subtest: 読み込みに失敗した文書は、その旨を表示する（画面は止まらない）
+    ok 1 - 読み込みに失敗した文書は、その旨を表示する（画面は止まらない）
+      ---
+      duration_ms: 508.72507
+      type: 'test'
+      ...
+    # Subtest: <input> 方式で開いた後にファイルが消えても、通知して動作を続ける
+    ok 2 - <input> 方式で開いた後にファイルが消えても、通知して動作を続ける
+      ---
+      duration_ms: 370.15748
+      type: 'test'
+      ...
+    1..2
+ok 7 - 読み込めないファイル（FR-901）
+  ---
+  duration_ms: 879.18043
+  type: 'suite'
+  ...
+1..7
+# tests 22
+# suites 7
+# pass 22
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 13315.07664

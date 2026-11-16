@@ -1,0 +1,147 @@
+TAP version 13
+# Subtest: 全文検索（FR-401, FR-402）
+    # Subtest: 一致した文書を、タイトル・パス・抜粋（一致語を強調）つきで表示する
+    ok 1 - 一致した文書を、タイトル・パス・抜粋（一致語を強調）つきで表示する
+      ---
+      duration_ms: 698.565548
+      type: 'test'
+      ...
+    # Subtest: 空白区切りは AND 条件（全角空白も区切り）
+    ok 2 - 空白区切りは AND 条件（全角空白も区切り）
+      ---
+      duration_ms: 932.930039
+      type: 'test'
+      ...
+    # Subtest: 大文字小文字・全角半角を区別しない
+    ok 3 - 大文字小文字・全角半角を区別しない
+      ---
+      duration_ms: 981.738881
+      type: 'test'
+      ...
+    # Subtest: タイトルでの一致を本文での一致より上に並べる
+    ok 4 - タイトルでの一致を本文での一致より上に並べる
+      ---
+      duration_ms: 603.912701
+      type: 'test'
+      ...
+    # Subtest: パス・コード内の語も対象。読み込まないファイルと添付は対象外
+    ok 5 - パス・コード内の語も対象。読み込まないファイルと添付は対象外
+      ---
+      duration_ms: 1079.437859
+      type: 'test'
+      ...
+    # Subtest: 一致なしの表示
+    ok 6 - 一致なしの表示
+      ---
+      duration_ms: 803.053698
+      type: 'test'
+      ...
+    # Subtest: 結果は最大 50 件。総数を表示する
+    ok 7 - 結果は最大 50 件。総数を表示する
+      ---
+      duration_ms: 612.387226
+      type: 'test'
+      ...
+    # Subtest: 文書のタイトルに HTML が含まれていても、文字として表示する
+    ok 8 - 文書のタイトルに HTML が含まれていても、文字として表示する
+      ---
+      duration_ms: 752.165269
+      type: 'test'
+      ...
+    1..8
+ok 1 - 全文検索（FR-401, FR-402）
+  ---
+  duration_ms: 6553.0923
+  type: 'suite'
+  ...
+# Subtest: カスタムナビのファイルの扱い
+    # Subtest: ナビに使っているファイル（_sidebar.md）は検索結果に出さない。ほかの文書は出る
+    ok 1 - ナビに使っているファイル（_sidebar.md）は検索結果に出さない。ほかの文書は出る
+      ---
+      duration_ms: 1507.025074
+      type: 'test'
+      ...
+    1..1
+ok 2 - カスタムナビのファイルの扱い
+  ---
+  duration_ms: 1507.365571
+  type: 'suite'
+  ...
+# Subtest: キーボード操作（FR-402, FR-405）
+    # Subtest: Ctrl+K と / で検索欄へ移動する
+    ok 1 - Ctrl+K と / で検索欄へ移動する
+      ---
+      duration_ms: 481.139822
+      type: 'test'
+      ...
+    # Subtest: ↑↓ で選び、Enter で開き、Esc で閉じる
+    ok 2 - ↑↓ で選び、Enter で開き、Esc で閉じる
+      ---
+      duration_ms: 685.337631
+      type: 'test'
+      ...
+    # Subtest: パネルの外を押すと閉じ、検索欄に戻ると同じ検索語で開く
+    ok 3 - パネルの外を押すと閉じ、検索欄に戻ると同じ検索語で開く
+      ---
+      duration_ms: 698.316117
+      type: 'test'
+      ...
+    1..3
+ok 3 - キーボード操作（FR-402, FR-405）
+  ---
+  duration_ms: 1865.145875
+  type: 'suite'
+  ...
+# Subtest: 本文中の一致語のハイライト（FR-403）
+    # Subtest: 結果を開くと一致語に印が付き、最初の一致位置が見える。別の文書へ移ると消える
+    ok 1 - 結果を開くと一致語に印が付き、最初の一致位置が見える。別の文書へ移ると消える
+      ---
+      duration_ms: 749.431133
+      type: 'test'
+      ...
+    # Subtest: 表示中の文書の中の語を検索した場合も、その場で印が付く
+    ok 2 - 表示中の文書の中の語を検索した場合も、その場で印が付く
+      ---
+      duration_ms: 638.172447
+      type: 'test'
+      ...
+    # Subtest: 折りたたみの中の一致は、開いて表示する。全角半角の違いも印が付く
+    ok 3 - 折りたたみの中の一致は、開いて表示する。全角半角の違いも印が付く
+      ---
+      duration_ms: 1244.40939
+      type: 'test'
+      ...
+    # Subtest: 検索欄を空にして Esc を押すと印を消す
+    ok 4 - 検索欄を空にして Esc を押すと印を消す
+      ---
+      duration_ms: 668.047746
+      type: 'test'
+      ...
+    1..4
+ok 4 - 本文中の一致語のハイライト（FR-403）
+  ---
+  duration_ms: 3300.561822
+  type: 'suite'
+  ...
+# Subtest: 索引の作成（FR-404）
+    # Subtest: 作成中でも作成済みの範囲で検索でき、進捗を表示する
+    ok 1 - 作成中でも作成済みの範囲で検索でき、進捗を表示する
+      ---
+      duration_ms: 2939.725351
+      type: 'test'
+      ...
+    1..1
+ok 5 - 索引の作成（FR-404）
+  ---
+  duration_ms: 2939.950151
+  type: 'suite'
+  ...
+1..5
+# tests 17
+# suites 5
+# pass 17
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 16671.295921

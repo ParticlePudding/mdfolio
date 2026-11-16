@@ -1,0 +1,130 @@
+TAP version 13
+# Subtest: フォルダ版を開く
+    # Subtest: index.html を開くと、所定の文書（docs/）を表示する。スクリプトは lib/ と data/ のファイルだけ
+    ok 1 - index.html を開くと、所定の文書（docs/）を表示する。スクリプトは lib/ と data/ のファイルだけ
+      ---
+      duration_ms: 502.892287
+      type: 'test'
+      ...
+    # Subtest: 数式と図のライブラリは、必要になったときに lib/ から読み込む
+    ok 2 - 数式と図のライブラリは、必要になったときに lib/ から読み込む
+      ---
+      duration_ms: 826.36896
+      type: 'test'
+      ...
+    # Subtest: 見出しへのリンクで開くと、数式と図を描いたあとも、その見出しの位置にある
+    ok 3 - 見出しへのリンクで開くと、数式と図を描いたあとも、その見出しの位置にある
+      ---
+      duration_ms: 1110.12557
+      type: 'test'
+      ...
+    # Subtest: 使い方とライセンス表記を表示できる（lib/resources.js）
+    ok 4 - 使い方とライセンス表記を表示できる（lib/resources.js）
+      ---
+      duration_ms: 566.174248
+      type: 'test'
+      ...
+    # Subtest: 外部の画像は、既定では読み込まない（SEC-10）
+    ok 5 - 外部の画像は、既定では読み込まない（SEC-10）
+      ---
+      duration_ms: 849.892193
+      type: 'test'
+      ...
+    1..5
+ok 1 - フォルダ版を開く
+  ---
+  duration_ms: 3939.360049
+  type: 'suite'
+  ...
+# Subtest: アクセシビリティ（フォルダ版、既定の配色）
+    # Subtest: axe-core の自動検査で違反がない（所定の文書のホームと記法のページ、ライト・ダーク）
+    ok 1 - axe-core の自動検査で違反がない（所定の文書のホームと記法のページ、ライト・ダーク）
+      ---
+      duration_ms: 2568.66422
+      type: 'test'
+      ...
+    1..1
+ok 2 - アクセシビリティ（フォルダ版、既定の配色）
+  ---
+  duration_ms: 2569.087216
+  type: 'suite'
+  ...
+# Subtest: 別のフォルダを開く・所定の文書に戻る
+    # Subtest: 所定の文書の表示中も、フォルダを開ける。メニューから所定の文書に戻れる
+    ok 1 - 所定の文書の表示中も、フォルダを開ける。メニューから所定の文書に戻れる
+      ---
+      duration_ms: 813.616411
+      type: 'test'
+      ...
+    # Subtest: 文書がないときは開始画面で、文書の置き方を案内する
+    ok 2 - 文書がないときは開始画面で、文書の置き方を案内する
+      ---
+      duration_ms: 502.893869
+      type: 'test'
+      ...
+    1..2
+ok 3 - 別のフォルダを開く・所定の文書に戻る
+  ---
+  duration_ms: 1318.029087
+  type: 'suite'
+  ...
+# Subtest: CSS で見た目を変える（style/document.css）
+    # Subtest: 変数と本文の規則の変更が、本文・画面・図に反映される（ライト・ダーク）
+    ok 1 - 変数と本文の規則の変更が、本文・画面・図に反映される（ライト・ダーク）
+      ---
+      duration_ms: 1017.82567
+      type: 'test'
+      ...
+    # Subtest: 図のライブラリが読めない書き方の色は使わず、既定の色で描く
+    ok 2 - 図のライブラリが読めない書き方の色は使わず、既定の色で描く
+      ---
+      duration_ms: 806.266292
+      type: 'test'
+      ...
+    # Subtest: 印刷では、利用者がダークの配色を変えていても、ライトの配色になる
+    ok 3 - 印刷では、利用者がダークの配色を変えていても、ライトの配色になる
+      ---
+      duration_ms: 336.999514
+      type: 'test'
+      ...
+    1..3
+ok 4 - CSS で見た目を変える（style/document.css）
+  ---
+  duration_ms: 2161.447854
+  type: 'suite'
+  ...
+# Subtest: フォルダ版からの書き出し
+    # Subtest: 書き出しは単一 HTML で、更新コマンドで写した CSS を使う。写す前の変更は入らない
+    ok 1 - 書き出しは単一 HTML で、更新コマンドで写した CSS を使う。写す前の変更は入らない
+      ---
+      duration_ms: 2265.723219
+      type: 'test'
+      ...
+    1..1
+ok 5 - フォルダ版からの書き出し
+  ---
+  duration_ms: 2266.075676
+  type: 'suite'
+  ...
+# Subtest: 更新コマンド（tools/update.mjs）
+    # Subtest: 文書を足して更新コマンドを実行し、再読み込みすると表示される
+    ok 1 - 文書を足して更新コマンドを実行し、再読み込みすると表示される
+      ---
+      duration_ms: 613.702162
+      type: 'test'
+      ...
+    1..1
+ok 6 - 更新コマンド（tools/update.mjs）
+  ---
+  duration_ms: 613.891257
+  type: 'suite'
+  ...
+1..6
+# tests 13
+# suites 6
+# pass 13
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 13372.114832

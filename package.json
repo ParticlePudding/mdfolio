@@ -1,0 +1,31 @@
+{
+  "name": "mdfolio",
+  "version": "1.1.0",
+  "description": "ローカルの HTML / JavaScript だけで動く Markdown 文書表示サイト",
+  "scripts": {
+    "build": "node tools/build.mjs && node tools/build-folder.mjs",
+    "test": "npm run build && npm run test:unit && npm run test:e2e",
+    "test:unit": "node --test tests/unit/*.test.mjs",
+    "test:e2e": "node --test --test-concurrency=1 tests/e2e/*.e2e.mjs",
+    "test:webkit": "node tests/cross/webkit.smoke.mjs",
+    "test:gecko": "node tests/cross/gecko.smoke.mjs",
+    "vendor": "node tools/vendor.mjs",
+    "build-site": "node tools/build-site.mjs"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@babel/helpers": "^8.1.2",
+    "@highlightjs/cdn-assets": "^11.12.0",
+    "@mermaid-js/tiny": "^12.3.0",
+    "axe-core": "^4.14.0",
+    "dompurify": "^3.4.17",
+    "katex": "^0.19.1",
+    "markdown-it": "^15.0.3",
+    "markdown-it-footnote": "^4.0.0",
+    "mermaid": "^12.3.0",
+    "playwright": "^1.63.0",
+    "regenerator-runtime": "^0.14.1",
+    "spdx-license-list": "^6.12.0"
+  },
+  "private": true
+}
