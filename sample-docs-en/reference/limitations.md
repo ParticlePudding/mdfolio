@@ -5,7 +5,7 @@
 | Browser | Support |
 |---|---|
 | Edge / Chrome | All features |
-| Firefox / Safari | Reading, search and export. "Reopen last folder" and automatic updates are not available |
+| Firefox / Safari | Reading, search and export. "Reopen last folder" and automatic refresh are not available |
 
 ## Documents
 
@@ -20,7 +20,7 @@
 - If you open files only (not a folder), images cannot be shown.
 - Images on the internet are not shown by default[^ext].
 
-[^ext]: You can change this with "Show external images" in the menu. When you turn it on, reload the page.
+[^ext]: You can change this with "Show external images" in the menu. Turning it on reloads the page.
 
 ## Diagrams
 

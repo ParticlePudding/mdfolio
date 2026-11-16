@@ -113,7 +113,7 @@ sequenceDiagram
 
 ## Footnotes
 
-Footnotes are collected at the end of the document[^1]. The same footnote can be referred to many times[^1].
+Footnotes are collected at the end of the document[^1]. The same footnote can be referred to more than once[^1].
 
 [^1]: This is a footnote.
 

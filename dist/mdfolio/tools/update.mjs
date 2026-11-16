@@ -60,7 +60,7 @@ const MESSAGES = {
   },
   en: {
     error: 'Error: ', needsValue: '{0} needs a value', unknownOption: 'Unknown option: {0}',
-    libMissing: 'lib/{0} was not found. Run the tools/update.mjs that is inside the mdfolio folder',
+    libMissing: 'lib/{0} was not found. Run the copy of tools/update.mjs that is inside the mdfolio folder',
     libLoad: 'Could not load the scripts in lib/',
     truncated: 'Stopped partway because there are more than {0} files and folders',
     tooManyDocs: 'Documents beyond the first {0} are left out',
@@ -73,7 +73,7 @@ const MESSAGES = {
     docsMissing: 'The document folder was not found: {0}',
     done: 'Rebuilt data/site.js and data/styles.js',
     counts: '  {0} document(s), {1} attachment(s) ({2})', home: '  Home: {0}',
-    noDocs: '  No documents (the start screen is shown)', note: '  Note: ', reload: 'Reopen (reload) index.html in the browser to see the changes.'
+    noDocs: '  No documents (the start screen will be shown)', note: '  Note: ', reload: 'Reopen (reload) index.html in the browser to see the changes.'
   }
 };
 const t = (key, ...args) => MESSAGES[LANG][key].replace(/\{(\d)\}/g, (m, i) => String(args[Number(i)]));
@@ -102,9 +102,9 @@ Node.js の標準機能だけで動きます。
 
   node tools/update.mjs [options]
 
-  --docs <folder>     Document folder (default: docs in this folder)
+  --docs <folder>     Document folder (default: the docs folder next to tools/)
   --title <title>     Title shown on the screen (default: the previous setting; otherwise the setting
-                      in index.html or the folder name). Give "" to clear the previous setting.
+                      in index.html or the folder name). Use "" to clear the previous setting.
   --home <path>       First document to show (default: the previous setting; otherwise
                       README.md → index.md → the first document)
 

@@ -54,15 +54,15 @@ const MESSAGES = {
   },
   en: {
     error: 'Error: ', needsValue: '{0} needs a value', unknownOption: 'Unknown option: {0}',
-    oneFolder: 'Give only one document folder', noFolder: 'Give a document folder (--help shows usage)',
+    oneFolder: 'Specify only one document folder', noFolder: 'Specify a document folder (see --help for usage)',
     badLang: '--lang must be auto, ja or en', badTheme: '--theme must be auto, light or dark',
     bothImages: '--allow-external-images and --lock-external-images cannot be used together',
     noViewer: 'Viewer not found: {0} (run node tools/build.mjs first)',
-    notViewer: 'Not an mdfolio viewer: {0}', viewerLoad: 'Could not load the scripts of the viewer',
+    notViewer: 'Not an mdfolio viewer: {0}', viewerLoad: "Could not load the viewer's scripts",
     folderMissing: 'Folder not found: {0}',
     truncated: 'Stopped partway because there are more than {0} files and folders',
     tooManyDocs: 'Documents beyond the first {0} are left out',
-    noDocs: 'No Markdown documents were found: {0}', bigAssets: '{0} attachment(s) larger than 20 MB are left out',
+    noDocs: 'No Markdown documents found in {0}', bigAssets: '{0} attachment(s) larger than 20 MB are left out',
     homeMissing: 'The document given with --home was not found: {0}',
     wrote: 'Wrote {0}', counts: '  {0} document(s), {1} attachment(s), {2}', home: '  Home: {0}',
     libs: '  Math library: {0}, diagram library: {1}', included: 'included', excluded: 'left out',
@@ -78,7 +78,7 @@ const HELP_EN = `Export a site as one HTML file (command-line version)
   --title <title>              Site title (default: the folder name)
   --home <path>                First document to show (default: README.md → index.md → the first document)
   --viewer <file>              Viewer to build from (default: dist/mdfolio.html)
-  --lang <auto|ja|en>          Default language of the screen
+  --lang <auto|ja|en>          Default interface language
   --theme <auto|light|dark>    Default theme
   --allow-external-images      Show external images from the start
   --lock-external-images       Never load external images (users cannot change this)

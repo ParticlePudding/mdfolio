@@ -96,7 +96,7 @@ const TEXT = {
     licenseTitle: 'ライセンス',
     license: 'mdfolio は MIT ライセンスです。同梱しているライブラリ（markdown-it、DOMPurify、highlight.js、KaTeX、Mermaid など）のライセンス表記を含む全文を、下に載せています。同じものが、各ページのメニュー（⋯）の「ライセンスとバージョン」でも見られます。',
     licenseOpen: 'ライセンス表記の全文を開く（英語）',
-    footer: `© 2026 Particle Pudding · MIT ライセンス · <a href="${REPO}">ソースコード</a>`
+    footer: `© 2026 Particle Pudding · MIT ライセンス · <a href="${REPO}">ソースコード</a> · <a href="${REPO}/issues">不具合・要望（Issues）</a>`
   },
   en: {
     description: 'A Markdown document viewer that needs no server and no installation',
@@ -108,12 +108,12 @@ const TEXT = {
     tryTitle: 'Try it',
     cards: [
       ['sample-site.html', 'Read the sample documents', 'An example of "Export as site": documents packed into one HTML file. Works on smartphones too.'],
-      ['../mdfolio.html', 'Open your own folder', 'The viewer itself. Choose a folder or files of Markdown on your device and read them.'],
-      ['folder/index.html', 'Folder version sample', 'Shows the documents in a fixed place. You can change the look with CSS.'],
+      ['../mdfolio.html', 'Open your own folder', 'The viewer itself. Choose Markdown files or a folder on your device and read them.'],
+      ['folder/index.html', 'Folder version sample', 'Shows the documents kept in its docs folder. You can change the look with CSS.'],
       ['mdfolio-docs.html', 'Documentation', 'How to use mdfolio, shown by mdfolio itself. The design records are in Japanese only.']
     ],
     privacyTitle: 'Your documents stay with you',
-    privacy: 'Documents you choose with "Open your own folder" are read inside your browser only. They are never sent to this site or anywhere else (the page settings block network access altogether).',
+    privacy: 'Documents you choose with "Open your own folder" are read inside your browser only. They are never sent to this site or anywhere else (the page\'s security settings block all network access).',
     localTitle: 'Use it on your device',
     local: [
       `<a href="../mdfolio.html" download>Download mdfolio.html</a> (about ${mb} MB) and double-click it. That one file is all you need.`,
@@ -122,7 +122,8 @@ const TEXT = {
     licenseTitle: 'License',
     license: 'mdfolio is released under the MIT License. The full text, including the license notices of the bundled libraries (markdown-it, DOMPurify, highlight.js, KaTeX, Mermaid and others), is below. The same text is under "Licenses and version" in the menu (⋯) of each page.',
     licenseOpen: 'Show the full license text',
-    footer: `© 2026 Particle Pudding · MIT License · <a href="${REPO}">Source code</a>`
+    footer: `© 2026 Particle Pudding · MIT License · <a href="${REPO}">Source code</a> · <a href="${REPO}/issues">Report a problem (Issues)</a>`
+      + `<br>The English text was written by a non-native speaker. If something reads oddly, please <a href="${REPO}/issues">let us know</a>.`
   }
 };
 

@@ -2,10 +2,10 @@
   "name": "mdfolio",
   "version": "1.2.0",
   "file": "mdfolio.html",
-  "bytes": 4337073,
-  "sha256": "e9ce0e1b758462915c53c169e2073b9fd3b532bd0dda0ff10689eeb3d39c1179",
+  "bytes": 4337585,
+  "sha256": "a27330811077604290687f2986f508dcbff594d05002c986891cd06b0a4e9e41",
   "without": [],
-  "csp": "default-src 'none'; script-src 'sha256-dcRAgsEz4TeMASNSI+H+F8tGUTG9gCWKHlzB47z8uMs=' 'sha256-oW13J47dFInnLZS8F9cy+IPaK1PVeu69/K+kk7x9yWw=' 'sha256-+hQEmLjPyDAsvl58sb28H5Urw4s/oljt4J5z7b+adLw=' 'sha256-xB9SNgkbg/UkxJQPl6FrKxSnbyH/hK6k/WtmQh2KKpo='; style-src 'unsafe-inline'; img-src data: blob: http: https:; media-src data: blob: http: https:; font-src data:; connect-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; form-action 'none'; base-uri 'none'",
+  "csp": "default-src 'none'; script-src 'sha256-dcRAgsEz4TeMASNSI+H+F8tGUTG9gCWKHlzB47z8uMs=' 'sha256-2wxuxxSvDiiA4r8UeRdsbpo6X5GFFbqZxkY9n9MGKxs=' 'sha256-+hQEmLjPyDAsvl58sb28H5Urw4s/oljt4J5z7b+adLw=' 'sha256-xB9SNgkbg/UkxJQPl6FrKxSnbyH/hK6k/WtmQh2KKpo='; style-src 'unsafe-inline'; img-src data: blob: http: https:; media-src data: blob: http: https:; font-src data:; connect-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; form-action 'none'; base-uri 'none'",
   "blocks": [
     {
       "id": "mdv-config",
@@ -20,12 +20,12 @@
     {
       "id": "mdv-res-help-ja",
       "type": "application/json",
-      "bytes": 7256
+      "bytes": 7262
     },
     {
       "id": "mdv-res-help-en",
       "type": "application/json",
-      "bytes": 5523
+      "bytes": 5637
     },
     {
       "id": "mdv-res-licenses",
@@ -55,7 +55,7 @@
     {
       "id": "mdv-js-app",
       "type": "text/javascript",
-      "bytes": 193002
+      "bytes": 193375
     }
   ],
   "scripts": [
@@ -65,7 +65,7 @@
     },
     {
       "id": "mdv-js-app",
-      "sha256Base64": "oW13J47dFInnLZS8F9cy+IPaK1PVeu69/K+kk7x9yWw="
+      "sha256Base64": "2wxuxxSvDiiA4r8UeRdsbpo6X5GFFbqZxkY9n9MGKxs="
     },
     {
       "id": "mdv-lib-katex",
@@ -269,7 +269,7 @@
     },
     {
       "name": "src/i18n.js",
-      "bytes": 15397,
+      "bytes": 15770,
       "escapes": 0
     },
     {

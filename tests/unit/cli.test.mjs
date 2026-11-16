@@ -273,7 +273,7 @@ describe('コマンドライン版の書き出しの英語の表示（FD-10）',
     assert.ok(!/[\u3040-\u30ff]/.test(r.out), r.out);
     r = run([], { lang: 'en' });
     assert.equal(r.code, 1);
-    assert.ok(r.err.includes('Error: Give a document folder'), r.err);
+    assert.ok(r.err.includes('Error: Specify a document folder'), r.err);
     r = run(['--help'], { lang: 'en' });
     assert.ok(r.out.includes('node tools/build-site.mjs <document folder> [options]'));
     assert.ok(!/[\u3040-\u30ff]/.test(r.out));

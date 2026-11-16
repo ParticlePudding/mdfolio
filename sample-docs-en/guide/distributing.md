@@ -21,17 +21,17 @@ Images and attachments that the documents refer to (up to 20 MB each) are includ
 
 Put `mdfolio.html` and the document folder in a zip file. Recipients open `mdfolio.html` and choose the document folder. This suits documents that are still being updated.
 
-## 3. Put the folder version in a fixed place
+## 3. Put the folder version in a shared location
 
-The folder version consists of `index.html` and folders such as `style`, `docs` and `lib`. Put it in a fixed place, such as a shared folder. Put your documents in `docs` and run `node tools/update.mjs`; after that, opening `index.html` is all it takes to read them. You can change the look to match your organization by editing `style/document.css`.
+The folder version consists of `index.html` and folders such as `style`, `docs` and `lib`. Put it in a permanent location, such as a shared folder. Put your documents in `docs` and run `node tools/update.mjs`; after that, opening `index.html` is all it takes to read them. You can change the look to match your organization by editing `style/document.css`.
 
 ## Which to choose
 
-| | Export as site | Viewer and folder |
-|---|---|---|
-| What recipients do | Just open the file | Choose the folder |
-| Updating documents | Export again | Replace the files |
-| Best for | Finished documents | Documents in progress |
+| | Export as site | Viewer and folder | Folder version |
+|---|---|---|---|
+| What recipients do | Just open the file | Choose the folder | Just open `index.html` |
+| Updating documents | Export again | Replace the files | Run the update command |
+| Best for | Finished documents | Documents in progress | Documents shared in one place |
 
 ## Export from the command line
 

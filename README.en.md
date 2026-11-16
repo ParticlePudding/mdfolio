@@ -4,41 +4,43 @@
 
 A Markdown document viewer that runs on nothing but local HTML and JavaScript. It needs no server, no installation and no network connection. It comes in two forms:
 
-- **Folder version** (`dist/mdfolio/`): put it in a fixed place, and the documents in `docs` can be read just by opening `index.html`. You can change the look with CSS (`style/document.css`).
-- **Single-HTML version** (`dist/mdfolio.html`, about 4.1 MB): open one file and choose a folder. Good for carrying around and handing over. "Export as site" also produces this form.
+- **Folder version** (`dist/mdfolio/`): put it in a permanent location (such as a shared folder), and anyone can read the documents in `docs` just by opening `index.html`. You can change the look with CSS (`style/document.css`).
+- **Single-HTML version** (`dist/mdfolio.html`, about 4.1 MB): open one file and choose a folder. Easy to carry around and share. Sites made with "Export as site" are also single HTML files.
 
 - Version: 1.2.0
 - Public page: https://particlepudding.github.io/mdfolio/en/ (read the samples, try the viewer, read the documentation)
 - License: MIT (license notices for the bundled libraries are inside the HTML)
 
-The screen of the app can be shown in English or Japanese. It follows the browser's language, and you can switch it with the menu (⋯). The design records (`docs/SPEC.md`, `docs/REVIEW.md`, `docs/TEST_REPORT.md`) are in Japanese only.
+The app's interface can be shown in English or Japanese. It follows the browser's language, and you can switch it with the menu (⋯). The design records (`docs/SPEC.md`, `docs/REVIEW.md`, `docs/TEST_REPORT.md`) are in Japanese only.
+
+The English text was written by a non-native speaker. If you find a mistake or an unnatural expression, please let us know on [GitHub Issues](https://github.com/ParticlePudding/mdfolio/issues). Bug reports and requests are welcome there too.
 
 ## How to use
 
-### Put the folder version in place
+### 1. Put the folder version in place
 
 1. Put the `dist/mdfolio/` folder where you want to use it (for example, a shared folder).
-2. Put Markdown files and images in `docs/`, and run `node tools/update.mjs` in that folder (Node.js 20 or later). You can set the title with `--title "Team handbook"`. The command prints messages in English or Japanese, following your computer's language; set the environment variable `MDFOLIO_LANG=en` to choose English.
+2. Put Markdown files and images in `docs/`, then run `node tools/update.mjs` in the mdfolio folder (the one that contains `index.html`; Node.js 20 or later). You can set the title with `--title "Team handbook"`. The command prints messages in English or Japanese, following your computer's language; set the environment variable `MDFOLIO_LANG=en` to choose English.
 3. Open `index.html` in a browser. When you change the documents, run step 2 again and then reload the page.
 
-Change the look in `style/document.css`. How to change it is explained at the top of the file. Changing the color variables (such as `--accent`) changes the colors of the text, the screen and the diagrams together. The document body is ordinary HTML (`h1`–`h6`, `table`, `pre` and so on) inside `.mdv-prose`, so you can write rules for those too.
+Change the look in `style/document.css`. Instructions are in the comment at the top of the file. Changing the color variables (such as `--accent`) changes the colors of the text, the screen and the diagrams together. The document body is ordinary HTML (`h1`–`h6`, `table`, `pre` and so on) inside `.mdv-prose`, so you can write rules for those too.
 
-Browsers do not let a page opened from `file://` read the files next to it. That is why putting files in `docs/` is not enough: the update command must create `data/site.js`. If you "Export as site" after changing the CSS, run the update command first as well (the export uses a copy of the CSS).
+Browsers do not let a page opened from `file://` read the files next to it. That is why putting files in `docs/` is not enough: the update command must create `data/site.js`. If you use "Export as site" after changing the CSS, run the update command first as well (the export uses a copy of the CSS).
 
-### 1. Read your own folder (single-HTML version)
+### 2. Read your own folder (single-HTML version)
 
 1. Open `dist/mdfolio.html` in a browser (double-click it).
-2. Choose a folder that contains Markdown with "Open folder", or drop the folder onto the window.
-3. Read on using the list on the left, links in the text, and search (`Ctrl+K` or `/`).
+2. Press "Open folder" and choose a folder that contains Markdown files, or drop the folder onto the window.
+3. Move between documents using the list on the left, links in the text, and search (`Ctrl+K` or `/`).
 
 To try it, open the included `sample-docs-en` folder (`sample-docs` is the Japanese version). To try a single file, choose the included `sample.en.md` with "Open files" (`sample.md` is the Japanese version). The full instructions are under "How to use" in the menu (⋯).
 
-### 2. Hand documents to other people
+### 3. Hand documents to other people
 
 "Export as site" in the menu (⋯) saves one HTML file that contains the open documents and every image and attachment they refer to.
-Recipients only need to open that HTML file. Attaching it directly to an email or chat message can alter it on the way and break it, so put it in a zip file.
+Recipients only need to open that HTML file. Email and chat services may alter an HTML file that is attached directly and break it, so put it in a zip file first.
 
-### 3. Export from the command line
+### 4. Export from the command line
 
 ```
 node tools/build-site.mjs <document folder> --out site.html --title "Handbook"
@@ -52,11 +54,11 @@ This makes the same HTML as the export in the app. It needs only Node.js 20 or l
 |---|---|
 | Opening | Choose a folder or files, drag and drop, embedding in HTML. Detects UTF-8, UTF-16 (with BOM) and Shift_JIS automatically |
 | Display | CommonMark and GFM (tables, strikethrough, task lists, autolinks), footnotes, GitHub-style alerts, code highlighting, math (KaTeX), diagrams (Mermaid), front matter |
-| Navigation | File tree, navigation from `_sidebar.md` / `SUMMARY.md`, outline of the page, sharing a position by URL (hash), Back / Forward |
-| Search | Full-text search (all words must appear; ignores case and character width), highlighting of matches |
-| View | Light / dark / auto, Japanese / English, layout that follows the screen width, print layout |
+| Navigation | File tree, navigation from `_sidebar.md` / `SUMMARY.md`, outline of the page, linking to a position on a page (URL hash), Back / Forward |
+| Search | Full-text search (all words must appear; ignores upper/lower case and full-width/half-width differences), highlighting of matches |
+| View | Light / dark / auto, Japanese / English, layout that adapts to the screen width, print layout |
 | Distribution | Export to a single HTML file with the documents inside (in the app or from the command line) |
-| Convenience | Automatic redisplay when the file you are viewing changes, reopening the last folder (both Chrome / Edge only) |
+| Convenience | Automatic refresh when the file you are viewing changes, reopening the last folder (both Chrome / Edge only) |
 
 Code highlighting supports 68 languages:
 
@@ -71,8 +73,8 @@ mdfolio is built so that opening Markdown written by someone else is safe.
 
 - Opened files are processed inside the browser only and are never sent anywhere. The app uses no networking features (such as fetch), and the browser's Content Security Policy forbids network access as well.
 - Scripts and event attributes in documents are removed. Even if one slipped through, only the scripts built into the HTML can run.
-- Images and videos on the internet are not loaded by default (loading them would tell their server that you opened the document). You can change this with "Show external images" in the menu. When you turn it on, reload the page.
-- Links to attachments are not opened in the browser; they are saved as downloads.
+- Images and videos on the internet are not loaded by default (loading them would tell their server that you opened the document). You can change this with "Show external images" in the menu. Turning it on reloads the page.
+- Links to attachments are not opened in the browser; they are downloaded instead.
 
 Details are in chapter 6 of `docs/SPEC.md`, and what was tested is in `docs/TEST_REPORT.md` (both in Japanese).
 
@@ -80,12 +82,12 @@ Details are in chapter 6 of `docs/SPEC.md`, and what was tested is in `docs/TEST
 
 | Browser | Status |
 |---|---|
-| Google Chrome / Microsoft Edge (desktop, latest) | Main target. Every item is tested automatically with Chromium |
+| Google Chrome / Microsoft Edge (desktop, latest) | Main target. All features are tested automatically in Chromium |
 | Firefox / Safari (desktop, latest) | Expected to work. Main features were checked automatically with their engines (Gecko 160, WebKitGTK 2.52). Not checked with the released browsers themselves |
-| Smartphones and tablets | Intended for reading exported sites and for "Open files". Checked automatically in an environment that imitates a 390 px wide touch screen. **Not checked on real devices** |
-| Embedded in another page (`<iframe>`) | The features needed for reading work (see "Embedding in another page" below). Checked automatically with a frame that imitates the conditions. Not checked in each service's real environment |
+| Smartphones and tablets | Intended for reading exported sites and for "Open files". Checked automatically on an emulated 390 px wide touch screen. **Not checked on real devices** |
+| Embedded in another page (`<iframe>`) | The features needed for reading work (see "Embedding in another page" below). Checked automatically with a test frame that simulates these conditions. Not checked in each service's real environment |
 
-In Firefox / Safari, folders are opened through the file selection dialog (the browser may ask whether to "upload" them, but nothing is sent). "Reopen last folder" and automatic updates are not available.
+In Firefox / Safari, folders are opened through the file selection dialog (the browser may ask whether to "upload" them, but nothing is sent). "Reopen last folder" and automatic refresh are not available.
 
 ## Settings
 
@@ -94,13 +96,13 @@ You can change the default behavior by editing `<script type="application/json" 
 | Key | Value | Meaning |
 |---|---|---|
 | `title` | text | Site title (if empty, the folder name) |
-| `lang` | `auto` / `ja` / `en` | Language of the screen |
+| `lang` | `auto` / `ja` / `en` | Interface language |
 | `theme` | `auto` / `light` / `dark` | Theme |
 | `home` | path | First document to show |
 | `allowExternalImages` | `true` / `false` | Whether to show external images from the start |
 | `allowDownloads` | `true` / `false` | `false` hides actions that save files ("Export as site" and saving attachments) |
 | `lockExternalImages` | `true` / `false` | `true` never loads external images (users cannot change this) |
-| `hosted` | `true` / `false` | `true` shows on the start screen and in the help that this is a public page for trying the viewer out |
+| `hosted` | `true` / `false` | `true` adds a notice on the start screen and in the help saying that this is a public page for trying out the viewer |
 
 The last three are for places where saving files or loading external content is not possible. For the command-line export, use `--no-downloads` and `--lock-external-images`.
 
@@ -118,7 +120,7 @@ Hosting services that inject their own scripts into the page (such as Claude art
 node tools/dev/make-hosted.mjs dist/mdfolio.html hosted-viewer.html --page-title "mdfolio viewer (trial)"
 ```
 
-The conversion removes the Content Security Policy written in the HTML and disables actions that save files and the display of external images (it also rewrites the character U+FFFD, which such hosts refuse, as an equivalent escape). This removes one of the safety mechanisms, so use the converted HTML only for trying the viewer out or publishing samples. For opening files on your own device or distributing within your organization, use the HTML before conversion (section 6.1 of `docs/SPEC.md`).
+The conversion removes the Content Security Policy written in the HTML and disables actions that save files and the display of external images (it also rewrites the character U+FFFD, which such hosts refuse, as an equivalent escape). This removes one of the safety mechanisms, so use the converted HTML only for trying the viewer out or publishing samples. For opening files on your own device or distributing within your organization, use the original, unconverted HTML file (section 6.1 of `docs/SPEC.md`).
 
 ## Main limitations
 
@@ -135,7 +137,7 @@ Other limitations are in chapter 11 of `docs/SPEC.md`.
 - `dist/mdfolio.html` and the HTML of sites exported from it can be redistributed as they are. The required copyright and permission notices (MIT, BSD, Apache-2.0, ISC, SIL OFL and others) are inside the HTML and can be shown with "Licenses and version" in the menu.
 - Only libraries under permissive licenses that allow redistribution are bundled (listed in `THIRD-PARTY-NOTICES.txt` and `vendor/manifest.json`). No GPL or EPL code is included.
 - The copyright holder in `LICENSE` is "Particle Pudding". If you change it, rebuild with `npm run build` (the text is embedded in the HTML).
-- This is not legal advice. If your organization has its own rules, use `THIRD-PARTY-NOTICES.txt` as material for checking.
+- This is not legal advice. If your organization has its own rules, use `THIRD-PARTY-NOTICES.txt` as a starting point for your review.
 
 ## For developers
 
@@ -156,7 +158,7 @@ npm run vendor                              # update bundled libraries and regen
 | `dist/mdfolio/` | Folder version (`index.html`, `style/`, `docs/`, `data/`, `lib/`, `tools/update.mjs`) |
 | `dist/mdfolio.html` | Single-HTML version |
 | `dist/mdfolio-docs.html` | The Japanese README and the three documents in `docs/`, exported as one site by mdfolio itself |
-| `dist/sample-site.html` | `sample-docs/` exported (an example of export output) |
+| `dist/sample-site.html` | `sample-docs/` exported as a site (example output) |
 | `sample-docs/` `sample-docs-en/` | Sample documents for trying mdfolio (Japanese and English) |
 | `sample.en.md` `sample.md` | A sample document that is complete in one file (English and Japanese) |
 | `CHANGELOG.en.md` `CHANGELOG.md` | Change history (English and Japanese) |

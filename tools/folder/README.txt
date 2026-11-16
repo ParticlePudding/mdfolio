@@ -10,7 +10,7 @@ mdfolio (folder version)    * 日本語: はじめに.txt
   2. In this folder, run the following command (Node.js is required):
        node tools/update.mjs
   3. Reload index.html in the browser.
-  Step 2 is needed because browsers cannot read the files next to a page opened from your disk.
+  Step 2 is needed because a browser does not let a page opened from your disk read the files next to it.
   To set the title or the first document to show, see: node tools/update.mjs --help
   The command prints messages in English or Japanese, following your computer's language.
   To choose, set the environment variable MDFOLIO_LANG to en or ja.
@@ -21,9 +21,9 @@ mdfolio (folder version)    * 日本語: はじめに.txt
        node tools/update.mjs --docs <path to sample-docs-en>
 
 - Change the look
-  Edit style/document.css and reload the browser.
+  Edit style/document.css and reload the page.
   This changes the look of the document body (headings, tables, code and so on) and the colors,
-  fonts and text width of the whole screen. How to change it is explained at the top of the file.
+  fonts and text width of the whole screen. Instructions are in the comment at the top of the file.
   For "Export as site" to use your changes, run node tools/update.mjs after editing.
 
 - Settings

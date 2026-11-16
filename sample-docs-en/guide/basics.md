@@ -5,7 +5,7 @@
 On the start screen, press "Open folder" and choose the folder that contains your documents. You can also drop the folder onto the window.
 
 > [!TIP]
-> In Edge or Chrome, "Reopen last folder" on the start screen opens the same folder again next time.
+> In Edge or Chrome, you can press "Reopen last folder" on the start screen next time to open the same folder again.
 
 ## Move between documents
 

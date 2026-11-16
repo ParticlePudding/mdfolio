@@ -20,10 +20,10 @@ If you open files only, images in the same folder cannot be shown. Open the whol
 ## Read
 
 - **Switch documents**: use the list on the left or links in the text. The browser's Back and Forward buttons work too.
-- **Search**: type in the search box at the top. `Ctrl+K` (`⌘K` on Mac) or `/` moves to the search box. Words separated by spaces must all appear. Case and character width are ignored.
+- **Search**: type in the search box at the top. `Ctrl+K` (`⌘K` on Mac) or `/` moves to the search box. Words separated by spaces must all appear. Upper/lower case and full-width/half-width differences are ignored.
 - **Theme**: the button at the top right cycles through auto, light and dark.
 - **Print or save as PDF**: use the browser's print function. Only the document body is printed.
-- **Pick up changes**: when a folder is open in Edge / Chrome, saving the file you are viewing updates the page automatically. Use "Reload" in the menu after adding or removing files.
+- **Automatic refresh**: when a folder is open in Edge / Chrome, saving the file you are viewing updates the page automatically. Use "Reload" in the menu after adding or removing files.
 
 ## Distribute
 
@@ -31,19 +31,19 @@ If you open files only, images in the same folder cannot be shown. Open the whol
 
 - Images and attachments referenced by the documents are included (up to 20 MB each).
 - If no document uses math or diagrams, the code for those features is left out to keep the file small.
-- HTML sent directly by email or chat may be altered on the way and stop working. Sending it in a zip file is reliable.
+- An HTML file sent as-is by email or chat may be altered in transit and stop working. Zip it first to be safe.
 
-## Use the folder edition
+## Use the folder version
 
-In the folder edition (`index.html` with folders such as `style` and `docs`), opening `index.html` shows the documents in the `docs` folder.
+In the folder version (`index.html` with folders such as `style` and `docs`), opening `index.html` shows the documents in the `docs` folder.
 
-- After adding or changing documents, run `node tools/update.mjs` in that folder and reload the page.
+- After adding or changing documents, run `node tools/update.mjs` in the mdfolio folder (the one that contains `index.html`) and reload the page.
 - Change the look in `style/document.css`. It controls the document body and the colors, fonts and text width of the whole screen.
 - After opening another folder, use "Back to the main documents" in the menu (⋯) to return.
 
 ## Control the sidebar order
 
-Put `_sidebar.md` (or `SUMMARY.md`) at the top of the folder and its content appears in the "Nav" tab of the sidebar. Write a list of links.
+Put `_sidebar.md` (or `SUMMARY.md`) at the top level of the folder and its content appears in the "Nav" tab of the sidebar. Write a list of links.
 
 ```markdown
 - [Introduction](README.md)
@@ -61,7 +61,7 @@ Besides common Markdown such as headings, lists, tables, code, links and images,
 | Task list | `- [ ] todo`, `- [x] done` |
 | Footnote | `[^1]` in the text and `[^1]: note` on its own line |
 | Alerts | `> [!NOTE]`, `> [!TIP]`, `> [!IMPORTANT]`, `> [!WARNING]`, `> [!CAUTION]` |
-| Math | `$E = mc^2$` inline, `$$` around a displayed formula |
+| Math | `$E = mc^2$` inline, `$$` around a display equation |
 | Diagram | a code block whose language is `mermaid` |
 
 Write links and images as paths relative to the document (for example `[Settings](guide/config.md)`, `![Overview](img/overview.png)`).
@@ -80,10 +80,10 @@ Switch this with "Show external images" in the menu. Turning it on reloads the p
 |---|---|
 | `Ctrl+K` (`⌘K` on Mac), `/` | Go to the search box |
 | `↑` `↓` `Enter` | Choose and open a search result |
-| `Tab` | Move to the next item. At the top of the page it shows "Skip to content" |
+| `Tab` | Move to the next item. The first press on a page shows a "Skip to content" link |
 | `Enter` or `↓` on the menu (⋯) | Open the menu. Choose an item with `↑` `↓` |
 | `Esc` | Close search results, the menu or a dialog |
-| `←` `→` on a wide table or code block | Tab to the table or code first, then scroll sideways |
+| `←` `→` on a wide table or code block | Scroll sideways (press Tab to move to the table or code block first) |
 
 ## Troubleshooting
 
@@ -93,4 +93,4 @@ Switch this with "Show external images" in the menu. Turning it on reloads the p
 | Text is garbled | Save the document as UTF-8 (supported: UTF-8, UTF-16 with BOM, Shift_JIS) |
 | A link says "not found" | Check the link path and the file name. Absolute paths such as `C:\…` do not work |
 | "Reopen last folder" is missing | It is available in Edge / Chrome only. Choose the folder again |
-| Math or diagrams do not appear | An exported HTML cannot show them if the documents did not use them at export time. Export again from the original folder |
+| Math or diagrams do not appear | When no document used math or diagrams at export time, that support is left out of the exported file. Export again from the original folder |

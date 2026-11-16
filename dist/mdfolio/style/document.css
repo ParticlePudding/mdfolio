@@ -23,7 +23,7 @@
  * Edit this file to change the look.
  *
  *   1. Colors, fonts, widths … Changing the variables below affects both the document body and the
- *      whole screen. There are two places: light (:root) and dark ([data-theme="dark"]).
+ *      whole screen. They are defined in two places: light (:root) and dark ([data-theme="dark"]).
  *      Diagrams (Mermaid) take their colors from these variables too.
  *   2. Document body … Change the rules from the "Document body" section onward. The body is inside
  *      .mdv-prose and is ordinary HTML made from Markdown (h1–h6, p, a, ul, ol, table, pre, code,
@@ -31,9 +31,9 @@
  *   3. Printing … @media print at the end sets the colors used when printing.
  *
  * Notes
- *   - Keep the contrast between text and background at 4.5:1 or more.
+ *   - Aim for a contrast of at least 4.5:1 between text and background.
  *   - Do not write external addresses (http:// or https://) in url(). They are not loaded while
- *     external images are turned off, and with some settings they cause network access.
+ *     external images are turned off, and otherwise they make the page connect to the network.
  *   - Of the class names starting with .mdv-, those not used in this file may change in future versions.
  *   - In the folder version, "Export as site" uses a copy of this file (data/styles.js).
  *     After editing, run node tools/update.mjs before exporting.

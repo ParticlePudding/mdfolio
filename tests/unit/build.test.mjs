@@ -297,6 +297,14 @@ describe('画面の文言（NFR-5）', () => {
     assert.equal(i18n.detect({ language: 'fr' }), 'en');
     assert.equal(i18n.translate('ja', 'searchCount', [3]), '3 件');
     assert.equal(i18n.translate('en', 'searchCountMore', [120, 50]), 'Showing top 50 of 120 results');
+    // 英語の単数・複数（{0:item|items}）
+    assert.equal(i18n.translate('en', 'searchCount', [1]), '1 result');
+    assert.equal(i18n.translate('en', 'searchCount', [0]), '0 results');
+    assert.equal(i18n.translate('en', 'searchCount', [12]), '12 results');
+    assert.equal(i18n.translate('en', 'exportSummary', [1, 3, '2 MB']), '1 document, 3 attachments. File size is about 2 MB.');
+    assert.equal(i18n.translate('en', 'exportSkipped', [1]), '1 attachment will not be included (over 20 MB or unreadable).');
+    assert.equal(i18n.translate('ja', 'searchCount', [1]), '1 件');
+    assert.equal(i18n.translate('en', 'searchCount'), '{0} {0:result|results}', '引数がなければそのまま');
     assert.equal(i18n.translate('ja', 'noSuchKey', []), 'noSuchKey');
   });
 });

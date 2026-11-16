@@ -1675,7 +1675,7 @@
   var en = {
     skipToContent: 'Skip to content',
     toggleSidebar: 'Toggle sidebar',
-    homeLink: 'Go to home',
+    homeLink: 'Go to home page',
     menu: 'Menu',
 
     welcomeTitle: 'Read a folder of Markdown as a site, just as it is.',
@@ -1693,7 +1693,7 @@
 
     searchLabel: 'Search documents',
     searchPlaceholder: 'Search documents',
-    searchCount: '{0} results',
+    searchCount: '{0} {0:result|results}',
     searchCountMore: 'Showing top {1} of {0} results',
     searchResults: 'Search results',
     searchNone: 'No documents match "{0}"',
@@ -1741,7 +1741,7 @@
 
     notFoundTitle: 'This document was not found',
     notFoundBody: '"{0}" is not among the open documents. Check the link or the file name.',
-    goHome: 'Go to home',
+    goHome: 'Go to home page',
     assetTitle: 'Attachment',
     assetBody: '"{0}" is not a Markdown document, so it is not shown here.',
     assetNoSave: '"{0}" is an attachment. Files cannot be saved in this environment.',
@@ -1757,7 +1757,7 @@
     limitEntries: 'More than {0} files and folders; reading stopped partway',
     readFailed: 'Could not read "{0}"',
     readChanged: 'The file has changed and cannot be reloaded. Open the folder again',
-    permissionDenied: 'Access to the folder was not allowed',
+    permissionDenied: 'Permission to access the folder was denied',
     lastFolderGone: 'Could not open the last folder. Choose the folder again',
     reloaded: 'Reloaded',
     siteDataError: 'Could not read the embedded documents',
@@ -1768,12 +1768,12 @@
     exportSiteTitle: 'Site title',
     exportHome: 'First document to show',
     exportPreparing: 'Checking what to export…',
-    exportSummary: '{0} documents, {1} attachments. File size is about {2}.',
+    exportSummary: '{0} {0:document|documents}, {1} {1:attachment|attachments}. File size is about {2}.',
     exportCssNote: 'The look comes from the copy of the CSS made by the update command (data/styles.js). If you changed the CSS, run node tools/update.mjs first.',
     exportNoTemplate: 'Could not load a file needed for exporting (lib/export.js).',
     welcomeFolderHint: 'To show your own documents here, put Markdown files in the docs folder and run node tools/update.mjs.',
-    exportSkipped: '{0} attachments over 20 MB or unreadable will not be included.',
-    exportUnreadable: '{0} unreadable documents will not be included.',
+    exportSkipped: '{0} {0:attachment|attachments} will not be included (over 20 MB or unreadable).',
+    exportUnreadable: '{0} unreadable {0:document|documents} will not be included.',
     exportLarge: 'The file will be over 100 MB and may take time to open.',
     exportDo: 'Export',
     exported: 'Exported: {0}',
@@ -1813,6 +1813,8 @@
     var table = lang === 'ja' ? ja : en;
     var s = Object.prototype.hasOwnProperty.call(table, key) ? table[key] : (Object.prototype.hasOwnProperty.call(en, key) ? en[key] : key);
     if (args && args.length) {
+      // {0:item|items} は、{0} が 1 のときは前の語、それ以外は後の語になる（英語の単数・複数）
+      s = s.replace(/\{(\d+):([^|{}]*)\|([^{}]*)\}/g, function (m, n, one, many) { return args[n] === undefined ? m : (Number(args[n]) === 1 ? one : many); });
       s = s.replace(/\{(\d+)\}/g, function (m, n) { return args[n] === undefined ? m : String(args[n]); });
     }
     return s;

@@ -1,8 +1,8 @@
 # mdfolio sample (single file)
 
-This one file is enough to try how mdfolio displays documents. The Japanese version is `sample.md`. Choose this file with "Open files" in mdfolio, or drop it onto the window.
+You can use this single file to see how mdfolio displays documents. The Japanese version is `sample.md`. Choose this file with "Open files" in mdfolio, or drop it onto the window.
 
-Features that work across a folder (links between documents, images, sidebar order, full-text search) can be tried with the samples in the `sample-docs-en` folder.
+To try features that work across a folder (links between documents, images, sidebar order, full-text search), use the samples in the `sample-docs-en` folder.
 
 ## Using the outline
 
@@ -113,7 +113,7 @@ sequenceDiagram
 
 ## Footnotes
 
-Footnotes are collected at the end of the document[^1]. The same footnote can be referred to many times[^1].
+Footnotes are collected at the end of the document[^1]. The same footnote can be referred to more than once[^1].
 
 [^1]: This is a footnote.
 
