@@ -8,17 +8,17 @@ Changes in each version of mdfolio. The details are in `docs/SPEC.md` (revision 
 
 ### Added
 
-- Wider English support (the app's interface has supported Japanese and English since 1.0.0).
+- Expanded English-language support (the app's interface has supported Japanese and English since 1.0.0).
   - English README (`README.en.md`) and English sample documents (`sample-docs-en/`, `sample.en.md`).
-  - Folder version: an English guide (`README.txt`), and English alongside Japanese in the notes in `index.html` and `style/document.css`.
-  - The update command of the folder version (`tools/update.mjs`) and the command-line export (`tools/build-site.mjs`) print messages in Japanese or English. They follow your computer's language; set the environment variable `MDFOLIO_LANG` (`ja` / `en`) to choose.
+  - Folder version: an English guide (`README.txt`), with English translations added alongside the Japanese notes in `index.html` and `style/document.css`.
+  - The update command of the folder version (`tools/update.mjs`) and the command-line export (`tools/build-site.mjs`) print messages in Japanese or English. They are based on your system language; set the environment variable `MDFOLIO_LANG` (`ja` / `en`) to choose.
 - Public pages (https://particlepudding.github.io/mdfolio/en/ , Japanese at `/`): samples, the viewer, the folder version sample and the documentation, in Japanese and English, with the full license text.
-- GitHub Actions now rebuilds the public pages automatically when `main` is updated, and creates a release when a tag such as `v1.2.0` is added.
+- GitHub Actions now automatically rebuilds the public pages whenever the `main` branch is updated and creates a release whenever a tag such as `v1.2.0` is pushed.
 - This changelog.
 
 ### Changed
 
-- The name "mdfolio" is now final (it was a working name before).
+- The name "mdfolio" has been finalized (it was previously a working name).
 - The copyright holder in `LICENSE` is now "Particle Pudding".
 - The help and the samples now say which diagram types are not available (Mermaid mindmaps and architecture diagrams).
 - The English text (interface, help, README, samples) was revised. The interface now uses the singular for a count of 1 (such as "1 result").
@@ -27,7 +27,7 @@ Changes in each version of mdfolio. The details are in `docs/SPEC.md` (revision 
 ### Fixed
 
 - The Japanese sample on distributing documents said there were two ways; there are three.
-- The docs said to reload the page after turning on external images; the page actually reloads by itself.
+- The docs said to reload the page after turning on external images; the page actually reloads automatically.
 
 ### Removed
 
@@ -59,4 +59,4 @@ Changes in each version of mdfolio. The details are in `docs/SPEC.md` (revision 
 
 ## 1.0.0 — 2026-11-13
 
-- First version: the single-HTML viewer (`mdfolio.html`), opening folders and files, full-text search, math, diagrams and code highlighting, export as a site, and a Japanese and English interface.
+- Initial release: the single-HTML viewer (`mdfolio.html`), with folder and file opening, full-text search, math, diagrams, code highlighting, site export, and a Japanese and English interface.

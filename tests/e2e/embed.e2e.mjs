@@ -119,7 +119,7 @@ describe('お試し用の公開ページの表示（hosted: true）', () => {
 
   test('英語の画面でも、同じ内容を伝える', async () => {
     await withPage(browser, { url: viewerWithConfig({ hosted: true }), locale: 'en-US' }, async ({ page }) => {
-      assert.equal(await page.textContent('.mdv-welcome-lead'), 'Choose a folder, or drop one onto this window. This is a public page for trying the viewer out. For confidential documents, use a copy of the HTML file saved on your own device.');
+      assert.equal(await page.textContent('.mdv-welcome-lead'), 'Choose a folder, or drop one onto this window. This is a public page for trying out the viewer. For confidential documents, use a copy of the HTML file saved on your own device.');
       await clickMenu(page, 'menuHelp');
       await page.waitForFunction(() => window.MDV.app.state.view === 'help');
       assert.ok((await page.textContent('.mdv-prose > h1 + .markdown-alert-important')).includes('are not available here'));

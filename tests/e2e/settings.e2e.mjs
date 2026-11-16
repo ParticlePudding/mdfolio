@@ -87,7 +87,7 @@ describe('画面の言語（FR-502）', () => {
       assert.equal((await stored(page)).lang, 'en');
       await page.reload();
       await page.waitForSelector('.mdv-welcome-title');
-      assert.equal(await page.textContent('.mdv-welcome-title'), 'Read a folder of Markdown as a site, just as it is.');
+      assert.equal(await page.textContent('.mdv-welcome-title'), 'Browse a folder of Markdown files as a website.');
       await clickMenu(page, 'menuLanguage');
       await page.waitForFunction(() => document.documentElement.lang === 'ja');
       assert.equal((await page.textContent('.mdv-open-folder')).trim(), 'フォルダを開く');

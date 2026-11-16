@@ -1,13 +1,13 @@
 # Markdown syntax
 
-Examples of the syntax that mdfolio can display.
+Examples of Markdown syntax supported by mdfolio.
 
 ## Text styles
 
-You can use **bold**, *italic*, ~~strikethrough~~, `inline code`, and keys such as <kbd>Ctrl</kbd> + <kbd>K</kbd>. You can also <span style="color: #B3261E">color text with HTML</span>.
+You can use **bold**, *italic*, ~~strikethrough~~, `inline code`, and keyboard shortcuts such as <kbd>Ctrl</kbd> + <kbd>K</kbd>. You can also <span style="color: #B3261E">color text with HTML</span>.
 
 End a line with two spaces  
-to break the line.
+to insert a line break.
 
 ## Lists
 
@@ -55,7 +55,7 @@ to break the line.
 
 ## Code
 
-Add a language name to color the code. Press "Copy" at the top right to copy it.
+Specify a language to enable syntax highlighting. Press "Copy" at the top right to copy it.
 
 ```js
 // Count the Markdown files in a folder

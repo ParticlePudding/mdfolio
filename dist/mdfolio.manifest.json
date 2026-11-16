@@ -2,10 +2,10 @@
   "name": "mdfolio",
   "version": "1.2.0",
   "file": "mdfolio.html",
-  "bytes": 4337585,
-  "sha256": "a27330811077604290687f2986f508dcbff594d05002c986891cd06b0a4e9e41",
+  "bytes": 4337690,
+  "sha256": "cc7303c030021abd5f68ceef89e12b882cc2faeae6341764d9788b94920a29bf",
   "without": [],
-  "csp": "default-src 'none'; script-src 'sha256-dcRAgsEz4TeMASNSI+H+F8tGUTG9gCWKHlzB47z8uMs=' 'sha256-2wxuxxSvDiiA4r8UeRdsbpo6X5GFFbqZxkY9n9MGKxs=' 'sha256-+hQEmLjPyDAsvl58sb28H5Urw4s/oljt4J5z7b+adLw=' 'sha256-xB9SNgkbg/UkxJQPl6FrKxSnbyH/hK6k/WtmQh2KKpo='; style-src 'unsafe-inline'; img-src data: blob: http: https:; media-src data: blob: http: https:; font-src data:; connect-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; form-action 'none'; base-uri 'none'",
+  "csp": "default-src 'none'; script-src 'sha256-dcRAgsEz4TeMASNSI+H+F8tGUTG9gCWKHlzB47z8uMs=' 'sha256-K6Feus7HdZrfyg6nyYOh/WeZ1OG3kFPO/8ja2zk+ME4=' 'sha256-+hQEmLjPyDAsvl58sb28H5Urw4s/oljt4J5z7b+adLw=' 'sha256-xB9SNgkbg/UkxJQPl6FrKxSnbyH/hK6k/WtmQh2KKpo='; style-src 'unsafe-inline'; img-src data: blob: http: https:; media-src data: blob: http: https:; font-src data:; connect-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; form-action 'none'; base-uri 'none'",
   "blocks": [
     {
       "id": "mdv-config",
@@ -25,7 +25,7 @@
     {
       "id": "mdv-res-help-en",
       "type": "application/json",
-      "bytes": 5637
+      "bytes": 5714
     },
     {
       "id": "mdv-res-licenses",
@@ -55,7 +55,7 @@
     {
       "id": "mdv-js-app",
       "type": "text/javascript",
-      "bytes": 193375
+      "bytes": 193381
     }
   ],
   "scripts": [
@@ -65,7 +65,7 @@
     },
     {
       "id": "mdv-js-app",
-      "sha256Base64": "2wxuxxSvDiiA4r8UeRdsbpo6X5GFFbqZxkY9n9MGKxs="
+      "sha256Base64": "K6Feus7HdZrfyg6nyYOh/WeZ1OG3kFPO/8ja2zk+ME4="
     },
     {
       "id": "mdv-lib-katex",
@@ -269,7 +269,7 @@
     },
     {
       "name": "src/i18n.js",
-      "bytes": 15770,
+      "bytes": 15776,
       "escapes": 0
     },
     {

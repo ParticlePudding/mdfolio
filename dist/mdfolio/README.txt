@@ -1,18 +1,18 @@
 mdfolio (folder version)    * 日本語: はじめに.txt
 
 - Open
-  Open index.html in a browser (Chrome / Edge / Firefox / Safari).
-  The documents in the docs folder are shown. You can also open other folders and files
+  Open index.html in a browser (Chrome, Edge, Firefox, or Safari).
+  The documents in the docs folder will be displayed. You can also open other folders and files
   from the menu (...).
 
 - Add or change documents
   1. Put Markdown (.md) files and images in the docs folder.
-  2. In this folder, run the following command (Node.js is required):
+  2. From this folder, run the following command (Node.js is required):
        node tools/update.mjs
   3. Reload index.html in the browser.
-  Step 2 is needed because a browser does not let a page opened from your disk read the files next to it.
+  Step 2 is necessary because browsers generally prevent pages opened from your disk from reading nearby files.
   To set the title or the first document to show, see: node tools/update.mjs --help
-  The command prints messages in English or Japanese, following your computer's language.
+  The command prints messages in English or Japanese based on your system language.
   To choose, set the environment variable MDFOLIO_LANG to en or ja.
 
   The included docs folder holds Japanese sample documents. English sample documents
@@ -22,8 +22,8 @@ mdfolio (folder version)    * 日本語: はじめに.txt
 
 - Change the look
   Edit style/document.css and reload the page.
-  This changes the look of the document body (headings, tables, code and so on) and the colors,
-  fonts and text width of the whole screen. Instructions are in the comment at the top of the file.
+  This changes the appearance of the document body (headings, tables, code, and so on), as well as
+  the colors, fonts, and text width of the entire interface. Instructions are in the comment at the top of the file.
   For "Export as site" to use your changes, run node tools/update.mjs after editing.
 
 - Settings

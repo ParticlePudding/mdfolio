@@ -104,26 +104,26 @@ const TEXT = {
     switchHref: '../',
     switchLang: 'ja',
     version: 'Version',
-    lead: 'mdfolio turns documents written in Markdown into a site you can read with nothing but a browser. It needs no server, no installation and no network connection. Just open the HTML file.',
+    lead: 'mdfolio turns Markdown documents into a website you can browse using any modern web browser. It needs no server, no installation and no network connection. Just open the HTML file.',
     tryTitle: 'Try it',
     cards: [
-      ['sample-site.html', 'Read the sample documents', 'An example of "Export as site": documents packed into one HTML file. Works on smartphones too.'],
+      ['sample-site.html', 'Read the sample documents', 'Try an example of "Export as site": a collection of documents packaged into a single HTML file. It works on smartphones too.'],
       ['../mdfolio.html', 'Open your own folder', 'The viewer itself. Choose Markdown files or a folder on your device and read them.'],
-      ['folder/index.html', 'Folder version sample', 'Shows the documents kept in its docs folder. You can change the look with CSS.'],
+      ['folder/index.html', 'Folder version sample', 'Shows the documents stored in its docs folder. You can change the look with CSS.'],
       ['mdfolio-docs.html', 'Documentation', 'How to use mdfolio, shown by mdfolio itself. The design records are in Japanese only.']
     ],
     privacyTitle: 'Your documents stay with you',
-    privacy: 'Documents you choose with "Open your own folder" are read inside your browser only. They are never sent to this site or anywhere else (the page\'s security settings block all network access).',
+    privacy: 'Documents you open using "Open your own folder" are processed entirely within your browser. They are never sent to this site or anywhere else (the page\'s security settings block all network access).',
     localTitle: 'Use it on your device',
     local: [
       `<a href="../mdfolio.html" download>Download mdfolio.html</a> (about ${mb} MB) and double-click it. That one file is all you need.`,
-      `For the folder version and command-line export, get everything from <a href="${REPO}">the GitHub repository</a> with "Code" → "Download ZIP", and follow README.en.md.`
+      `To use the folder version or command-line export, download <a href="${REPO}">the GitHub repository</a> as a ZIP file using "Code" → "Download ZIP", then follow the instructions in README.en.md.`
     ],
     licenseTitle: 'License',
     license: 'mdfolio is released under the MIT License. The full text, including the license notices of the bundled libraries (markdown-it, DOMPurify, highlight.js, KaTeX, Mermaid and others), is below. The same text is under "Licenses and version" in the menu (⋯) of each page.',
     licenseOpen: 'Show the full license text',
     footer: `© 2026 Particle Pudding · MIT License · <a href="${REPO}">Source code</a> · <a href="${REPO}/issues">Report a problem (Issues)</a>`
-      + `<br>The English text was written by a non-native speaker. If something reads oddly, please <a href="${REPO}/issues">let us know</a>.`
+      + `<br>The English text was written by a non-native English speaker. If you notice any awkward wording, please let us know through <a href="${REPO}/issues">GitHub Issues</a>.`
   }
 };
 

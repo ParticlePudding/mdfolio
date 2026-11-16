@@ -6,7 +6,7 @@ title: Settings
 
 ## List of settings
 
-You can change the default behavior by editing the settings block named `mdv-config` inside `mdfolio.html`.
+You can change the default behavior by editing the settings block with the ID `mdv-config` in `mdfolio.html`.
 
 ```html
 <script type="application/json" id="mdv-config">{"title":"","lang":"auto","theme":"auto","home":"","allowExternalImages":false,"allowDownloads":true,"lockExternalImages":false,"hosted":false}</script>
@@ -30,7 +30,7 @@ The last three are for places where saving files or loading external content is 
 
 ## Per-user settings
 
-When a user changes the theme, the language, external images, or whether the sidebar is open, the choice is saved in the browser and takes priority over the settings block.
+When a user changes the theme, language, external image setting, or sidebar visibility, these preferences are saved in the browser and take priority over the settings block.
 
 ## First document to show
 

@@ -4,15 +4,15 @@
 
 | Browser | Support |
 |---|---|
-| Edge / Chrome | All features |
+| Chrome / Edge | All features |
 | Firefox / Safari | Reading, search and export. "Reopen last folder" and automatic refresh are not available |
 
 ## Documents
 
-- Up to 5,000 documents can be read from one folder.
+- mdfolio can read up to 5,000 documents from a single folder.
 - Documents larger than 10 MB are shown as plain text without conversion.
 - Folders and files whose names start with `.`, and `node_modules` folders, are not read.
-- Supported text encodings are UTF-8, UTF-16 with a BOM, and Shift_JIS.
+- Supported text encodings are UTF-8, UTF-16 (with BOM), and Shift_JIS.
 
 ## Links and images
 

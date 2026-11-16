@@ -53,15 +53,15 @@ const MESSAGES = {
     note: '  注意: ', tooBig: 'ファイルサイズが 100MB を超えています'
   },
   en: {
-    error: 'Error: ', needsValue: '{0} needs a value', unknownOption: 'Unknown option: {0}',
+    error: 'Error: ', needsValue: '{0} requires a value', unknownOption: 'Unknown option: {0}',
     oneFolder: 'Specify only one document folder', noFolder: 'Specify a document folder (see --help for usage)',
     badLang: '--lang must be auto, ja or en', badTheme: '--theme must be auto, light or dark',
     bothImages: '--allow-external-images and --lock-external-images cannot be used together',
     noViewer: 'Viewer not found: {0} (run node tools/build.mjs first)',
     notViewer: 'Not an mdfolio viewer: {0}', viewerLoad: "Could not load the viewer's scripts",
     folderMissing: 'Folder not found: {0}',
-    truncated: 'Stopped partway because there are more than {0} files and folders',
-    tooManyDocs: 'Documents beyond the first {0} are left out',
+    truncated: 'Stopped scanning because the number of files and folders exceeds {0}',
+    tooManyDocs: 'Only the first {0} documents are included; the rest are skipped',
     noDocs: 'No Markdown documents found in {0}', bigAssets: '{0} attachment(s) larger than 20 MB are left out',
     homeMissing: 'The document given with --home was not found: {0}',
     wrote: 'Wrote {0}', counts: '  {0} document(s), {1} attachment(s), {2}', home: '  Home: {0}',
@@ -77,16 +77,16 @@ const HELP_EN = `Export a site as one HTML file (command-line version)
   --out <file>                 Output file (default: <folder name>.html)
   --title <title>              Site title (default: the folder name)
   --home <path>                First document to show (default: README.md → index.md → the first document)
-  --viewer <file>              Viewer to build from (default: dist/mdfolio.html)
+  --viewer <file>              Path to the viewer HTML file to use (default: dist/mdfolio.html)
   --lang <auto|ja|en>          Default interface language
   --theme <auto|light|dark>    Default theme
   --allow-external-images      Show external images from the start
   --lock-external-images       Never load external images (users cannot change this)
-  --no-downloads               Hide actions that save files (for places where saving is not possible)
+  --no-downloads               Hide actions that save files (for environments where saving files is not possible)
 
 It produces the same result as "Export as site" in the app, using the scripts inside the viewer HTML
 (parsing documents, resolving links, assembling the HTML). It needs only Node.js, with no extra packages.
-You can set the language of the messages with the environment variable MDFOLIO_LANG (ja / en).
+You can set the message language with the MDFOLIO_LANG environment variable (ja / en).
 `;
 
 function fail(message) {

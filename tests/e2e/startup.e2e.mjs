@@ -102,7 +102,7 @@ describe('起動', () => {
   test('画面の言語はブラウザの言語設定に従う（FR-502）', async () => {
     await withPage(browser, { locale: 'en-US' }, async ({ page }) => {
       assert.equal(await page.getAttribute('html', 'lang'), 'en');
-      assert.equal(await page.textContent('.mdv-welcome-title'), 'Read a folder of Markdown as a site, just as it is.');
+      assert.equal(await page.textContent('.mdv-welcome-title'), 'Browse a folder of Markdown files as a website.');
       assert.equal((await page.textContent('.mdv-open-folder')).trim(), 'Open folder');
     });
     await withPage(browser, { locale: 'fr-FR' }, async ({ page }) => {

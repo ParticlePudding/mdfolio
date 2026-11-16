@@ -2,7 +2,7 @@
 
 You can use this single file to see how mdfolio displays documents. The Japanese version is `sample.md`. Choose this file with "Open files" in mdfolio, or drop it onto the window.
 
-To try features that work across a folder (links between documents, images, sidebar order, full-text search), use the samples in the `sample-docs-en` folder.
+To try features that involve multiple files in a folder (links between documents, images, sidebar ordering, and full-text search), use the samples in the `sample-docs-en` folder.
 
 ## Using the outline
 
@@ -10,10 +10,10 @@ To try features that work across a folder (links between documents, images, side
 
 ## Text styles
 
-You can use **bold**, *italic*, ~~strikethrough~~, `inline code`, and keys such as <kbd>Ctrl</kbd> + <kbd>K</kbd>.
+You can use **bold**, *italic*, ~~strikethrough~~, `inline code`, and keyboard shortcuts such as <kbd>Ctrl</kbd> + <kbd>K</kbd>.
 
 End a line with two spaces  
-to break the line.
+to insert a line break.
 
 ## Lists
 
@@ -61,7 +61,7 @@ to break the line.
 
 ## Code
 
-Add a language name to color the code. Press "Copy" at the top right to copy it.
+Specify a language to enable syntax highlighting. Press "Copy" at the top right to copy it.
 
 ```js
 // Count the Markdown files in a folder
