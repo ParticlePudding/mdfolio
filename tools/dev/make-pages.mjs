@@ -1,59 +1,138 @@
 #!/usr/bin/env node
 /**
- * GitHub Pages に置くファイル一式を作る。
+ * GitHub Pages に置くファイル一式を、日本語と英語で作る（SPEC 8.7）。
  *
  *   node tools/dev/make-pages.mjs [出力フォルダ]      既定: tmp/pages
  *
- * dist/ の成果物をそのまま写し、案内のページ（index.html）を加える。先に npm run build と
- * make-docs-site.mjs を実行しておくこと。出力フォルダの中身は毎回消してから作り直す。
+ * 先に npm run build を実行しておくこと（dist/mdfolio.html を使う）。出力フォルダの中身は毎回消してから作り直す。
  *
- *   index.html          案内のページ（スクリプトなし）
- *   sample-site.html    書き出しの見本（dist/sample-site.html）
- *   mdfolio.html        単一 HTML 版のビューア（dist/mdfolio.html）
- *   mdfolio-docs.html   説明書（dist/mdfolio-docs.html）
- *   folder/             フォルダ版の見本（dist/mdfolio/）
- *   .nojekyll           GitHub Pages の変換（Jekyll）を止める。止めないと「_」で始まるファイル
- *                       （folder/docs/_sidebar.md）が公開されない
+ *   index.html            案内（日本語。スクリプトなし）
+ *   mdfolio.html          ビューア（dist/mdfolio.html。1 つだけ。画面の言語はブラウザーに合わせる）
+ *   sample-site.html      書き出しの見本（sample-docs/。画面は日本語に固定）
+ *   folder/               フォルダ版の見本（sample-docs/。画面は日本語に固定）
+ *   mdfolio-docs.html     説明書（README.md と docs/ の 3 文書）
+ *   en/index.html         案内（英語）
+ *   en/sample-site.html   書き出しの見本（sample-docs-en/。画面は英語に固定）
+ *   en/folder/            フォルダ版の見本（sample-docs-en/。画面は英語に固定）
+ *   en/mdfolio-docs.html  説明書（README.en.md）
+ *   .nojekyll             GitHub Pages の変換（Jekyll）を止める。止めないと「_」で始まるファイル
+ *                         （folder/docs/_sidebar.md）が公開されない
+ *
+ * 見本の画面の言語を固定するのは公開ページだけで、dist/ の見本（lang: auto）は変えない。
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const out = path.resolve(process.argv[2] || path.join(ROOT, 'tmp/pages'));
-const dist = (p) => path.join(ROOT, 'dist', p);
 const version = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8')).version;
 const REPO = 'https://github.com/ParticlePudding/mdfolio';
+const SITE = 'https://particlepudding.github.io/mdfolio/';
+const viewer = path.join(ROOT, 'dist/mdfolio.html');
 
-for (const p of ['mdfolio.html', 'sample-site.html', 'mdfolio-docs.html', 'mdfolio/index.html']) {
-  if (!fs.existsSync(dist(p))) {
-    console.error(`dist/${p} がありません。先に npm run build と node tools/dev/make-docs-site.mjs を実行してください。`);
-    process.exit(1);
-  }
+if (!fs.existsSync(viewer)) {
+  console.error('dist/mdfolio.html がありません。先に npm run build を実行してください。');
+  process.exit(1);
 }
 if (out === ROOT || out === path.join(ROOT, 'dist') || ROOT.startsWith(out + path.sep)) {
   console.error('出力先にこのフォルダや dist/ は指定できません: ' + out);
   process.exit(1);
 }
 
+const run = (script, args) => execFileSync(process.execPath, [path.join(ROOT, script), ...args], { cwd: ROOT, stdio: ['ignore', 'ignore', 'inherit'] });
+
 fs.rmSync(out, { recursive: true, force: true });
-fs.mkdirSync(out, { recursive: true });
-for (const name of ['mdfolio.html', 'sample-site.html', 'mdfolio-docs.html']) fs.copyFileSync(dist(name), path.join(out, name));
-fs.cpSync(dist('mdfolio'), path.join(out, 'folder'), { recursive: true });
+fs.mkdirSync(path.join(out, 'en'), { recursive: true });
+fs.copyFileSync(viewer, path.join(out, 'mdfolio.html'));
 fs.writeFileSync(path.join(out, '.nojekyll'), '');
 
-const mb = (name) => (fs.statSync(dist(name)).size / 1048576).toFixed(1);
+const LANGS = {
+  ja: { dir: '', docs: 'sample-docs', title: 'mdfolio サンプル文書' },
+  en: { dir: 'en', docs: 'sample-docs-en', title: 'mdfolio sample documents' }
+};
+for (const [lang, c] of Object.entries(LANGS)) {
+  const at = (p) => path.join(out, c.dir, p);
+  run('tools/build-site.mjs', [c.docs, '--out', at('sample-site.html'), '--title', c.title, '--lang', lang]);
+  run('tools/dev/make-docs-site.mjs', [at('mdfolio-docs.html'), '--lang', lang]);
+  run('tools/build-folder.mjs', ['--out', at('folder'), '--docs', path.join(ROOT, c.docs), '--title', c.title]);
+  // フォルダ版の画面の言語を固定する（設定ブロックは利用者が編集してよい部分。SPEC 8.6）
+  const index = at('folder/index.html');
+  const html = fs.readFileSync(index, 'utf8');
+  if (html.split('"lang":"auto"').length !== 2) throw new Error('folder/index.html の設定ブロックに "lang":"auto" が 1 つだけあるはずです');
+  fs.writeFileSync(index, html.replace('"lang":"auto"', `"lang":"${lang}"`));
+}
 
-const html = `<!DOCTYPE html>
-<html lang="ja">
+const mb = (fs.statSync(viewer).size / 1048576).toFixed(1);
+
+const TEXT = {
+  ja: {
+    description: 'サーバーもインストールも要らない、Markdown 文書の表示サイト',
+    switchLabel: 'English',
+    switchHref: 'en/',
+    switchLang: 'en',
+    version: 'バージョン',
+    lead: 'Markdown で書いた文書を、ブラウザーだけで読めるサイトにします。サーバー、インストール、ネット接続は要りません。HTML のファイルを開くだけで動きます。',
+    tryTitle: '試してみる',
+    cards: [
+      ['sample-site.html', 'サンプル文書を読む', '文書を 1 つの HTML にまとめた「書き出し」の見本です。スマートフォンでも読めます。'],
+      ['mdfolio.html', '自分のフォルダを開く', 'ビューア本体です。手元の Markdown のフォルダやファイルを選んで読めます。'],
+      ['folder/index.html', 'フォルダ版の見本', '決まった場所の文書を表示する形です。見た目を CSS で変えられます。'],
+      ['mdfolio-docs.html', '説明書', '使い方、仕様書、テストの記録です。mdfolio 自身で表示しています。']
+    ],
+    privacyTitle: '文書は外に送られません',
+    privacy: '「自分のフォルダを開く」で選んだ文書は、あなたのブラウザーの中だけで読み込みます。このサイトやほかの場所へ送ることはありません（ページの設定で、外部との通信そのものを止めています）。',
+    localTitle: '手元で使う',
+    local: [
+      `<a href="mdfolio.html" download>mdfolio.html をダウンロード</a>（約 ${mb}MB）して、ダブルクリックで開きます。これ 1 つで動きます。`,
+      `フォルダ版やコマンドラインでの書き出しは、<a href="${REPO}">GitHub のリポジトリ</a>の「Code」→「Download ZIP」で一式を入手し、README の手順に従ってください。`
+    ],
+    footer: `MIT ライセンス。同梱しているライブラリのライセンス表記は、各ページのメニュー（⋯）の「ライセンスとバージョン」で確認できます。 · <a href="${REPO}">ソースコード</a>`
+  },
+  en: {
+    description: 'A Markdown document viewer that needs no server and no installation',
+    switchLabel: '日本語',
+    switchHref: '../',
+    switchLang: 'ja',
+    version: 'Version',
+    lead: 'mdfolio turns documents written in Markdown into a site you can read with nothing but a browser. It needs no server, no installation and no network connection. Just open the HTML file.',
+    tryTitle: 'Try it',
+    cards: [
+      ['sample-site.html', 'Read the sample documents', 'An example of "Export as site": documents packed into one HTML file. Works on smartphones too.'],
+      ['../mdfolio.html', 'Open your own folder', 'The viewer itself. Choose a folder or files of Markdown on your device and read them.'],
+      ['folder/index.html', 'Folder version sample', 'Shows the documents in a fixed place. You can change the look with CSS.'],
+      ['mdfolio-docs.html', 'Documentation', 'How to use mdfolio, shown by mdfolio itself. The design records are in Japanese only.']
+    ],
+    privacyTitle: 'Your documents stay with you',
+    privacy: 'Documents you choose with "Open your own folder" are read inside your browser only. They are never sent to this site or anywhere else (the page settings block network access altogether).',
+    localTitle: 'Use it on your device',
+    local: [
+      `<a href="../mdfolio.html" download>Download mdfolio.html</a> (about ${mb} MB) and double-click it. That one file is all you need.`,
+      `For the folder version and command-line export, get everything from <a href="${REPO}">the GitHub repository</a> with "Code" → "Download ZIP", and follow README.en.md.`
+    ],
+    footer: `MIT License. License notices for the bundled libraries are under "Licenses and version" in the menu (⋯) of each page. · <a href="${REPO}">Source code</a>`
+  }
+};
+
+const ICON = 'data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%231D4F91%27/%3E%3Cpath d=%27M9 6h10l5 5v15H9z%27 fill=%27%23fff%27/%3E%3Cpath d=%27M12 15h9M12 19h9M12 23h5%27 stroke=%27%231D4F91%27 stroke-width=%271.8%27/%3E%3C/svg%3E';
+
+const page = (lang) => {
+  const t = TEXT[lang];
+  const card = ([href, title, text]) => `  <a class="card" href="${href}"><strong>${title}</strong><span>${text}</span></a>`;
+  return `<!DOCTYPE html>
+<html lang="${lang}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
-<meta name="description" content="サーバーもインストールも要らない、Markdown 文書の表示サイト">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%231D4F91%27/%3E%3Cpath d=%27M9 6h10l5 5v15H9z%27 fill=%27%23fff%27/%3E%3Cpath d=%27M12 15h9M12 19h9M12 23h5%27 stroke=%27%231D4F91%27 stroke-width=%271.8%27/%3E%3C/svg%3E">
+<meta name="description" content="${t.description}">
+<link rel="alternate" hreflang="ja" href="${SITE}">
+<link rel="alternate" hreflang="en" href="${SITE}en/">
+<link rel="alternate" hreflang="x-default" href="${SITE}">
+<link rel="icon" href="${ICON}">
 <title>mdfolio</title>
 <style>
 :root { --bg: #f7f8fa; --card: #fff; --text: #1d2330; --muted: #5a6474; --line: #dde2ea; --accent: #1d4f91; --accent-bg: #e8eef8; }
@@ -62,7 +141,10 @@ const html = `<!DOCTYPE html>
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.75 system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Yu Gothic UI", "Noto Sans JP", sans-serif; }
-main { max-width: 860px; margin: 0 auto; padding: 48px 20px 64px; }
+main { max-width: 860px; margin: 0 auto; padding: 32px 20px 64px; }
+.lang { text-align: right; margin: 0 0 16px; font-size: .95rem; }
+.lang a { display: inline-block; padding: 4px 14px; border: 1px solid var(--line); border-radius: 999px; background: var(--card); text-decoration: none; }
+.lang a:hover, .lang a:focus-visible { border-color: var(--accent); }
 h1 { font-size: 2rem; margin: 0 0 4px; letter-spacing: .02em; }
 .version { color: var(--muted); font-size: .9rem; margin: 0 0 20px; }
 .lead { font-size: 1.1rem; margin: 0 0 32px; }
@@ -81,35 +163,34 @@ footer { margin-top: 48px; color: var(--muted); font-size: .85rem; }
 </head>
 <body>
 <main>
+<p class="lang"><a href="${t.switchHref}" hreflang="${t.switchLang}" lang="${t.switchLang}">${t.switchLabel}</a></p>
 <h1>mdfolio</h1>
-<p class="version">バージョン ${version}</p>
-<p class="lead">Markdown で書いた文書を、ブラウザーだけで読めるサイトにします。サーバー、インストール、ネット接続は要りません。HTML のファイルを開くだけで動きます。</p>
+<p class="version">${t.version} ${version}</p>
+<p class="lead">${t.lead}</p>
 
-<h2>試してみる</h2>
+<h2>${t.tryTitle}</h2>
 <div class="cards">
-  <a class="card" href="sample-site.html"><strong>サンプル文書を読む</strong><span>文書を 1 つの HTML にまとめた「書き出し」の見本です。スマートフォンでも読めます。</span></a>
-  <a class="card" href="mdfolio.html"><strong>自分のフォルダを開く</strong><span>ビューア本体です。手元の Markdown のフォルダやファイルを選んで読めます。</span></a>
-  <a class="card" href="folder/index.html"><strong>フォルダ版の見本</strong><span>決まった場所の文書を表示する形です。見た目を CSS で変えられます。</span></a>
-  <a class="card" href="mdfolio-docs.html"><strong>説明書</strong><span>使い方、仕様書、テストの記録です。mdfolio 自身で表示しています。</span></a>
+${t.cards.map(card).join('\n')}
 </div>
 
-<h2>文書は外に送られません</h2>
-<p class="note">「自分のフォルダを開く」で選んだ文書は、あなたのブラウザーの中だけで読み込みます。このサイトやほかの場所へ送ることはありません（ページの設定で、外部との通信そのものを止めています）。</p>
+<h2>${t.privacyTitle}</h2>
+<p class="note">${t.privacy}</p>
 
-<h2>手元で使う</h2>
+<h2>${t.localTitle}</h2>
 <ul>
-  <li><a href="mdfolio.html" download>mdfolio.html をダウンロード</a>（約 ${mb('mdfolio.html')}MB）して、ダブルクリックで開きます。これ 1 つで動きます。</li>
-  <li>フォルダ版やコマンドラインでの書き出しは、<a href="${REPO}">GitHub のリポジトリ</a>の「Code」→「Download ZIP」で一式を入手し、README の手順に従ってください。</li>
+${t.local.map((li) => `  <li>${li}</li>`).join('\n')}
 </ul>
 
 <footer>
-<p>MIT ライセンス。同梱しているライブラリのライセンス表記は、各ページのメニュー（⋯）の「ライセンスとバージョン」で確認できます。 · <a href="${REPO}">ソースコード</a></p>
+<p>${t.footer}</p>
 </footer>
 </main>
 </body>
 </html>
 `;
-fs.writeFileSync(path.join(out, 'index.html'), html);
+};
+fs.writeFileSync(path.join(out, 'index.html'), page('ja'));
+fs.writeFileSync(path.join(out, 'en/index.html'), page('en'));
 
 const count = (dir) => fs.readdirSync(dir, { withFileTypes: true }).reduce((n, e) => n + (e.isDirectory() ? count(path.join(dir, e.name)) : 1), 0);
-console.log(`${path.relative(ROOT, out) || out}: ${count(out)} ファイル`);
+console.log(`${path.relative(ROOT, out) || out}: ${count(out)} ファイル（日本語と英語）`);

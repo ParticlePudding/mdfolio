@@ -1,3 +1,5 @@
+**日本語** | [English](README.en.md)
+
 # mdfolio（仮称）
 
 ローカルの HTML と JavaScript だけで動く、Markdown 文書の表示サイトです。サーバー、インストール、ネット接続は要りません。形が 2 つあります。
@@ -6,7 +8,7 @@
 - **単一 HTML 版**（`dist/mdfolio.html`、約 4.1MB）: 1 ファイルを開いてフォルダを選ぶ形。持ち運びや受け渡しに向きます。「サイトとして書き出す」の出力もこの形です。
 
 - バージョン: 1.1.0
-- 公開ページ: https://particlepudding.github.io/mdfolio/ （サンプルを読む、ビューアを試す、説明書を読む）
+- 公開ページ: https://particlepudding.github.io/mdfolio/ （サンプルを読む、ビューアを試す、説明書を読む。英語版は `/en/`）
 - ライセンス: MIT（同梱ライブラリのライセンス表記は HTML の中に入っています）
 
 ## 使い方
@@ -27,7 +29,7 @@
 2. 「フォルダを開く」で Markdown のあるフォルダを選ぶか、フォルダをウィンドウにドロップします。
 3. 左の一覧、文書中のリンク、検索（`Ctrl+K` または `/`）で読み進めます。
 
-試すには、付属の `sample-docs` フォルダを開いてください。ファイル 1 つで試すなら、「ファイルを開く」で付属の `sample.md` を選びます。使い方の全体はメニュー（⋯）の「使い方」にあります。
+試すには、付属の `sample-docs` フォルダを開いてください（英語版は `sample-docs-en`）。ファイル 1 つで試すなら、「ファイルを開く」で付属の `sample.md` を選びます。使い方の全体はメニュー（⋯）の「使い方」にあります。
 
 ### 2. 文書をまとめて人に渡す
 
@@ -153,7 +155,7 @@ npm run vendor                              # 同梱ライブラリの更新と�
 | `dist/mdfolio.html` | 単一 HTML 版 |
 | `dist/mdfolio-docs.html` | この説明と `docs/` の 3 文書を、mdfolio 自身で 1 つのサイトに書き出したもの（開くだけで読める） |
 | `dist/sample-site.html` | `sample-docs/` を書き出したもの（書き出し結果の見本） |
-| `sample-docs/` | 動作確認用の文書（フォルダ） |
+| `sample-docs/` `sample-docs-en/` | 動作確認用の文書（フォルダ。日本語と英語） |
 | `sample.md` | 動作確認用の文書（1 ファイルで完結するもの） |
 | `src/` | ソース（`core.js` 画面に依存しない処理、`md.js` Markdown の拡張、`i18n.js` 文言、`app.js` 画面、`app.css` 画面の部品、`document.css` 本文と配色） |
 | `vendor/` | 同梱ライブラリ（配布物そのまま）と目録 `manifest.json` |
