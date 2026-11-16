@@ -131,10 +131,7 @@ node tools/dev/make-hosted.mjs dist/mdfolio.html hosted-viewer.html --page-title
 
 ## 再配布について
 
-- `dist/mdfolio.html` と、そこから書き出したサイトの HTML は、そのまま再配布できます。必要な著作権表示と許諾表示（MIT、BSD、Apache-2.0、ISC、SIL OFL など）は HTML の中に入っており、メニューの「ライセンスとバージョン」で表示できます。
-- 同梱しているのは、再配布が認められている寛容なライセンスのライブラリだけです（一覧は `THIRD-PARTY-NOTICES.txt` と `vendor/manifest.json`）。GPL や EPL のコードは含めていません。
-- `LICENSE` の著作権者名は「Particle Pudding」です。書き換えた場合は `npm run build` で作り直してください（文章が HTML に埋め込まれるため）。
-- これは法的な助言ではありません。社内規程などがある場合は、`THIRD-PARTY-NOTICES.txt` を確認の材料にしてください。
+- `dist/mdfolio.html` と、そこから書き出したサイトの HTML は、そのまま再配布できます。必要な著作権表示と許諾表示は HTML の中に入っています。
 
 ## 開発者向け
 

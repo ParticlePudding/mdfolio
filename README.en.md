@@ -134,10 +134,7 @@ Other limitations are in chapter 11 of `docs/SPEC.md`.
 
 ## Redistribution
 
-- `dist/mdfolio.html` and exported site HTML files can be redistributed as-is. The required copyright and permission notices (MIT, BSD, Apache-2.0, ISC, SIL OFL and others) are inside the HTML and can be shown with "Licenses and version" in the menu.
-- Only libraries with licenses that permit redistribution are bundled (listed in `THIRD-PARTY-NOTICES.txt` and `vendor/manifest.json`). No GPL or EPL code is included.
-- The copyright holder in `LICENSE` is "Particle Pudding". If you change it, rebuild with `npm run build` (the text is embedded in the HTML).
-- This is not legal advice. If your organization has its own rules, use `THIRD-PARTY-NOTICES.txt` as a starting point for your review.
+- `dist/mdfolio.html` and sites exported from it can be redistributed as-is. The required copyright and license notices are included in the HTML.
 
 ## For developers
 
