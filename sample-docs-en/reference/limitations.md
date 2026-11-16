@@ -24,4 +24,4 @@
 
 ## Diagrams
 
-Mermaid mindmap and architecture diagrams are not supported.
+Mermaid mindmaps (`mindmap`) and architecture diagrams (`architecture-beta`) are not available, because the bundled lightweight build does not include them. If you write one, an error is shown in place of the diagram.

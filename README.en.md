@@ -7,7 +7,7 @@ A Markdown document viewer that runs on nothing but local HTML and JavaScript. I
 - **Folder version** (`dist/mdfolio/`): put it in a fixed place, and the documents in `docs` can be read just by opening `index.html`. You can change the look with CSS (`style/document.css`).
 - **Single-HTML version** (`dist/mdfolio.html`, about 4.1 MB): open one file and choose a folder. Good for carrying around and handing over. "Export as site" also produces this form.
 
-- Version: 1.1.0
+- Version: 1.2.0
 - Public page: https://particlepudding.github.io/mdfolio/en/ (read the samples, try the viewer, read the documentation)
 - License: MIT (license notices for the bundled libraries are inside the HTML)
 
@@ -18,7 +18,7 @@ The screen of the app can be shown in English or Japanese. It follows the browse
 ### Put the folder version in place
 
 1. Put the `dist/mdfolio/` folder where you want to use it (for example, a shared folder).
-2. Put Markdown files and images in `docs/`, and run `node tools/update.mjs` in that folder (Node.js 20 or later). You can set the title with `--title "Team handbook"`.
+2. Put Markdown files and images in `docs/`, and run `node tools/update.mjs` in that folder (Node.js 20 or later). You can set the title with `--title "Team handbook"`. The command prints messages in English or Japanese, following your computer's language; set the environment variable `MDFOLIO_LANG=en` to choose English.
 3. Open `index.html` in a browser. When you change the documents, run step 2 again and then reload the page.
 
 Change the look in `style/document.css`. How to change it is explained at the top of the file. Changing the color variables (such as `--accent`) changes the colors of the text, the screen and the diagrams together. The document body is ordinary HTML (`h1`–`h6`, `table`, `pre` and so on) inside `.mdv-prose`, so you can write rules for those too.
@@ -31,7 +31,7 @@ Browsers do not let a page opened from `file://` read the files next to it. That
 2. Choose a folder that contains Markdown with "Open folder", or drop the folder onto the window.
 3. Read on using the list on the left, links in the text, and search (`Ctrl+K` or `/`).
 
-To try it, open the included `sample-docs-en` folder (`sample-docs` is the Japanese version). To try a single file, choose the included `sample.md` (Japanese) with "Open files". The full instructions are under "How to use" in the menu (⋯).
+To try it, open the included `sample-docs-en` folder (`sample-docs` is the Japanese version). To try a single file, choose the included `sample.en.md` with "Open files" (`sample.md` is the Japanese version). The full instructions are under "How to use" in the menu (⋯).
 
 ### 2. Hand documents to other people
 
@@ -125,7 +125,7 @@ The conversion removes the Content Security Policy written in the HTML and disab
 - Up to 5,000 documents and 50,000 files and folders. Documents larger than 10 MB are shown as plain text without conversion.
 - Attachments included in an export are limited to 20 MB each.
 - Automatic encoding detection covers UTF-8 / UTF-16 (with BOM) / Shift_JIS only.
-- The bundled Mermaid is the lightweight build, so mindmap and architecture diagrams cannot be shown.
+- The bundled Mermaid is the lightweight build, so mindmaps (`mindmap`) and architecture diagrams (`architecture-beta`) cannot be shown. Flowcharts, sequence, class, state and ER diagrams, Gantt charts, pie charts and others work.
 - Emoji shortcodes (`:smile:`), wiki links (`[[...]]`), `[TOC]` and definition lists are not supported.
 
 Other limitations are in chapter 11 of `docs/SPEC.md`.
@@ -158,7 +158,8 @@ npm run vendor                              # update bundled libraries and regen
 | `dist/mdfolio-docs.html` | The Japanese README and the three documents in `docs/`, exported as one site by mdfolio itself |
 | `dist/sample-site.html` | `sample-docs/` exported (an example of export output) |
 | `sample-docs/` `sample-docs-en/` | Sample documents for trying mdfolio (Japanese and English) |
-| `sample.md` | A sample document that is complete in one file (Japanese) |
+| `sample.en.md` `sample.md` | A sample document that is complete in one file (English and Japanese) |
+| `CHANGELOG.en.md` `CHANGELOG.md` | Change history (English and Japanese) |
 | `src/` | Source (`core.js` logic independent of the screen, `md.js` Markdown extensions, `i18n.js` UI text, `app.js` screen, `app.css` screen parts, `document.css` document body and colors) |
 | `vendor/` | Bundled libraries (as distributed) and the list `manifest.json` |
 | `tools/` | Build, export and library updates. `tools/folder/` holds the update command and notes for the folder version. `tools/dev/` holds the conversion for embedding (`make-hosted.mjs`), zip creation (`make-zip.py`), assembly of the public pages (`make-pages.mjs`) and test summaries |

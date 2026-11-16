@@ -1,0 +1,39 @@
+# v で始まるタグ（例: v1.2.0）が付いたら、リリースを作る（SPEC 8.8 AU-2、AU-3）
+# Create a GitHub release when a tag such as v1.2.0 is pushed.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check version
+        run: |
+          v="$(node -p "require('./package.json').version")"
+          if [ "v$v" != "$GITHUB_REF_NAME" ]; then
+            echo "タグ $GITHUB_REF_NAME と package.json の版 $v が一致しません / Tag and package.json version differ"
+            exit 1
+          fi
+      - name: Build
+        run: node tools/build.mjs && node tools/build-folder.mjs
+      - name: Unit tests
+        run: npm run test:unit
+      - name: Make release files
+        run: node tools/dev/make-release.mjs
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          v="$(node -p "require('./package.json').version")"
+          gh release create "$GITHUB_REF_NAME" tmp/release/mdfolio.html "tmp/release/mdfolio-$v.zip" \
+            --title "mdfolio $v" --notes-file tmp/release/notes.md --verify-tag

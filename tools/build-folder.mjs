@@ -109,10 +109,10 @@ const index = [
   `<meta name="generator" content="${core.NAME} ${core.VERSION}">`,
   `<link rel="icon" href="${core.FAVICON}">`,
   `<title>${core.NAME}</title>`,
-  '<!-- 見た目を変えるときは style/document.css を編集します -->',
+  '<!-- 見た目を変えるときは style/document.css を編集します / To change the look, edit style/document.css -->',
   '<link rel="stylesheet" href="style/app.css" data-mdv-style>',
   '<link rel="stylesheet" href="style/document.css" data-mdv-style>',
-  '<!-- 設定（SPEC 5.4）: タイトル・言語・テーマ・ホーム文書など。JSON として正しい形で編集します -->',
+  '<!-- 設定: タイトル・言語・テーマ・ホーム文書など。JSON として正しい形で編集します / Settings: title, language, theme, home document and more. Keep it valid JSON -->',
   `<script type="application/json" id="mdv-config">${core.jsonForScript(config)}</script>`,
   '</head>',
   '<body>',
@@ -134,6 +134,7 @@ out('tools/update.mjs', read('tools/folder/update.mjs'));
 out('LICENSE', read('LICENSE'));
 out('THIRD-PARTY-NOTICES.txt', read('THIRD-PARTY-NOTICES.txt'));
 out('はじめに.txt', read('tools/folder/はじめに.txt'));
+out('README.txt', read('tools/folder/README.txt'));
 if (args.docs) fs.cpSync(args.docs, path.join(args.out, 'docs'), { recursive: true, preserveTimestamps: true });
 else fs.mkdirSync(path.join(args.out, 'docs'), { recursive: true });
 

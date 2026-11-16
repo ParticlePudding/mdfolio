@@ -1,6 +1,6 @@
 {
   "name": "mdfolio",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "ローカルの HTML / JavaScript だけで動く Markdown 文書表示サイト",
   "scripts": {
     "build": "node tools/build.mjs && node tools/build-folder.mjs",

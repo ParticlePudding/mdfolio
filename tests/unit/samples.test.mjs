@@ -44,6 +44,18 @@ describe('見本文書', () => {
     assert.deepEqual(en, ja);
   });
 
+  test('1 ファイルの見本（sample.md と sample.en.md）: ページ内の見出しへのリンク先があり、同じ構成である', () => {
+    const outline = (f) => {
+      const text = fs.readFileSync(path.join(ROOT, f), 'utf8');
+      const html = r.render(text);
+      for (const href of r.collectRefs(text).links.filter((x) => x.startsWith('#'))) {
+        assert.ok(html.includes(`id="${decodeURIComponent(href.slice(1))}"`), `${f}: ${href} の見出しがない`);
+      }
+      return { headings: text.match(/^#{1,3} /gm).map((h) => h.trim()), fences: text.match(/^```\w+$/gm), alerts: text.match(/^> \[!\w+\]/gm) };
+    };
+    assert.deepEqual(outline('sample.en.md'), outline('sample.md'));
+  });
+
   for (const set of SETS) {
     test(`${set}: 相対リンクと画像はすべて実在するファイルを指し、見出しへのリンク先の見出しもある（PG-8）`, () => {
       const dir = path.join(ROOT, set);

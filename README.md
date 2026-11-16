@@ -1,13 +1,13 @@
 **日本語** | [English](README.en.md)
 
-# mdfolio（仮称）
+# mdfolio
 
 ローカルの HTML と JavaScript だけで動く、Markdown 文書の表示サイトです。サーバー、インストール、ネット接続は要りません。形が 2 つあります。
 
 - **フォルダ版**（`dist/mdfolio/`）: 所定の場所に置き、`docs` の文書を `index.html` を開くだけで読めるようにする形。見た目を CSS（`style/document.css`）で変えられます。
 - **単一 HTML 版**（`dist/mdfolio.html`、約 4.1MB）: 1 ファイルを開いてフォルダを選ぶ形。持ち運びや受け渡しに向きます。「サイトとして書き出す」の出力もこの形です。
 
-- バージョン: 1.1.0
+- バージョン: 1.2.0
 - 公開ページ: https://particlepudding.github.io/mdfolio/ （サンプルを読む、ビューアを試す、説明書を読む。英語版は `/en/`）
 - ライセンス: MIT（同梱ライブラリのライセンス表記は HTML の中に入っています）
 
@@ -16,7 +16,7 @@
 ### フォルダ版を置いて使う
 
 1. `dist/mdfolio/` フォルダを、使う場所（共有フォルダなど）に置きます。
-2. `docs/` に Markdown と画像を置き、そのフォルダで `node tools/update.mjs` を実行します（Node.js 20 以降）。タイトルは `--title "部の手順書"` で指定できます。
+2. `docs/` に Markdown と画像を置き、そのフォルダで `node tools/update.mjs` を実行します（Node.js 20 以降）。タイトルは `--title "部の手順書"` で指定できます。コマンドの表示はパソコンの言語設定に合わせて日本語か英語になり、環境変数 `MDFOLIO_LANG=ja` で日本語に固定できます。
 3. `index.html` をブラウザーで開きます。文書を変えたら、2 を実行してから再読み込みします。
 
 見た目は `style/document.css` で変えます。ファイルの先頭に変え方の説明があります。配色の変数（`--accent` など）を変えると、本文・画面・図の色がそろって変わります。本文は `.mdv-prose` の中の普通の HTML（`h1`〜`h6`、`table`、`pre` など）なので、それに対する規則も書けます。
@@ -29,7 +29,7 @@
 2. 「フォルダを開く」で Markdown のあるフォルダを選ぶか、フォルダをウィンドウにドロップします。
 3. 左の一覧、文書中のリンク、検索（`Ctrl+K` または `/`）で読み進めます。
 
-試すには、付属の `sample-docs` フォルダを開いてください（英語版は `sample-docs-en`）。ファイル 1 つで試すなら、「ファイルを開く」で付属の `sample.md` を選びます。使い方の全体はメニュー（⋯）の「使い方」にあります。
+試すには、付属の `sample-docs` フォルダを開いてください（英語版は `sample-docs-en`）。ファイル 1 つで試すなら、「ファイルを開く」で付属の `sample.md`（英語版は `sample.en.md`）を選びます。使い方の全体はメニュー（⋯）の「使い方」にあります。
 
 ### 2. 文書をまとめて人に渡す
 
@@ -123,7 +123,7 @@ node tools/dev/make-hosted.mjs dist/mdfolio.html hosted-viewer.html --page-title
 - 文書 5,000 件、ファイルとフォルダ 50,000 件まで。10MB を超える文書は変換せずにテキストとして表示します。
 - 書き出しに含められる添付は 1 つ 20MB まで。
 - 文字コードの自動判定は UTF-8 / UTF-16（BOM 付き）/ Shift_JIS のみです。
-- Mermaid は軽量版を同梱しているため、Mindmap と Architecture 図は表示できません。
+- Mermaid は軽量版を同梱しているため、マインドマップ（`mindmap`）とアーキテクチャ図（`architecture-beta`）は表示できません。フローチャート、シーケンス図、クラス図、状態遷移図、ER 図、ガントチャート、円グラフなどは使えます。
 - 絵文字のショートコード（`:smile:`）、Wiki リンク（`[[...]]`）、`[TOC]`、定義リストには対応していません。
 
 そのほかの制約は `docs/SPEC.md` の 11 章にあります。
@@ -156,7 +156,8 @@ npm run vendor                              # 同梱ライブラリの更新と�
 | `dist/mdfolio-docs.html` | この説明と `docs/` の 3 文書を、mdfolio 自身で 1 つのサイトに書き出したもの（開くだけで読める） |
 | `dist/sample-site.html` | `sample-docs/` を書き出したもの（書き出し結果の見本） |
 | `sample-docs/` `sample-docs-en/` | 動作確認用の文書（フォルダ。日本語と英語） |
-| `sample.md` | 動作確認用の文書（1 ファイルで完結するもの） |
+| `sample.md` `sample.en.md` | 動作確認用の文書（1 ファイルで完結するもの。日本語と英語） |
+| `CHANGELOG.md` `CHANGELOG.en.md` | 変更履歴（日本語と英語） |
 | `src/` | ソース（`core.js` 画面に依存しない処理、`md.js` Markdown の拡張、`i18n.js` 文言、`app.js` 画面、`app.css` 画面の部品、`document.css` 本文と配色） |
 | `vendor/` | 同梱ライブラリ（配布物そのまま）と目録 `manifest.json` |
 | `tools/` | ビルド、書き出し、ライブラリ更新。`tools/folder/` はフォルダ版に入れる更新コマンドと説明。`tools/dev/` は、埋め込み用の変換（`make-hosted.mjs`）、zip の作成（`make-zip.py`）、公開ページの組み立て（`make-pages.mjs`）、テスト結果の集計 |

@@ -1,0 +1,42 @@
+# main が更新されたら、公開ページ（gh-pages ブランチ）を作り直す（SPEC 8.8 AU-1）
+# Rebuild the public pages (gh-pages branch) whenever main is updated.
+name: Publish pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build
+        run: node tools/build.mjs && node tools/build-folder.mjs
+      - name: Unit tests
+        run: npm run test:unit
+      - name: Assemble pages
+        run: node tools/dev/make-pages.mjs
+      - name: Push to gh-pages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd tmp/pages
+          git init -q -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "公開ページ（main ${GITHUB_SHA::7} から作成） / Pages built from main ${GITHUB_SHA::7}"
+          # 公開用のブランチは、毎回 1 つの記録だけにする（大きな HTML の履歴をためない）
+          git push -q --force "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" gh-pages

@@ -1,6 +1,6 @@
 # mdfolio — Claude Code 向けの引き継ぎメモ
 
-ローカルの HTML / JavaScript だけで動く Markdown 文書ビューア。現在の版は 1.1.0。
+ローカルの HTML / JavaScript だけで動く Markdown 文書ビューア。現在の版は 1.2.0。変更の一覧は `CHANGELOG.md`（英語は `CHANGELOG.en.md`）。
 詳しい仕様は `docs/SPEC.md`、設計判断の経緯は `docs/REVIEW.md`、テスト結果は `docs/TEST_REPORT.md`。
 
 ## 依頼者について・進め方
@@ -35,12 +35,16 @@ node tools/dev/make-hosted.mjs   # 外部のホスティング環境（Claude �
 python3 tools/dev/make-zip.py    # 配布用 zip（日本語のファイル名に UTF-8 の印を付ける。zip コマンドは使わない）
 node tools/dev/make-docs-site.mjs  # README と docs/ を dist/mdfolio-docs.html に書き出す
 node tools/dev/make-pages.mjs     # GitHub Pages に置く一式（日本語と英語）を tmp/pages/ に作る。先に npm run build
+node tools/dev/make-release.mjs   # リリースの添付（mdfolio.html、zip）と説明を tmp/release/ に作る
 ```
 
 GitHub: https://github.com/ParticlePudding/mdfolio （公開リポジトリ）。作業は `main`。
-公開ページ https://particlepudding.github.io/mdfolio/ は `gh-pages` ブランチから配信する。更新するときは、
-ビルド → `make-pages.mjs` → `tmp/pages/` の中身を `gh-pages` に送る（`main` の履歴とは別の、
-公開ファイルだけのブランチ）。`.nojekyll` を消さないこと（消すと `_sidebar.md` が公開されない）。
+公開ページ https://particlepudding.github.io/mdfolio/ は `gh-pages` ブランチから配信する。`main` に送ると
+GitHub Actions（`.github/workflows/pages.yml`）が、ビルド → 単体テスト → `make-pages.mjs` → `gh-pages` の置き換えを行う
+（手で `gh-pages` に送らない。`.nojekyll` は `make-pages.mjs` が作る。消すと `_sidebar.md` が公開されない）。
+版を上げる手順: `package.json`・`package-lock.json`・`src/core.js` の版、README の版、`CHANGELOG.md` と `CHANGELOG.en.md` に
+「## <版> — 日付」の節 → ビルド・テスト → `main` に送る → 依頼者の了承を得て `v<版>` のタグを送る。
+タグで `.github/workflows/release.yml` がリリース（`mdfolio.html` と `mdfolio-<版>.zip`、説明は変更履歴から）を作る。
 日本語と英語の両対応（SPEC 8.7）: 見本文書は `sample-docs/` と `sample-docs-en/`、README は `README.md` と `README.en.md`。
 片方を変えたらもう片方も直す（構成とリンクは `tests/unit/samples.test.mjs` が確かめる）。英語の文書で画面の部品を書くときは
 `src/i18n.js` の `en` の言葉を使う。仕様書・レビュー記録・テスト報告書は日本語だけ。
@@ -81,6 +85,6 @@ GitHub: https://github.com/ParticlePudding/mdfolio （公開リポジトリ）�
 - Windows / macOS の実機、Edge、製品版の Firefox / Safari（特に、共有フォルダに置いたフォルダ版）
 - スマートフォンの実機
 - 公開したページ（Claude のアーティファクト 2 件、1.0.1 のお試し用変換）を、公開先の画面で操作した確認
-- GitHub Pages の公開ページを、実際の公開先で開いた確認（http で配信した写しでは確認済み）
+- GitHub Actions の 2 つの自動実行は、この開発環境では動かせない。初回の実行結果を GitHub の Actions の画面で確かめる
 - 利用者が配色を変えた場合のコントラスト（自動検査は既定の配色だけ）
-- 検討中の案: 更新コマンドを Node.js なしで動かす（Windows の PowerShell 版など）、書き出し時に CSS ファイルを指定するオプション
+- 依頼者と相談して行わないと決めたもの（1.2.0）: 更新コマンドの Node.js 以外の版、書き出す CSS の指定、配色のコントラストの検査

@@ -1,4 +1,4 @@
-/* mdfolio 1.1.0 — ビューア本体。編集しないでください。 */
+/* mdfolio 1.2.0 — ビューア本体。編集しないでください。 */
 /*!
  * mdfolio core — DOM に依存しない処理（ブラウザ・Node.js 共用）
  * MIT License
@@ -13,7 +13,7 @@
   'use strict';
 
   var NAME = 'mdfolio';
-  var VERSION = '1.1.0';
+  var VERSION = '1.2.0';
   var SITE_FORMAT = 1;
 
   var DOC_EXTS = ['md', 'markdown', 'mdown', 'mkd', 'mkdn', 'mdwn', 'mdtxt', 'mdtext'];

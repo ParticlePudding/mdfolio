@@ -66,6 +66,8 @@ Besides common Markdown such as headings, lists, tables, code, links and images,
 
 Write links and images as paths relative to the document (for example `[Settings](guide/config.md)`, `![Overview](img/overview.png)`).
 
+Diagrams (Mermaid) include flowcharts, sequence diagrams, class diagrams, state diagrams, ER diagrams, Gantt charts, pie charts and more. **Mindmaps (`mindmap`) and architecture diagrams (`architecture-beta`) are not available** (the bundled lightweight build does not include them). If you write one, an error is shown in place of the diagram.
+
 ## External images
 
 Images and videos on the internet (`https://…`) are not shown by default, because loading them tells the hosting server that you opened the document. Images referenced inside diagrams (Mermaid) are treated the same way, and the browser's Content Security Policy blocks them as well.

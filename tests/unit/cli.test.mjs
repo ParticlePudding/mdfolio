@@ -13,7 +13,8 @@ const FIXTURES = path.join(ROOT, 'tests/fixtures');
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'mdfolio-cli-'));
 
 function run(args, options = {}) {
-  const r = spawnSync(process.execPath, [CLI, ...args], { cwd: options.cwd || ROOT, encoding: 'utf8' });
+  const env = options.lang ? { ...process.env, MDFOLIO_LANG: options.lang } : process.env;
+  const r = spawnSync(process.execPath, [CLI, ...args], { cwd: options.cwd || ROOT, encoding: 'utf8', env });
   return { code: r.status, out: r.stdout, err: r.stderr };
 }
 
@@ -258,5 +259,25 @@ describe('さまざまな入力', () => {
     assert.equal(site.site.files[0].text, nasty);
     assert.equal((site.html.match(/<\/script>/g) || []).length, site.ids.length);
     assert.ok(!core.findBlock(site.parts, 'mdv-site').text.includes('<!--'));
+  });
+});
+
+describe('コマンドライン版の書き出しの英語の表示（FD-10）', () => {
+  test('結果、エラー、--help を英語で表示する', () => {
+    const out = path.join(tmp(), 'site.html');
+    let r = run([path.join(ROOT, 'sample-docs-en'), '--out', out], { lang: 'en' });
+    assert.equal(r.code, 0, r.err);
+    assert.ok(r.out.includes('Wrote ' + out));
+    assert.match(r.out, /7 document\(s\), 3 attachment\(s\)/);
+    assert.ok(r.out.includes('Math library: included, diagram library: included'));
+    assert.ok(!/[\u3040-\u30ff]/.test(r.out), r.out);
+    r = run([], { lang: 'en' });
+    assert.equal(r.code, 1);
+    assert.ok(r.err.includes('Error: Give a document folder'), r.err);
+    r = run(['--help'], { lang: 'en' });
+    assert.ok(r.out.includes('node tools/build-site.mjs <document folder> [options]'));
+    assert.ok(!/[\u3040-\u30ff]/.test(r.out));
+    r = run(['--help'], { lang: 'ja' });
+    assert.ok(r.out.includes('node tools/build-site.mjs <文書フォルダ> [オプション]'));
   });
 });

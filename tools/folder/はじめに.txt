@@ -1,4 +1,4 @@
-mdfolio（フォルダ版）
+mdfolio（フォルダ版）　※ English: README.txt
 
 ■ 開く
   index.html をブラウザー（Chrome / Edge / Firefox / Safari）で開きます。
@@ -11,6 +11,8 @@ mdfolio（フォルダ版）
   3. ブラウザーで index.html を再読み込みします。
   ブラウザーは、開いたページの隣にあるファイルを直接読めないため、2 の手順が必要です。
   タイトルや最初に表示する文書は、node tools/update.mjs --help で指定方法を確認できます。
+  更新コマンドの表示は、パソコンの言語設定に合わせて日本語か英語になります。
+  日本語にしたいときは、環境変数 MDFOLIO_LANG=ja を指定します。
 
 ■ 見た目を変える
   style/document.css を編集して、ブラウザーを再読み込みします。
@@ -29,3 +31,4 @@ mdfolio（フォルダ版）
   data/               更新コマンドが作るファイル（編集しない）
   lib/                プログラム（編集しない）
   tools/update.mjs    更新コマンド
+  はじめに.txt        この説明（英語の説明は README.txt）

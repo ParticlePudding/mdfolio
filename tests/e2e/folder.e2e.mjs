@@ -29,7 +29,7 @@ function copyFolder(docs) {
   }
   return dir;
 }
-const update = (dir, args = []) => execFileSync(process.execPath, [path.join(dir, 'tools/update.mjs'), ...args], { cwd: dir, encoding: 'utf8' });
+const update = (dir, args = []) => execFileSync(process.execPath, [path.join(dir, 'tools/update.mjs'), ...args], { cwd: dir, encoding: 'utf8', env: { ...process.env, MDFOLIO_LANG: 'ja' } });
 
 /** フォルダ版を開く。フォルダの中のファイル以外への通信と、エラーがないことを最後に確かめる。 */
 async function withFolder(dir, options, fn) {

@@ -20,7 +20,8 @@ function copyFolder() {
   fs.cpSync(BUILT, dir, { recursive: true });
   return dir;
 }
-const update = (dir, args = []) => spawnSync(process.execPath, [path.join(dir, 'tools/update.mjs'), ...args], { cwd: dir, encoding: 'utf8' });
+// 表示の言語は MDFOLIO_LANG で固定する（既定は日本語。実行する機械の言語設定に左右されないように）
+const update = (dir, args = [], lang = 'ja') => spawnSync(process.execPath, [path.join(dir, 'tools/update.mjs'), ...args], { cwd: dir, encoding: 'utf8', env: { ...process.env, MDFOLIO_LANG: lang } });
 
 /** data/*.js を評価して window.MDV_DATA を返す。 */
 function readData(dir, ...files) {
@@ -134,5 +135,33 @@ describe('更新コマンド', () => {
     const r = update(copyFolder(), ['--help']);
     assert.equal(r.status, 0);
     assert.ok(r.stdout.includes('node tools/update.mjs [オプション]'));
+  });
+
+  test('英語でも表示する: 結果、注意、エラー、--help（FD-10）', () => {
+    const dir = copyFolder();
+    let r = update(dir, [], 'en');
+    assert.equal(r.status, 0, r.stderr);
+    assert.ok(r.stdout.includes('Rebuilt data/site.js and data/styles.js'), r.stdout);
+    assert.match(r.stdout, /\d+ document\(s\), \d+ attachment\(s\)/);
+    assert.ok(!/[\u3040-\u30ff]/.test(r.stdout), '仮名を含まない: ' + r.stdout);
+    r = update(dir, ['--docs', path.join(dir, 'nothing-here')], 'en');
+    assert.ok(r.stdout.includes('Note: The document folder was not found'), r.stdout);
+    r = update(dir, ['--bogus'], 'en');
+    assert.equal(r.status, 1);
+    assert.ok(r.stderr.includes('Error: Unknown option: --bogus'), r.stderr);
+    r = update(dir, ['--help'], 'en');
+    assert.ok(r.stdout.includes('node tools/update.mjs [options]'));
+    assert.ok(!/[\u3040-\u30ff]/.test(r.stdout));
+  });
+
+  test('表示の言語の決め方: MDFOLIO_LANG → LC_ALL → LC_MESSAGES → LANG → OS の設定（FD-10）', async () => {
+    const { detectLang } = await import(path.join(BUILT, 'tools/update.mjs'));
+    assert.equal(detectLang({ MDFOLIO_LANG: 'en', LANG: 'ja_JP.UTF-8' }), 'en');
+    assert.equal(detectLang({ MDFOLIO_LANG: 'ja', LANG: 'C' }), 'ja');
+    assert.equal(detectLang({ LC_ALL: 'ja_JP.UTF-8', LANG: 'en_US.UTF-8' }), 'ja');
+    assert.equal(detectLang({ LC_ALL: '', LC_MESSAGES: 'en_GB.UTF-8', LANG: 'ja_JP.UTF-8' }), 'en');
+    assert.equal(detectLang({ LANG: 'ja_JP.UTF-8' }), 'ja');
+    assert.equal(detectLang({ LANG: 'C.UTF-8' }), 'en');
+    assert.match(detectLang({}), /^(ja|en)$/);
   });
 });

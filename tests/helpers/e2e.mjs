@@ -8,6 +8,10 @@ import http from 'node:http';
 import { pathToFileURL } from 'node:url';
 import { ROOT, core } from './load.mjs';
 
+// コマンド（更新コマンド、コマンドライン版の書き出し）の表示の言語は、テストでは日本語に固定する。
+// 実行する機械の言語設定に左右されないように（SPEC FD-10）。英語の表示は、テストの中で個別に指定して確かめる。
+process.env.MDFOLIO_LANG = process.env.MDFOLIO_LANG || 'ja';
+
 export { ROOT, core };
 export const VIEWER = path.join(ROOT, 'dist/mdfolio.html');
 export const VIEWER_URL = pathToFileURL(VIEWER).href;
