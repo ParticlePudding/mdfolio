@@ -34,7 +34,14 @@ python3 tools/check-source.py <ファイル…>   # ソースの文字の検査�
 node tools/dev/make-hosted.mjs   # 外部のホスティング環境（Claude のアーティファクト）向けの変換
 python3 tools/dev/make-zip.py    # 配布用 zip（日本語のファイル名に UTF-8 の印を付ける。zip コマンドは使わない）
 node tools/dev/make-docs-site.mjs  # README と docs/ を dist/mdfolio-docs.html に書き出す
+node tools/dev/make-pages.mjs     # GitHub Pages に置く一式を tmp/pages/ に作る（dist/ を写し、案内のページを加える）
 ```
+
+GitHub: https://github.com/ParticlePudding/mdfolio （公開リポジトリ）。作業は `main`。
+公開ページ https://particlepudding.github.io/mdfolio/ は `gh-pages` ブランチから配信する。更新するときは、
+ビルド → `make-docs-site.mjs` → `make-pages.mjs` → `tmp/pages/` の中身を `gh-pages` に送る（`main` の履歴とは別の、
+公開ファイルだけのブランチ）。`.nojekyll` を消さないこと（消すと `_sidebar.md` が公開されない）。
+著作権者名は「Particle Pudding」（`LICENSE`。HTML に埋め込まれるので、変えたら作り直す）。
 
 テストは `dist/` を読むので、`src/` を変えたら必ずビルドし直してから実行する。
 
@@ -71,5 +78,6 @@ node tools/dev/make-docs-site.mjs  # README と docs/ を dist/mdfolio-docs.html
 - Windows / macOS の実機、Edge、製品版の Firefox / Safari（特に、共有フォルダに置いたフォルダ版）
 - スマートフォンの実機
 - 公開したページ（Claude のアーティファクト 2 件、1.0.1 のお試し用変換）を、公開先の画面で操作した確認
+- GitHub Pages の公開ページを、実際の公開先で開いた確認（http で配信した写しでは確認済み）
 - 利用者が配色を変えた場合のコントラスト（自動検査は既定の配色だけ）
 - 検討中の案: 更新コマンドを Node.js なしで動かす（Windows の PowerShell 版など）、書き出し時に CSS ファイルを指定するオプション

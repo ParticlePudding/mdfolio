@@ -6,6 +6,7 @@
 - **単一 HTML 版**（`dist/mdfolio.html`、約 4.1MB）: 1 ファイルを開いてフォルダを選ぶ形。持ち運びや受け渡しに向きます。「サイトとして書き出す」の出力もこの形です。
 
 - バージョン: 1.1.0
+- 公開ページ: https://particlepudding.github.io/mdfolio/ （サンプルを読む、ビューアを試す、説明書を読む）
 - ライセンス: MIT（同梱ライブラリのライセンス表記は HTML の中に入っています）
 
 ## 使い方
@@ -156,7 +157,7 @@ npm run vendor                              # 同梱ライブラリの更新と�
 | `sample.md` | 動作確認用の文書（1 ファイルで完結するもの） |
 | `src/` | ソース（`core.js` 画面に依存しない処理、`md.js` Markdown の拡張、`i18n.js` 文言、`app.js` 画面、`app.css` 画面の部品、`document.css` 本文と配色） |
 | `vendor/` | 同梱ライブラリ（配布物そのまま）と目録 `manifest.json` |
-| `tools/` | ビルド、書き出し、ライブラリ更新。`tools/folder/` はフォルダ版に入れる更新コマンドと説明。`tools/dev/` は、埋め込み用の変換（`make-hosted.mjs`）、zip の作成（`make-zip.py`）、テスト結果の集計 |
+| `tools/` | ビルド、書き出し、ライブラリ更新。`tools/folder/` はフォルダ版に入れる更新コマンドと説明。`tools/dev/` は、埋め込み用の変換（`make-hosted.mjs`）、zip の作成（`make-zip.py`）、公開ページの組み立て（`make-pages.mjs`）、テスト結果の集計 |
 | `tests/` | 単体テスト（`unit/`）、ブラウザーでのテスト（`e2e/`）、別エンジンでの確認（`cross/`）、テスト用の文書（`fixtures/`） |
 | `docs/` | 仕様書 `SPEC.md`、仕様レビュー記録 `REVIEW.md`、テスト報告書 `TEST_REPORT.md` |
 | `test-results/` | テストの実行記録（件数、性能の計測値、別エンジンでの確認結果と画面） |
