@@ -6,7 +6,7 @@
  *
  * 先に npm run build を実行しておくこと（dist/mdfolio.html を使う）。出力フォルダの中身は毎回消してから作り直す。
  *
- *   index.html            案内（日本語。スクリプトなし）
+ *   index.html            案内（日本語。スクリプトなし。ライセンス表記の全文を含む）
  *   mdfolio.html          ビューア（dist/mdfolio.html。1 つだけ。画面の言語はブラウザーに合わせる）
  *   sample-site.html      書き出しの見本（sample-docs/。画面は日本語に固定）
  *   folder/               フォルダ版の見本（sample-docs/。画面は日本語に固定）
@@ -66,6 +66,11 @@ for (const [lang, c] of Object.entries(LANGS)) {
 
 const mb = (fs.statSync(viewer).size / 1048576).toFixed(1);
 
+// ライセンス表記の全文（アプリの HTML に埋め込んでいるもの（tools/build.mjs）と同じ並び）
+const readText = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8').replace(/\r\n?/g, '\n').trim();
+const esc = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const LICENSES = esc([`mdfolio ${version}`, '='.repeat(78), '', readText('LICENSE'), '', '', readText('THIRD-PARTY-NOTICES.txt')].join('\n'));
+
 const TEXT = {
   ja: {
     description: 'サーバーもインストールも要らない、Markdown 文書の表示サイト',
@@ -88,7 +93,10 @@ const TEXT = {
       `<a href="mdfolio.html" download>mdfolio.html をダウンロード</a>（約 ${mb}MB）して、ダブルクリックで開きます。これ 1 つで動きます。`,
       `フォルダ版やコマンドラインでの書き出しは、<a href="${REPO}">GitHub のリポジトリ</a>の「Code」→「Download ZIP」で一式を入手し、README の手順に従ってください。`
     ],
-    footer: `MIT ライセンス。同梱しているライブラリのライセンス表記は、各ページのメニュー（⋯）の「ライセンスとバージョン」で確認できます。 · <a href="${REPO}">ソースコード</a>`
+    licenseTitle: 'ライセンス',
+    license: 'mdfolio は MIT ライセンスです。同梱しているライブラリ（markdown-it、DOMPurify、highlight.js、KaTeX、Mermaid など）のライセンス表記を含む全文を、下に載せています。同じものが、各ページのメニュー（⋯）の「ライセンスとバージョン」でも見られます。',
+    licenseOpen: 'ライセンス表記の全文を開く（英語）',
+    footer: `© 2026 Particle Pudding · MIT ライセンス · <a href="${REPO}">ソースコード</a>`
   },
   en: {
     description: 'A Markdown document viewer that needs no server and no installation',
@@ -111,7 +119,10 @@ const TEXT = {
       `<a href="../mdfolio.html" download>Download mdfolio.html</a> (about ${mb} MB) and double-click it. That one file is all you need.`,
       `For the folder version and command-line export, get everything from <a href="${REPO}">the GitHub repository</a> with "Code" → "Download ZIP", and follow README.en.md.`
     ],
-    footer: `MIT License. License notices for the bundled libraries are under "Licenses and version" in the menu (⋯) of each page. · <a href="${REPO}">Source code</a>`
+    licenseTitle: 'License',
+    license: 'mdfolio is released under the MIT License. The full text, including the license notices of the bundled libraries (markdown-it, DOMPurify, highlight.js, KaTeX, Mermaid and others), is below. The same text is under "Licenses and version" in the menu (⋯) of each page.',
+    licenseOpen: 'Show the full license text',
+    footer: `© 2026 Particle Pudding · MIT License · <a href="${REPO}">Source code</a>`
   }
 };
 
@@ -158,6 +169,10 @@ ul { padding-left: 1.3em; margin: 0; }
 li { margin: 4px 0; }
 a { color: var(--accent); }
 .note { background: var(--card); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 6px; padding: 12px 16px; font-size: .95rem; }
+details { background: var(--card); border: 1px solid var(--line); border-radius: 6px; margin-top: 12px; }
+summary { cursor: pointer; padding: 10px 16px; color: var(--accent); }
+summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+pre.licenses { margin: 0; padding: 12px 16px; border-top: 1px solid var(--line); max-height: 60vh; overflow: auto; font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
 footer { margin-top: 48px; color: var(--muted); font-size: .85rem; }
 </style>
 </head>
@@ -180,6 +195,13 @@ ${t.cards.map(card).join('\n')}
 <ul>
 ${t.local.map((li) => `  <li>${li}</li>`).join('\n')}
 </ul>
+
+<h2 id="license">${t.licenseTitle}</h2>
+<p>${t.license}</p>
+<details>
+<summary>${t.licenseOpen}</summary>
+<pre class="licenses" lang="en" tabindex="0">${LICENSES}</pre>
+</details>
 
 <footer>
 <p>${t.footer}</p>
