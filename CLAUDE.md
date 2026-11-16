@@ -86,6 +86,7 @@ GitHub Actions（`.github/workflows/pages.yml`）が、ビルド → 単体テ�
 - Windows / macOS の実機、Edge、製品版の Firefox / Safari（特に、共有フォルダに置いたフォルダ版）
 - スマートフォンの実機
 - 公開したページ（Claude のアーティファクト 2 件、1.0.1 のお試し用変換）を、公開先の画面で操作した確認
-- GitHub Actions の 2 つの自動実行は、この開発環境では動かせない。初回の実行結果を GitHub の Actions の画面で確かめる
+- GitHub Actions の 2 つの自動実行は、どちらも GitHub 上で成功を確認済み（公開ページの更新、1.2.0 のリリース）。
+  この開発環境からは動かせないので、結果は GitHub の API（`/repos/ParticlePudding/mdfolio/actions/runs`。認証なしで読める）で確かめる
 - 利用者が配色を変えた場合のコントラスト（自動検査は既定の配色だけ）
 - 依頼者と相談して行わないと決めたもの（1.2.0）: 更新コマンドの Node.js 以外の版、書き出す CSS の指定、配色のコントラストの検査
