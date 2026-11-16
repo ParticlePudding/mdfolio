@@ -144,7 +144,7 @@ describe('ヘルプ・ライセンス', () => {
       const lead = await page.textContent('.mdv-dialog-about .mdv-dialog-lead');
       assert.ok(lead.includes('mdfolio') && lead.includes(core.VERSION));
       const text = await page.textContent('.mdv-licenses');
-      for (const s of ['MIT License', 'mdfolio contributors', 'markdown-it', 'dompurify', 'highlight.js', 'Ivan Sagalaev', 'katex', '@mermaid-js/tiny', 'SIL OPEN FONT LICENSE', 'Apache License', 'd3', 'lodash-es', 'Permission is hereby granted']) {
+      for (const s of ['MIT License', 'Particle Pudding', 'markdown-it', 'dompurify', 'highlight.js', 'Ivan Sagalaev', 'katex', '@mermaid-js/tiny', 'SIL OPEN FONT LICENSE', 'Apache License', 'd3', 'lodash-es', 'Permission is hereby granted']) {
         assert.ok(text.includes(s), `ライセンス表記に「${s}」が含まれる`);
       }
       assert.ok(!/elkjs|GNU GENERAL PUBLIC|Eclipse Public License/i.test(text), 'コピーレフト系ライセンスの表記がない');
