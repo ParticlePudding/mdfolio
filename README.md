@@ -2,7 +2,7 @@
 
 # mdfolio
 
-ブラウザーだけで読める Markdown 文書ビューアです。サーバーもインストールも要りません。
+ブラウザーだけで読める Markdown 文書ビューアです。サーバーもインストールも、Node.js などのツールも要りません。
 
 - バージョン: 1.3.0
 - 公開ページ: https://particlepudding.github.io/mdfolio/
@@ -14,11 +14,7 @@
 
 **見た目を変える**: `mdfolio.html` と同じフォルダに `mdfolio.css` を置きます。例は `examples/mdfolio.css` です。
 
-**人に渡す**: メニュー（⋯）の「サイトとして書き出す」で、文書を 1 つの HTML にまとめられます。見た目の CSS は、書き出しの画面の「CSS を選ぶ」で入れます。zip に入れて渡してください。コマンドでも書き出せます（Node.js 20 以降）。
-
-```
-node tools/build-site.mjs <文書フォルダ> --out site.html --title "手順書" --css mdfolio.css
-```
+**人に渡す**: メニュー（⋯）の「サイトとして書き出す」で、文書を 1 つの HTML にまとめられます。見た目の CSS は、書き出しの画面の「CSS を選ぶ」で入れます。zip に入れて渡してください。
 
 ## できること
 
@@ -50,10 +46,18 @@ HTML の中の `id="mdv-config"` の行で、タイトル、言語、テーマ�
 
 ## 開発者向け
 
+ビルドとテストには Node.js 20 以降を使います（利用者には要りません）。
+
 ```
 npm run build        # dist/ を作る
 npm install          # テストの準備
 npm test             # ビルド → 単体テスト → ブラウザーでのテスト
+```
+
+書き出しを自動化したいときは、コマンドでも書き出せます。
+
+```
+node tools/build-site.mjs <文書フォルダ> --out site.html --title "手順書" --css mdfolio.css
 ```
 
 仕様は `docs/SPEC.md`、変更履歴は `CHANGELOG.md` にあります。

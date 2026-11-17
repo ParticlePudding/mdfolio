@@ -13,6 +13,8 @@
 ## 形と見た目の変え方
 
 配布物は単一 HTML の `dist/mdfolio.html` だけ。1 ファイルを開いてフォルダを選ぶ。書き出し（「サイトとして書き出す」）の出力も同じ形の HTML。
+**利用者は Node.js を使わない**（依頼者の確認済み）。Node.js はビルド・テストと、開発者向けのコマンドライン書き出し（`tools/build-site.mjs`）だけ。
+利用者向けの説明（README の使い方、見本の文書、公開ページ、使い方）とリリースの zip に、Node.js やコマンドを出さないこと。
 
 - **フォルダ版は 1.3.0 で廃止した**（依頼者と合意。理由と経緯は SPEC 8.6、REVIEW 10 章）。`tools/build-folder.mjs`、`tools/folder/`、
   `dist/mdfolio/`、`library` モード、`window.MDV_DATA` はすべて消した。戻さないこと。
@@ -50,7 +52,7 @@ node tools/dev/make-release.mjs   # リリースの添付（mdfolio.html、zip�
 GitHub: https://github.com/ParticlePudding/mdfolio （公開リポジトリ）。作業は `main`。
 公開ページ https://particlepudding.github.io/mdfolio/ は `gh-pages` ブランチから配信する。`main` に送ると
 GitHub Actions（`.github/workflows/pages.yml`）が、ビルド → 単体テスト → `make-pages.mjs` → `gh-pages` の置き換えを行う
-（手で `gh-pages` に送らない。`.nojekyll` は `make-pages.mjs` が作る。消すと `_sidebar.md` が公開されない）。
+（手で `gh-pages` に送らない。`.nojekyll` は `make-pages.mjs` が作る）。
 版を上げる手順: `package.json`・`package-lock.json`・`src/core.js` の版、README の版、`CHANGELOG.md` に
 「## <版> — 日付」の節 → ビルド・テスト → `main` に送る → 依頼者の了承を得て、依頼者が GitHub の Actions の画面で
 「Release」→「Run workflow」を押す（この開発環境からはタグを送れない。GitHub が 403 で拒む）。
@@ -95,7 +97,8 @@ GitHub Actions（`.github/workflows/pages.yml`）が、ビルド → 単体テ�
 - Windows / macOS の実機、Edge、製品版の Firefox / Safari（隣の `mdfolio.css` の読み込みを含む）
 - スマートフォンの実機
 - 公開したページ（Claude のアーティファクト 2 件、1.0.1 のお試し用変換）を、公開先の画面で操作した確認
-- GitHub Actions の 2 つの自動実行は、どちらも GitHub 上で成功を確認済み（公開ページの更新、1.2.0 のリリース）。
+- GitHub Actions の 2 つの自動実行は、どちらも GitHub 上で成功を確認済み（公開ページの更新、1.2.0 のリリース）。リリースの「Run workflow」は
+  1 回だけ押してもらう（2 回押すと、後の方が「もうある」で失敗する。害はない）。
   この開発環境からは動かせないので、結果は GitHub の API（`/repos/ParticlePudding/mdfolio/actions/runs`。認証なしで読める）で確かめる
 - 利用者が配色を変えた場合のコントラスト（自動検査は既定の配色だけ）
 - 依頼者と相談して行わないと決めたもの: 配色のコントラストの検査（1.2.0）。「書き出す CSS の指定」は 1.2.0 で見送ったが、1.3.0 で

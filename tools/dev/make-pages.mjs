@@ -89,7 +89,7 @@ const TEXT = {
     local: [
       `<a href="mdfolio.html" download>mdfolio.html をダウンロード</a>（約 ${mb}MB）して、ダブルクリックで開きます。これ 1 つで動きます。`,
       `見た目を変えるには、HTML と同じフォルダに <a href="style/mdfolio.css" download>mdfolio.css</a>（例）を置きます。`,
-      `見本の文書やコマンドラインでの書き出しは、<a href="${REPO}/releases/latest">リリース</a>の zip に入っています。`
+      `見本の文書は、<a href="${REPO}/releases/latest">リリース</a>の zip に入っています。`
     ],
     licenseTitle: 'ライセンス',
     license: 'mdfolio は MIT ライセンスです。同梱しているライブラリ（markdown-it、DOMPurify、highlight.js、KaTeX、Mermaid など）のライセンス表記を含む全文を、下に載せています。同じものが、各ページのメニュー（⋯）の「ライセンスとバージョン」でも見られます。',
@@ -116,7 +116,7 @@ const TEXT = {
     local: [
       `<a href="../mdfolio.html" download>Download mdfolio.html</a> (about ${mb} MB) and double-click it. That one file is all you need.`,
       `To change the look, place <a href="style/mdfolio.css" download>mdfolio.css</a> (example) in the same folder as the HTML file.`,
-      `The sample documents and the command-line export are in the zip file of the <a href="${REPO}/releases/latest">latest release</a>.`
+      `The sample documents are in the zip file of the <a href="${REPO}/releases/latest">latest release</a>.`
     ],
     licenseTitle: 'License',
     license: 'mdfolio is released under the MIT License. The full text, including the license notices of the bundled libraries (markdown-it, DOMPurify, highlight.js, KaTeX, Mermaid and others), is below. The same text is under "Licenses and version" in the menu (⋯) of each page.',

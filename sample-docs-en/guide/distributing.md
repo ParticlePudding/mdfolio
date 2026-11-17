@@ -33,10 +33,3 @@ Put `mdfolio.html` and the document folder in a zip file. Recipients open `mdfol
 
 Place `mdfolio.css` in the same folder as the HTML file to change its look with that CSS. To include it in an export, choose the same file with "Choose CSS" in the export dialog.
 
-## Export from the command line
-
-If you have Node.js installed, you can perform the same export from the command line.
-
-```bash
-node tools/build-site.mjs sample-docs-en --title "Sample documents" --out sample-site.html
-```

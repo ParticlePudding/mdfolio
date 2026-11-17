@@ -37,7 +37,7 @@ export function sectionOf(text, ver) {
 
 // 配布用の zip に入れるもの（リポジトリと同じ並び）
 export const CONTENTS = [
-  'dist/mdfolio.html', 'examples/mdfolio.css', 'tools/build-site.mjs',
+  'dist/mdfolio.html', 'examples/mdfolio.css',
   'sample-docs', 'sample-docs-en', 'sample.md', 'sample.en.md',
   'README.md', 'README.en.md', 'CHANGELOG.md', 'LICENSE', 'THIRD-PARTY-NOTICES.txt'
 ];
