@@ -1,4 +1,4 @@
-// 性能（NFR-2）: 仕様の目標値をそのまま合格基準にする。計測値は test-results/perf.json に残す。
+// Performance (NFR-2): the spec's target values are used directly as pass criteria. Measurements are saved to test-results/perf.json.
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -7,7 +7,7 @@ import path from 'node:path';
 import { launchBrowser, withPage, openPage, loadFolder, waitIndexed, tmpDir, writeTree, mockOptions, ROOT, VIEWER } from '../helpers/e2e.mjs';
 
 let browser;
-const results = { machine: `${os.cpus().length} コア / ${os.cpus()[0].model.trim()}`, viewerBytes: fs.statSync(VIEWER).size, measured: {} };
+const results = { machine: `${os.cpus().length} cores / ${os.cpus()[0].model.trim()}`, viewerBytes: fs.statSync(VIEWER).size, measured: {} };
 before(async () => { browser = await launchBrowser(); });
 after(async () => {
   await browser.close();
@@ -21,11 +21,11 @@ const round = (n) => Math.round(n);
 
 function record(t, key, value, limit, note) {
   results.measured[key] = { ms: round(value), limitMs: limit, note: note || '' };
-  t.diagnostic(`${key}: ${round(value)} ms（目標 ${limit} ms 以内）${note ? ' ' + note : ''}`);
-  assert.ok(value <= limit, `${key}: ${round(value)} ms は目標の ${limit} ms を超えている`);
+  t.diagnostic(`${key}: ${round(value)} ms (target: within ${limit} ms)${note ? ' ' + note : ''}`);
+  assert.ok(value <= limit, `${key}: ${round(value)} ms exceeds the ${limit} ms target`);
 }
 
-// 本文らしい内容の文書（見出し・段落・リスト・表・コード）
+// A document with realistic body content (headings, paragraphs, lists, tables, code)
 const SECTION = [
   '## 概要 {n}',
   '',
@@ -63,8 +63,8 @@ function bigDocument(bytes) {
 
 const BODY = SECTION.replace(/\{n\}/g, '7') + '\n' + SECTION.replace(/\{n\}/g, '8');
 
-describe('性能（NFR-2）', () => {
-  test('起動から開始画面の表示まで 1 秒以内', async (t) => {
+describe('Performance (NFR-2)', () => {
+  test('start screen is shown within 1 second of startup', async (t) => {
     const times = [];
     const paints = [];
     for (let i = 0; i < 7; i++) {
@@ -82,11 +82,11 @@ describe('性能（NFR-2）', () => {
       paints.push(await page.evaluate(() => performance.getEntriesByType('paint').find((e) => e.name === 'first-contentful-paint').startTime));
       await context.close();
     }
-    record(t, '起動（開始画面の構築まで）', median(times), 1000, `7 回の中央値。最大 ${round(Math.max(...times))} ms`);
-    record(t, '起動（最初の描画まで）', median(paints), 1000, `7 回の中央値。最大 ${round(Math.max(...paints))} ms`);
+    record(t, 'Startup (until the start screen is built)', median(times), 1000, `Median of 7 runs. Max ${round(Math.max(...times))} ms`);
+    record(t, 'Startup (until first paint)', median(paints), 1000, `Median of 7 runs. Max ${round(Math.max(...paints))} ms`);
   });
 
-  test('1MB の文書を 3 秒以内に表示', async (t) => {
+  test('shows a 1 MB document within 3 seconds', async (t) => {
     const text = bigDocument(1024 * 1024);
     const bytes = Buffer.byteLength(text);
     assert.ok(bytes >= 1024 * 1024 && bytes < 1.1 * 1024 * 1024);
@@ -103,7 +103,7 @@ describe('性能（NFR-2）', () => {
           const check = () => {
             const h1 = document.querySelector('.mdv-prose h1');
             if (h1 && h1.textContent.indexOf('大きな文書') === 0 && document.querySelectorAll('.mdv-prose h2').length > 1000) {
-              // 描画まで含める
+              // Include painting
               requestAnimationFrame(() => requestAnimationFrame(() => resolve(performance.now() - t0)));
               return;
             }
@@ -114,21 +114,21 @@ describe('性能（NFR-2）', () => {
         }));
         times.push(ms);
         assert.ok((await page.locator('.mdv-prose table').count()) > 1000);
-        // コードの色分けは、表示のあとで続けて行われる
+        // Code highlighting continues after the document is shown
         await page.waitForFunction(() => window.MDV.app.state.pendingCode === null);
         complete.push(Date.now() - t0);
-        assert.ok((await page.locator('.mdv-prose .hljs-keyword').count()) > 3000, 'すべてのコードブロックを色分けしている');
+        assert.ok((await page.locator('.mdv-prose .hljs-keyword').count()) > 3000, 'all code blocks are highlighted');
       });
     }
     const sections = text.split('\n## ').length - 1;
-    record(t, '1MB の文書の表示', median(times), 3000, `${(bytes / 1024 / 1024).toFixed(2)} MB、見出し・表・コードブロック各 ${sections} 個。5 回の中央値。最大 ${round(Math.max(...times))} ms`);
-    assert.ok(Math.max(...times) <= 3000, `最大値も目標以内（${round(Math.max(...times))} ms）`);
-    results.measured['1MB の文書の表示'].maxMs = round(Math.max(...times));
-    results.measured['1MB の文書: コードの色分け完了まで（参考）'] = { ms: round(median(complete)), limitMs: null, note: '表示のあと、操作を妨げない範囲で少しずつ処理する。目標値はない' };
-    t.diagnostic(`1MB の文書: コードの色分け完了まで（参考）: ${round(median(complete))} ms`);
+    record(t, '1 MB document: display', median(times), 3000, `${(bytes / 1024 / 1024).toFixed(2)} MB, ${sections} each of headings, tables and code blocks. Median of 5 runs. Max ${round(Math.max(...times))} ms`);
+    assert.ok(Math.max(...times) <= 3000, `the maximum is also within the target (${round(Math.max(...times))} ms)`);
+    results.measured['1 MB document: display'].maxMs = round(Math.max(...times));
+    results.measured['1 MB document: until code highlighting completes (reference)'] = { ms: round(median(complete)), limitMs: null, note: 'Processed bit by bit after display without blocking interaction. No target value' };
+    t.diagnostic(`1 MB document: until code highlighting completes (reference): ${round(median(complete))} ms`);
   });
 
-  test('1,000 文書: ツリー表示 2 秒以内・索引作成 10 秒以内・検索応答 0.3 秒以内（フォルダのハンドル）', async (t) => {
+  test('1,000 documents: tree within 2 s, indexing within 10 s, search response within 0.3 s (folder handle)', async (t) => {
     const spec = { name: 'thousand', files: { 'README.md': '# 千の文書\n' }, generate: [{ count: 999, prefix: 'docs/section-', text: '# 文書', body: BODY }] };
     await withPage(browser, mockOptions(spec), async ({ page }) => {
       const m = await page.evaluate(() => new Promise((resolve) => {
@@ -143,8 +143,8 @@ describe('性能（NFR-2）', () => {
         document.querySelector('.mdv-open-folder').click();
         check();
       }));
-      record(t, '1,000 文書: ツリー表示', m.tree, 2000, '「フォルダを開く」から、一覧と最初の文書が表示されるまで');
-      record(t, '1,000 文書: 索引作成', m.index, 10000, '「フォルダを開く」から、全文検索の索引ができるまで');
+      record(t, '1,000 documents: tree display', m.tree, 2000, 'From "Open folder" until the list and the first document are shown');
+      record(t, '1,000 documents: indexing', m.index, 10000, 'From "Open folder" until the full-text search index is built');
       const search = (q) => page.evaluate((query) => new Promise((resolve) => {
         const input = document.querySelector('.mdv-search-input');
         const list = document.getElementById('mdv-search-list');
@@ -163,14 +163,14 @@ describe('性能（NFR-2）', () => {
       const runs = [];
       for (const q of ['手順 確認', 'config.yaml', 'tokenizer english', '文書 500', '上限']) {
         const r = await search(q);
-        assert.ok(r.items > 0, `「${q}」の結果がある`);
+        assert.ok(r.items > 0, `"${q}" has results`);
         runs.push(r.ms);
       }
-      record(t, '1,000 文書: 検索応答', Math.max(...runs), 300, `入力から結果の表示まで（入力待ち 150 ms を含む）。5 種類の検索語の最大値。中央値 ${round(median(runs))} ms`);
+      record(t, '1,000 documents: search response', Math.max(...runs), 300, `From input until results are shown (including the 150 ms input debounce). Max over 5 search terms. Median ${round(median(runs))} ms`);
     });
   });
 
-  test('1,000 文書: 実際のファイルを <input> 方式で開いた場合', async (t) => {
+  test('1,000 documents: opening real files via <input>', async (t) => {
     const files = { 'README.md': '# 千の文書\n' };
     for (let i = 0; i < 999; i++) files[`docs/g${String(i % 20).padStart(2, '0')}/section-${String(i).padStart(4, '0')}.md`] = `# 文書 ${i}\n\n${BODY}`;
     const dir = writeTree(tmpDir(), files);
@@ -181,9 +181,9 @@ describe('性能（NFR-2）', () => {
       const tree = Date.now() - t0;
       await waitIndexed(page);
       const index = Date.now() - t0;
-      // こちらは、テスト用の仕組みがファイルを渡す時間を含むので参考値とする（目標値は同じものを使う）
-      record(t, '1,000 文書（実ファイル）: ツリー表示', tree, 2000, 'ファイルの受け渡しにかかる時間を含む');
-      record(t, '1,000 文書（実ファイル）: 索引作成', index, 10000, 'ファイルの受け渡しにかかる時間を含む');
+      // This includes the time the test harness takes to hand over the files, so it is for reference only (the same targets are used)
+      record(t, '1,000 documents (real files): tree display', tree, 2000, 'Includes the time to hand over the files');
+      record(t, '1,000 documents (real files): indexing', index, 10000, 'Includes the time to hand over the files');
       assert.equal(await page.evaluate(() => window.MDV.app.state.set.docs.length), 1000);
     });
   });

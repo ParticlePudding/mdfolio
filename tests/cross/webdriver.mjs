@@ -1,4 +1,4 @@
-// 最小限の WebDriver クライアント（追加のパッケージなしで、別のブラウザーエンジンを操作するため）
+// A minimal WebDriver client (to drive other browser engines without extra packages)
 import { spawn } from 'node:child_process';
 import net from 'node:net';
 
@@ -15,7 +15,7 @@ async function waitFor(fn, ms, what) {
   let last;
   for (;;) {
     try { const v = await fn(); if (v) return v; } catch (e) { last = e; }
-    if (Date.now() > end) throw new Error('待ち時間を超えました: ' + what + (last ? ' (' + last.message + ')' : ''));
+    if (Date.now() > end) throw new Error('timed out waiting: ' + what + (last ? ' (' + last.message + ')' : ''));
     await new Promise((r) => setTimeout(r, 100));
   }
 }
@@ -47,12 +47,12 @@ export class Driver {
   refresh() { return this.call('POST', this.s('/refresh'), {}); }
   setSize(width, height) { return this.call('POST', this.s('/window/rect'), { width, height }); }
 
-  /** ページの中で関数を実行する。fn は文字列化して送るので、外の変数は args で渡す。 */
+  /** Run a function in the page. fn is sent as a string, so pass outside variables through args. */
   exec(fn, ...args) {
     return this.call('POST', this.s('/execute/sync'), { script: 'return (' + fn.toString() + ').apply(null, arguments);', args });
   }
 
-  /** Promise を返す関数を実行して、結果を待つ。 */
+  /** Run a function that returns a Promise and wait for its result. */
   execAsync(fn, ...args) {
     const script = 'var done = arguments[arguments.length - 1]; var a = Array.prototype.slice.call(arguments, 0, -1);' +
       'Promise.resolve().then(function () { return (' + fn.toString() + ').apply(null, a); }).then(function (v) { done({ ok: v }); }, function (e) { done({ error: String(e && e.message || e) }); });';
@@ -85,26 +85,26 @@ export class Driver {
     await this.call('DELETE', this.s('/actions'));
   }
 
-  /** 操作の対象を、フレームの中へ切り替える（番号で指定）。null でいちばん外側のページへ戻る。 */
+  /** Switch the target of operations into a frame (by index). null returns to the outermost page. */
   frame(id) { return this.call('POST', this.s('/frame'), { id }); }
 
-  /** 画面の PNG を返す（Buffer）。 */
+  /** Return a PNG of the screen (Buffer). */
   async screenshot() {
     return Buffer.from(await this.call('GET', this.s('/screenshot')), 'base64');
   }
 
   async quit() {
-    if (this.session) { try { await this.call('DELETE', '/session/' + this.session); } catch (e) { /* 無視 */ } this.session = null; }
+    if (this.session) { try { await this.call('DELETE', '/session/' + this.session); } catch (e) { /* ignore */ } this.session = null; }
   }
 }
 
-/** ドライバーのプロセスを起動して、応答するまで待つ。 */
+/** Start the driver process and wait until it responds. */
 export async function launchDriver(command, args, env) {
   const child = spawn(command, args, { env: { ...process.env, ...env }, stdio: ['ignore', 'pipe', 'pipe'] });
   let log = '';
   child.stdout.on('data', (d) => { log += d; });
   child.stderr.on('data', (d) => { log += d; });
-  return { child, log: () => log, stop: () => { try { child.kill('SIGTERM'); } catch (e) { /* 無視 */ } } };
+  return { child, log: () => log, stop: () => { try { child.kill('SIGTERM'); } catch (e) { /* ignore */ } } };
 }
 
 export { waitFor };

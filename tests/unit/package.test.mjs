@@ -1,4 +1,4 @@
-// 配布のための道具: zip の作成（日本語のファイル名）と、外部のホスティング環境に置くための変換
+// Distribution tools: creating the zip (with Japanese file names) and converting for external hosting environments
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -10,14 +10,14 @@ import { ROOT, core } from '../helpers/load.mjs';
 const VIEWER = path.join(ROOT, 'dist/mdfolio.html');
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'mdfolio-pkg-'));
 
-/** zip の中央ディレクトリを読んで、各項目の名前（バイト列）とフラグを返す。 */
+/** Reads the zip central directory and returns each entry's name (as bytes) and flags. */
 function readZipEntries(file) {
   const buf = fs.readFileSync(file);
   let eocd = -1;
   for (let i = buf.length - 22; i >= 0; i--) {
     if (buf.readUInt32LE(i) === 0x06054b50) { eocd = i; break; }
   }
-  assert.ok(eocd >= 0, 'zip の終端が見つかる');
+  assert.ok(eocd >= 0, 'the end of central directory record is found');
   const count = buf.readUInt16LE(eocd + 10);
   let p = buf.readUInt32LE(eocd + 16);
   const entries = [];
@@ -33,11 +33,11 @@ function readZipEntries(file) {
   return entries;
 }
 
-describe('zip の作成（tools/dev/make-zip.py）', () => {
+describe('Creating the zip (tools/dev/make-zip.py)', () => {
   const python = spawnSync('python3', ['--version'], { encoding: 'utf8' });
-  const skip = python.status !== 0 ? 'python3 がない環境' : false;
+  const skip = python.status !== 0 ? 'python3 is not available' : false;
 
-  test('日本語のファイル名に、UTF-8 であることを示す印を付ける（付けないと Windows で文字化けする）', { skip }, () => {
+  test('Marks Japanese file names as UTF-8 (without it, Windows garbles them)', { skip }, () => {
     const dir = tmp();
     const src = path.join(dir, 'docs');
     fs.mkdirSync(path.join(src, 'guide'), { recursive: true });
@@ -52,40 +52,40 @@ describe('zip の作成（tools/dev/make-zip.py）', () => {
     const names = entries.map((e) => new TextDecoder('utf-8', { fatal: true }).decode(e.nameBytes)).sort();
     assert.deepEqual(names, ['パッケージ/docs/README.md', 'パッケージ/docs/guide/基本操作.md', 'パッケージ/docs/はじめに.txt', 'パッケージ/読んでください.md'].sort());
     for (const e of entries) {
-      assert.equal((e.flags & 0x800) !== 0, true, 'UTF-8 の印（汎用フラグのビット 11）');
-      assert.equal(e.nameBytes.includes(0x5c), false, '区切りは /');
+      assert.equal((e.flags & 0x800) !== 0, true, 'UTF-8 flag (bit 11 of the general purpose flags)');
+      assert.equal(e.nameBytes.includes(0x5c), false, 'the separator is /');
     }
   });
 
-  test('引数が足りないときは、使い方を表示して終わる', { skip }, () => {
+  test('Shows the usage and exits when arguments are missing', { skip }, () => {
     const r = spawnSync('python3', [path.join(ROOT, 'tools/dev/make-zip.py')], { encoding: 'utf8' });
     assert.equal(r.status, 2);
     assert.ok(r.stdout.includes('make-zip.py'));
   });
 });
 
-describe('外部のホスティング環境に置くための変換（tools/dev/make-hosted.mjs）', () => {
+describe('Conversion for external hosting environments (tools/dev/make-hosted.mjs)', () => {
   const run = (args) => spawnSync(process.execPath, [path.join(ROOT, 'tools/dev/make-hosted.mjs'), ...args], { cwd: ROOT, encoding: 'utf8' });
-  // 置換文字（U+FFFD）。このファイルには、その文字そのものを書かない
+  // The replacement character (U+FFFD). Do not write the character itself in this file
   const REPLACEMENT = String.fromCharCode(0xFFFD);
   const ESCAPED = '\\' + 'uFFFD';
   const count = (text, part) => text.split(part).length - 1;
 
-  test('CSP の指定を取り除き、保存と外部画像を使わない設定にする。ほかは変えない', () => {
+  test('Removes the CSP and turns off saving and external images; nothing else changes', () => {
     const out = path.join(tmp(), 'hosted.html');
     const r = run([VIEWER, out]);
     assert.equal(r.status, 0, r.stderr);
     const before = fs.readFileSync(VIEWER, 'utf8');
     const after = fs.readFileSync(out, 'utf8');
-    // スクリプトの中にも同じ文字列があるので、行の先頭にあるもの（<head> の中の指定）だけを数える
+    // The same text also appears inside scripts, so count only lines that start with it (the declaration in <head>)
     const metaCsp = (html) => html.split('\n').filter((l) => l.startsWith('<meta http-equiv="Content-Security-Policy"')).length;
     assert.equal(metaCsp(before), 1);
-    assert.equal(metaCsp(after), 0, 'HTML に書いた CSP がない');
+    assert.equal(metaCsp(after), 0, 'no CSP written in the HTML');
     assert.ok(after.startsWith('<!DOCTYPE html>'));
-    // 設定のブロックと CSP の行、置換文字の書き方（下のテスト）のほかは、1 文字も変わらない
+    // Apart from the settings block, the CSP line and how replacement characters are written (see the test below), not a single character changes
     const cspLine = before.split('\n').find((l) => l.startsWith('<meta http-equiv="Content-Security-Policy"')) + '\n';
     const configRe = /<script type="application\/json" id="mdv-config">[^\n]*<\/script>/;
-    // 隣の mdfolio.css を読む指定も取り除く（公開先には隣のファイルを置けないため）
+    // The link to the neighboring mdfolio.css is also removed (the host cannot hold a file next to the page)
     const userCssLine = '<link rel="stylesheet" href="mdfolio.css" id="mdv-user-css">\n';
     assert.ok(before.includes(userCssLine) && !after.includes(userCssLine));
     assert.equal(after.replace(configRe, ''), before.replace(cspLine, '').replace(userCssLine, '').replace(configRe, '').split(REPLACEMENT).join(ESCAPED));
@@ -93,16 +93,16 @@ describe('外部のホスティング環境に置くための変換（tools/dev/
     assert.deepEqual(config, { title: '', lang: 'auto', theme: 'auto', home: '', allowExternalImages: false, allowDownloads: false, lockExternalImages: true, hosted: true });
   });
 
-  test('置換文字（U+FFFD）を含まない HTML にする。スクリプトでは、同じ意味のエスケープに書き換える', () => {
+  test('Produces HTML without the replacement character (U+FFFD); in scripts it is rewritten as an escape with the same meaning', () => {
     const out = path.join(tmp(), 'hosted.html');
     assert.equal(run([VIEWER, out]).status, 0);
     const before = fs.readFileSync(VIEWER, 'utf8');
     const after = fs.readFileSync(out, 'utf8');
     const literal = count(before, REPLACEMENT);
-    assert.ok(literal > 0, '同梱ライブラリ（markdown-it）が、この文字を使っている');
+    assert.ok(literal > 0, 'the bundled library (markdown-it) uses this character');
     assert.equal(count(after, REPLACEMENT), 0);
-    assert.equal(count(after, ESCAPED) - count(before, ESCAPED), literal, '1 文字ずつエスケープに置き換わっている');
-    // 書き換えたスクリプトを実行して、もとの文字列と同じ値になることを確かめる（markdown-it の該当部分と同じ形の式）
+    assert.equal(count(after, ESCAPED) - count(before, ESCAPED), literal, 'each character is replaced by one escape');
+    // Evaluate the rewritten literals and check they give the same values as the originals (expressions of the same form as in markdown-it)
     const vendor = (html) => core.findBlock(core.extractParts(html.includes('<meta http-equiv="Content-Security-Policy"') ? html : html.replace('<meta name="generator"', '<meta http-equiv="Content-Security-Policy" content="x">\n<meta name="generator"')), 'mdv-js-vendor').text;
     const literals = (text) => (text.match(new RegExp('`(?:' + REPLACEMENT + '|\\\\uFFFD)+`', 'g')) || []).map((src) => (0, eval)(src));
     const a = literals(vendor(before));
@@ -112,7 +112,7 @@ describe('外部のホスティング環境に置くための変換（tools/dev/
     for (const value of b) assert.ok(/^\uFFFD+$/.test(value));
   });
 
-  test('文書のデータに置換文字が含まれていても、読み取った内容は変わらない', () => {
+  test('Replacement characters in document data do not change the parsed content', () => {
     const dir = tmp();
     const docs = path.join(dir, 'docs');
     fs.mkdirSync(docs);
@@ -129,12 +129,12 @@ describe('外部のホスティング環境に置くための変換（tools/dev/
     assert.ok(read(out).files[0].text.includes(REPLACEMENT + REPLACEMENT));
   });
 
-  test('意味を変えずに書き換えられると言い切れない場所に置換文字がある場合は、変換をやめる', () => {
+  test('Stops the conversion when a replacement character is somewhere it cannot be safely rewritten', () => {
     const dir = tmp();
     const cases = [
-      ';var x = String.raw`' + REPLACEMENT + '`;',          // タグ付きのテンプレート（生の文字列を使う）
-      ';var y = "a' + REPLACEMENT + 'b";',                  // ほかの文字と混ざっている
-      ';var z = /' + REPLACEMENT + '/;'                     // 正規表現
+      ';var x = String.raw`' + REPLACEMENT + '`;',          // tagged template (uses the raw string)
+      ';var y = "a' + REPLACEMENT + 'b";',                  // mixed with other characters
+      ';var z = /' + REPLACEMENT + '/;'                     // regular expression
     ];
     for (const extra of cases) {
       const parts = core.extractParts(fs.readFileSync(VIEWER, 'utf8'));
@@ -144,12 +144,12 @@ describe('外部のホスティング環境に置くための変換（tools/dev/
       const out = path.join(dir, 'out.html');
       const r = run([input, out]);
       assert.equal(r.status, 1, extra);
-      assert.ok(r.stderr.includes('安全に書き換えられません: mdv-js-app'), r.stderr);
+      assert.ok(r.stderr.includes('Cannot safely rewrite the replacement character (U+FFFD) in the script: mdv-js-app'), r.stderr);
       assert.equal(fs.existsSync(out), false);
     }
   });
 
-  test('--title はサイトのタイトルと <title> を、--page-title は <title> だけを変える', () => {
+  test('--title changes the site title and <title>; --page-title changes only <title>', () => {
     const dir = tmp();
     const a = path.join(dir, 'a.html');
     const b = path.join(dir, 'b.html');
@@ -163,7 +163,7 @@ describe('外部のホスティング環境に置くための変換（tools/dev/
     assert.deepEqual(read(b), { title: 'ビューア（お試し用）', config: '' });
   });
 
-  test('外部の画像を許可する設定の HTML を変換しても、許可は引き継がない', () => {
+  test('Converting HTML that allows external images does not keep that permission', () => {
     const dir = tmp();
     const parts = core.extractParts(fs.readFileSync(VIEWER, 'utf8'));
     core.findBlock(parts, 'mdv-config').text = core.jsonForScript({ allowExternalImages: true, theme: 'dark' });
@@ -175,15 +175,15 @@ describe('外部のホスティング環境に置くための変換（tools/dev/
     assert.deepEqual([config.allowExternalImages, config.lockExternalImages, config.allowDownloads, config.hosted, config.theme], [false, true, false, true, 'dark']);
   });
 
-  test('誤った指定は、理由を示して終了コード 1 で終わり、何も書き出さない', () => {
+  test('Invalid arguments exit with code 1, show the reason and write nothing', () => {
     const dir = tmp();
     const out = path.join(dir, 'x.html');
     const cases = [
-      [[VIEWER], '入力と出力のファイルを指定してください'],
-      [[path.join(dir, 'none.html'), out], '入力が見つかりません'],
-      [[path.join(ROOT, 'README.md'), out], 'mdfolio の HTML として読み取れません'],
-      [[VIEWER, out, '--zzz'], '不明なオプション'],
-      [[VIEWER, out, '--title'], '値が必要です']
+      [[VIEWER], 'Specify the input and output files'],
+      [[path.join(dir, 'none.html'), out], 'Input not found'],
+      [[path.join(ROOT, 'README.md'), out], 'Cannot read as an mdfolio HTML file'],
+      [[VIEWER, out, '--zzz'], 'Unknown option'],
+      [[VIEWER, out, '--title'], 'requires a value']
     ];
     for (const [args, message] of cases) {
       const r = run(args);

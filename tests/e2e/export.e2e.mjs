@@ -1,4 +1,4 @@
-// サイト書き出し（FR-601〜FR-604）とサイトモード（FR-104）
+// Site export (FR-601 to FR-604) and site mode (FR-104)
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -20,7 +20,7 @@ const SITE_DOCS = [
   'guide/index.md', 'guide/intro.md', 'guide/Setup.md', 'guide/sub/deep.md',
   '日本語 フォルダ/仕様書 v1.0.md'
 ];
-// 添付は「最初に参照された順」（文書ごとにリンク → 画像）に並ぶ
+// Attachments are ordered by first reference (per document: links, then images)
 const SITE_ASSETS = ['assets/data.csv', 'assets/evil.html', 'assets/pixel.png', 'assets/diagram.svg'];
 
 async function openExportDialog(page) {
@@ -55,7 +55,7 @@ function readSite(file) {
 
 const viewerParts = () => core.extractParts(fs.readFileSync(VIEWER, 'utf8'));
 
-/** 書き出したフォルダ一式を使い回す（書き出しは 1 回だけ行う）。 */
+/** Reuse one exported site across tests (the export is done only once). */
 let exported = null;
 async function exportedSite() {
   if (exported) return exported;
@@ -68,8 +68,8 @@ async function exportedSite() {
   return exported;
 }
 
-describe('書き出しダイアログ（FR-601）', () => {
-  test('タイトル・ホーム文書を指定でき、文書数・添付数・概算サイズを確認できる', async () => {
+describe('Export dialog (FR-601)', () => {
+  test('title and home document can be set; document count, attachment count and approximate size are shown', async () => {
     await withPage(browser, async ({ page }) => {
       await loadFolder(page, fixture('site'));
       await openExportDialog(page);
@@ -86,34 +86,34 @@ describe('書き出しダイアログ（FR-601）', () => {
     });
   });
 
-  test('書き出すと HTML が 1 つ保存され、完了を通知する', async () => {
+  test('exporting saves a single HTML file and reports completion', async () => {
     const e = await exportedSite();
-    assert.equal(e.name, 'テスト サイト_1.html', 'ファイル名に使えない文字は置き換える');
+    assert.equal(e.name, 'テスト サイト_1.html', 'characters not allowed in file names are replaced');
     assert.deepEqual(e.toasts, ['書き出しました: テスト サイト_1.html']);
     assert.ok(fs.statSync(e.file).size > 4 * 1024 * 1024);
   });
 });
 
-describe('書き出した HTML の中身（FR-601, FR-602, 仕様 5.5, 8.2）', () => {
-  test('ビューアと同じ CSP・同じスクリプトで、設定とサイトデータだけが異なる', async () => {
+describe('Contents of the exported HTML (FR-601, FR-602, spec 5.5, 8.2)', () => {
+  test('same CSP and scripts as the viewer; only the config and site data differ', async () => {
     const e = await exportedSite();
     const out = readSite(e.file);
     const base = viewerParts();
     assert.equal(out.parts.csp, base.csp);
-    assert.deepEqual(out.ids, base.blocks.map((b) => b.id), '数式・図を使っているのでライブラリは残す');
+    assert.deepEqual(out.ids, base.blocks.map((b) => b.id), 'libraries are kept because math and diagrams are used');
     for (const b of base.blocks) {
       if (b.id === 'mdv-config' || b.id === 'mdv-site') continue;
-      assert.equal(core.findBlock(out.parts, b.id).text, b.text, `${b.id} はビューアと同一`);
+      assert.equal(core.findBlock(out.parts, b.id).text, b.text, `${b.id} is identical to the viewer`);
     }
     assert.equal(out.parts.css, base.css);
     assert.equal(out.parts.title, 'テスト サイト/1');
     assert.equal(out.parts.lang, 'ja');
     assert.deepEqual(out.config, { title: 'テスト サイト/1', lang: 'auto', theme: 'auto', home: 'README.md', allowExternalImages: false, allowDownloads: true, lockExternalImages: false, hosted: false });
     assert.ok(!out.html.includes('\r'));
-    assert.equal(core.composeHtml(out.parts), out.html, '分解 → 再組み立てで一致する');
+    assert.equal(core.composeHtml(out.parts), out.html, 'splitting and reassembling gives the same result');
   });
 
-  test('すべての文書と、参照されている添付だけを埋め込む', async () => {
+  test('embeds all documents and only the attachments that are referenced', async () => {
     const e = await exportedSite();
     const { site } = readSite(e.file);
     assert.deepEqual(core.validateSiteData(site), { ok: true });
@@ -124,24 +124,24 @@ describe('書き出した HTML の中身（FR-601, FR-602, 仕様 5.5, 8.2）', 
     assert.deepEqual(site.files.filter((f) => f.kind === 'doc').map((f) => f.path), SITE_DOCS);
     assert.deepEqual(site.files.filter((f) => f.kind === 'asset').map((f) => f.path), SITE_ASSETS);
     const byPath = Object.fromEntries(site.files.map((f) => [f.path, f]));
-    // 文書は判定後の文字列として入る（Shift_JIS も UTF-16 も同じ扱い）
+    // Documents are stored as decoded text (Shift_JIS and UTF-16 alike)
     assert.equal(byPath['README.md'].text, fs.readFileSync(path.join(fixture('site'), 'README.md'), 'utf8'));
     assert.ok(byPath['sjis.md'].text.startsWith('# シフトJISの文書'));
     assert.ok(byPath['utf16.md'].text.startsWith('# UTF-16 の文書'));
     assert.ok(byPath['bom.md'].text.startsWith('# BOM 付き UTF-8'));
-    // 添付はバイト列がそのまま入る
+    // Attachments are stored byte for byte
     for (const p of SITE_ASSETS) {
       const original = fs.readFileSync(path.join(fixture('site'), p));
-      assert.ok(Buffer.from(byPath[p].base64, 'base64').equals(original), `${p} の内容が一致する`);
+      assert.ok(Buffer.from(byPath[p].base64, 'base64').equals(original), `contents of ${p} match`);
       assert.equal(byPath[p].mime, core.mimeOf(p));
     }
-    assert.equal(byPath['notes.txt'], undefined, '参照されていないファイルは入らない');
+    assert.equal(byPath['notes.txt'], undefined, 'unreferenced files are not included');
     assert.ok(!site.files.some((f) => /^\.|\/\.|node_modules/.test(f.path)));
   });
 });
 
-describe('サイトモード（FR-104, シナリオ S3）', () => {
-  test('開くだけで文書が表示される。操作・通信・エラーなし', async () => {
+describe('Site mode (FR-104, scenario S3)', () => {
+  test('documents are shown just by opening it, with no interaction, network requests or errors', async () => {
     const e = await exportedSite();
     await withPage(browser, { url: e.url }, async ({ page }) => {
       await waitHeading(page, 'テスト用サイト');
@@ -156,7 +156,7 @@ describe('サイトモード（FR-104, シナリオ S3）', () => {
     });
   });
 
-  test('メニューに「開く」「再読み込み」「書き出し」を出さない。ドロップも受け付けない', async () => {
+  test('the menu has no Open, Reload or Export items, and drops are not accepted', async () => {
     const e = await exportedSite();
     await withPage(browser, { url: e.url }, async ({ page }) => {
       await waitHeading(page, 'テスト用サイト');
@@ -177,7 +177,7 @@ describe('サイトモード（FR-104, シナリオ S3）', () => {
     });
   });
 
-  test('リンク・検索・戻る・添付のダウンロードが使える', async () => {
+  test('links, search, back navigation and attachment downloads work', async () => {
     const e = await exportedSite();
     await withPage(browser, { url: e.url }, async ({ page }) => {
       await waitHeading(page, 'テスト用サイト');
@@ -201,16 +201,16 @@ describe('サイトモード（FR-104, シナリオ S3）', () => {
     });
   });
 
-  test('ハッシュ付きの URL を直接開くと、その文書・位置が表示される（FR-304）', async () => {
+  test('opening a URL with a hash directly shows that document and position (FR-304)', async () => {
     const e = await exportedSite();
     const route = core.buildRoute('guide/intro.md', '末尾');
     await withPage(browser, { url: e.url, hash: route }, async ({ page }) => {
       await waitHeading(page, 'イントロダクション');
       assert.equal(await hash(page), route);
-      // 文書の最後の見出しなので画面の上端までは届かない。画面内に入っていることを確かめる
+      // It is the last heading in the document, so it cannot reach the top of the screen; check that it is in view
       const inView = () => { const r = document.getElementById('user-content-末尾').getBoundingClientRect(); return window.scrollY > 300 && r.top >= 52 && r.bottom <= window.innerHeight; };
       await page.waitForFunction(inView);
-      // 再読み込みしても同じ場所
+      // Same place after a reload
       await page.reload();
       await waitHeading(page, 'イントロダクション');
       assert.equal(await hash(page), route);
@@ -218,7 +218,7 @@ describe('サイトモード（FR-104, シナリオ S3）', () => {
     });
   });
 
-  test('数式・図・ライセンス表記も含まれている（FR-802）', async () => {
+  test('math, diagrams and license text are included too (FR-802)', async () => {
     const e = await exportedSite();
     await withPage(browser, { url: e.url, hash: '#/syntax.md' }, async ({ page }) => {
       await waitHeading(page, '記法');
@@ -231,13 +231,13 @@ describe('サイトモード（FR-104, シナリオ S3）', () => {
     });
   });
 
-  test('サイトの設定（ホーム文書）が反映される', async () => {
+  test('the site setting (home document) is applied', async () => {
     let out;
     await withPage(browser, async ({ page }) => {
       await loadFolder(page, fixture('site'));
       out = await exportSite(page, { title: '', home: 'guide/intro.md' });
     });
-    assert.equal(out.name, 'site.html', 'タイトルが空ならフォルダ名を使う');
+    assert.equal(out.name, 'site.html', 'uses the folder name when the title is empty');
     assert.equal(readSite(out.file).config.home, 'guide/intro.md');
     await withPage(browser, { url: pathToFileURL(out.file).href }, async ({ page }) => {
       await waitHeading(page, 'イントロダクション');
@@ -248,8 +248,8 @@ describe('サイトモード（FR-104, シナリオ S3）', () => {
   });
 });
 
-describe('未使用ライブラリの除外（FR-603）', () => {
-  test('数式も図も使っていなければ、KaTeX と Mermaid を省く', async () => {
+describe('Leaving out unused libraries (FR-603)', () => {
+  test('leaves out KaTeX and Mermaid when neither math nor diagrams are used', async () => {
     let out;
     await withPage(browser, async ({ page }) => {
       await loadFolder(page, fixture('plain'));
@@ -258,23 +258,23 @@ describe('未使用ライブラリの除外（FR-603）', () => {
     });
     const site = readSite(out.file);
     assert.deepEqual(site.ids, ['mdv-config', 'mdv-site', 'mdv-res-help-ja', 'mdv-res-help-en', 'mdv-res-licenses', 'mdv-js-vendor', 'mdv-js-app']);
-    assert.ok(fs.statSync(out.file).size < 1024 * 1024, '1MB 未満になる');
-    assert.equal((site.parts.csp.match(/'sha256-/g) || []).length, 2, '外したライブラリのハッシュは CSP からも外す');
+    assert.ok(fs.statSync(out.file).size < 1024 * 1024, 'under 1 MB');
+    assert.equal((site.parts.csp.match(/'sha256-/g) || []).length, 2, 'hashes of removed libraries are also removed from the CSP');
     assert.deepEqual(site.site.files.map((f) => f.path), ['README.md', 'b.md', 'c.md', 'files/data.txt', 'img/p.png', 'img/q.png']);
-    assert.ok(core.findBlock(site.parts, 'mdv-res-licenses').text.includes('katex'), 'ライセンス表記は残す');
+    assert.ok(core.findBlock(site.parts, 'mdv-res-licenses').text.includes('katex'), 'license text is kept');
     await withPage(browser, { url: pathToFileURL(out.file).href }, async ({ page }) => {
       await waitHeading(page, '数式も図もないサイト');
       assert.ok((await page.textContent('.mdv-prose')).includes('価格は $5 と $10 です。'));
       await page.waitForFunction(() => { const i = document.querySelector('.mdv-prose img'); return i && i.naturalWidth === 64; });
       await goTo(page, '#/b.md', '文書 B');
       await page.waitForFunction(() => { const i = document.querySelector('.mdv-prose img'); return i && i.naturalWidth === 48; });
-      assert.equal(await page.textContent('.mdv-prose pre code'), 'mermaid.render();\n', 'コードの中の mermaid という語は図として扱わない');
+      assert.equal(await page.textContent('.mdv-prose pre code'), 'mermaid.render();\n', 'the word mermaid inside code is not treated as a diagram');
       assert.equal(await page.locator('.mdv-mermaid, .mdv-mermaid-error, .katex').count(), 0);
       assert.equal(await page.evaluate(() => typeof window.mermaid + ' ' + typeof window.katex), 'undefined undefined');
     });
   });
 
-  test('数式だけを使っていれば KaTeX だけを残す', async () => {
+  test('keeps only KaTeX when only math is used', async () => {
     const dir = writeTree(tmpDir(), { 'README.md': '# 数式だけ\n\n$a^2$\n' });
     let out;
     await withPage(browser, async ({ page }) => {
@@ -292,7 +292,7 @@ describe('未使用ライブラリの除外（FR-603）', () => {
     });
   });
 
-  test('図だけを使っていれば Mermaid だけを残す', async () => {
+  test('keeps only Mermaid when only diagrams are used', async () => {
     const dir = writeTree(tmpDir(), { 'README.md': '# 図だけ\n\n```mermaid\nflowchart LR\n  A --> B\n```\n' });
     let out;
     await withPage(browser, async ({ page }) => {
@@ -310,7 +310,7 @@ describe('未使用ライブラリの除外（FR-603）', () => {
     });
   });
 
-  test('ライブラリが含まれない HTML では、数式・図の原文を表示する（FR-205, FR-206）', async () => {
+  test('in HTML without the libraries, shows the source of math and diagrams (FR-205, FR-206)', async () => {
     const lite = path.join(tmpDir(), 'lite.html');
     execFileSync(process.execPath, [path.join(ROOT, 'tools/build.mjs'), '--out', lite, '--without', 'mermaid,katex'], { cwd: ROOT });
     const csp = core.extractParts(fs.readFileSync(lite, 'utf8')).csp;
@@ -333,8 +333,8 @@ describe('未使用ライブラリの除外（FR-603）', () => {
   });
 });
 
-describe('添付と文書の扱い（FR-602）', () => {
-  test('20MB を超える添付は埋め込まず、件数を通知する', async () => {
+describe('Handling of attachments and documents (FR-602)', () => {
+  test('attachments over 20 MB are not embedded, and their count is reported', async () => {
     const spec = {
       name: 'assets',
       files: { 'README.md': '# 添付の確認\n\n[大きい](big.bin) [小さい](small.txt) ![画像なし](none.png)\n', 'small.txt': 'small' },
@@ -349,7 +349,7 @@ describe('添付と文書の扱い（FR-602）', () => {
     });
   });
 
-  test('読み込めない文書は含めず、件数を通知する。合計が大きい場合は警告する', async () => {
+  test('unreadable documents are left out and their count is reported; warns when the total is large', async () => {
     const spec = { name: 'partial', files: { 'README.md': '# 一部が読めない\n', 'ok.md': '# OK\n', 'ng.md': '# NG\n' } };
     await withPage(browser, mockOptions(spec), async ({ page }) => {
       await page.evaluate(() => { window.__mockFs.fail['ng.md'] = true; });
@@ -364,7 +364,7 @@ describe('添付と文書の扱い（FR-602）', () => {
     });
   });
 
-  test('文書に </script> や <!-- が含まれていても、安全に埋め込まれる', async () => {
+  test('documents containing </script> or <!-- are embedded safely', async () => {
     const nasty = '# 埋め込みの確認\n\n本文に </script><script>window.__xss = 1</script> と <!-- コメント開始、' + String.fromCharCode(0x2028) + ' 行区切り、"引用符" と \\ バックスラッシュ。\n\n```html\n</script><script>window.__xss = 2</script>\n```\n';
     const dir = writeTree(tmpDir(), { 'README.md': nasty });
     let out;
@@ -373,8 +373,8 @@ describe('添付と文書の扱い（FR-602）', () => {
       out = await exportSite(page);
     });
     const site = readSite(out.file);
-    assert.equal(site.site.files[0].text, nasty, '内容が 1 文字も変わらない');
-    assert.equal((site.html.match(/<\/script>/g) || []).length, site.ids.length, '</script> は各ブロックの閉じタグだけ');
+    assert.equal(site.site.files[0].text, nasty, 'not a single character of the content changes');
+    assert.equal((site.html.match(/<\/script>/g) || []).length, site.ids.length, 'the only </script> occurrences are the closing tags of each block');
     await withPage(browser, { url: pathToFileURL(out.file).href }, async ({ page }) => {
       await waitHeading(page, '埋め込みの確認');
       assert.equal(await page.evaluate(() => typeof window.__xss), 'undefined');
@@ -383,8 +383,8 @@ describe('添付と文書の扱い（FR-602）', () => {
   });
 });
 
-describe('コマンドライン版（FR-604）', () => {
-  test('アプリ内の書き出しと同じ内容の HTML を生成する', async () => {
+describe('Command-line version (FR-604)', () => {
+  test('generates HTML with the same content as the in-app export', async () => {
     const e = await exportedSite();
     const cliFile = path.join(tmpDir(), 'cli-site.html');
     const stdout = execFileSync(process.execPath, [path.join(ROOT, 'tools/build-site.mjs'), fixture('site'), '--title', 'テスト サイト/1', '--out', cliFile], { cwd: ROOT, encoding: 'utf8' });
@@ -396,13 +396,13 @@ describe('コマンドライン版（FR-604）', () => {
     assert.equal(cli.parts.csp, app.parts.csp);
     assert.equal(cli.parts.title, app.parts.title);
     const strip = (f) => ({ ...f, mtime: 0 });
-    assert.deepEqual(cli.site.files.map(strip), app.site.files.map(strip), '文書と添付の内容・順序が一致する');
+    assert.deepEqual(cli.site.files.map(strip), app.site.files.map(strip), 'documents and attachments match in content and order');
     for (let i = 0; i < cli.site.files.length; i++) {
-      assert.ok(Math.abs(cli.site.files[i].mtime - app.site.files[i].mtime) <= 1, '更新日時も一致する');
+      assert.ok(Math.abs(cli.site.files[i].mtime - app.site.files[i].mtime) <= 1, 'modification times match too');
     }
     for (const id of app.ids) {
       if (id === 'mdv-site') continue;
-      assert.equal(core.findBlock(cli.parts, id).text, core.findBlock(app.parts, id).text, `${id} が一致する`);
+      assert.equal(core.findBlock(cli.parts, id).text, core.findBlock(app.parts, id).text, `${id} matches`);
     }
     await withPage(browser, { url: pathToFileURL(cliFile).href, hash: '#/guide/Setup.md' }, async ({ page }) => {
       await waitHeading(page, 'セットアップ');
@@ -410,7 +410,7 @@ describe('コマンドライン版（FR-604）', () => {
     });
   });
 
-  test('オプション（--home, --lang, --theme, --allow-external-images）と、未使用ライブラリの除外', async () => {
+  test('options (--home, --lang, --theme, --allow-external-images) and leaving out unused libraries', async () => {
     const out = path.join(tmpDir(), 'plain.html');
     const stdout = execFileSync(process.execPath, [path.join(ROOT, 'tools/build-site.mjs'), fixture('plain'), '--out', out, '--home', 'b', '--lang', 'en', '--theme', 'dark', '--allow-external-images'], { cwd: ROOT, encoding: 'utf8' });
     assert.ok(stdout.includes('数式ライブラリ: 除外、図のライブラリ: 除外'));
@@ -425,7 +425,7 @@ describe('コマンドライン版（FR-604）', () => {
     });
   });
 
-  test('誤った指定はエラーで終了する', () => {
+  test('invalid arguments exit with an error', () => {
     const run = (args) => {
       try {
         execFileSync(process.execPath, [path.join(ROOT, 'tools/build-site.mjs'), ...args], { cwd: ROOT, encoding: 'utf8', stdio: 'pipe' });
@@ -440,6 +440,6 @@ describe('コマンドライン版（FR-604）', () => {
     assert.ok(run([fixture('site'), '--out', out, '--home', 'nothing.md']).stderr.includes('--home の文書が見つかりません'));
     assert.ok(run([fixture('site'), '--out', out, '--lang', 'fr']).stderr.includes('--lang'));
     assert.ok(run([fixture('site'), '--unknown']).stderr.includes('不明なオプション'));
-    assert.equal(fs.existsSync(out), false, '失敗時はファイルを作らない');
+    assert.equal(fs.existsSync(out), false, 'no file is created on failure');
   });
 });

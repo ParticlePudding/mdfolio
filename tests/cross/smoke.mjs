@@ -1,8 +1,8 @@
-// 別のブラウザーエンジンでの動作確認（共通部分）。
-// Chromium 以外では Playwright を使えないため、WebDriver で操作できる範囲を確認する:
-//   起動、<input> 方式でのファイル読み込み、書き出したサイトの表示（画像・コード・数式・図）、検索、移動、
-//   テーマ・言語、外部通信の遮断（追加した CSP が効くこと）、外部画像の許可（再読み込みと設定の保存）、
-//   別のページの中（フレーム）に埋め込んだ場合の表示と移動。
+// Checks on other browser engines (shared part).
+// Playwright cannot be used outside Chromium, so this checks what can be driven through WebDriver:
+//   startup, loading files via <input>, displaying an exported site (images, code, math, diagrams), search, navigation,
+//   theme and language, blocking external requests (the added CSP takes effect), allowing external images (reload and saved settings),
+//   and display and navigation when embedded in another page (a frame).
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -32,7 +32,7 @@ function buildSite(dir, out, extra = []) {
   return pathToFileURL(out).href;
 }
 
-/** 1 つの HTML を返すだけの HTTP サーバー。headers は応答ヘッダー。 */
+/** An HTTP server that only returns a single HTML page. headers are the response headers. */
 function serve(html, host, headers = {}) {
   const server = http.createServer((req, res) => {
     res.setHeader('content-type', 'text/html; charset=utf-8');
@@ -57,8 +57,8 @@ const headingIs = (text) => { const h = document.querySelector('.mdv-doc:not([hi
 const appReady = () => !!(window.MDV && window.MDV.app && document.querySelector('.mdv-app'));
 
 /**
- * d: Driver（セッション開始済み）。engine: 表示用の名前。
- * 結果を { name, ok, detail } の配列で返す。1 つ失敗しても残りを続ける。
+ * d: Driver (session already started). engine: display name.
+ * Returns the results as an array of { name, ok, detail }. Keeps going with the rest if one fails.
  */
 export async function runSmoke(d, engine, log = console.log, shots = null) {
   const results = [];
@@ -79,14 +79,14 @@ export async function runSmoke(d, engine, log = console.log, shots = null) {
       log(`  FAIL ${name}: ${String(e.message || e).split('\n').slice(0, 30).join(' / ')}`);
     }
   };
-  const open = async (url, hash = '') => { await d.goto('about:blank'); await d.goto(url + hash); await d.wait(appReady, [], 20000, 'アプリの起動'); };
+  const open = async (url, hash = '') => { await d.goto('about:blank'); await d.goto(url + hash); await d.wait(appReady, [], 20000, 'app startup'); };
 
   try {
     const siteUrl = buildSite(path.join(FIXTURES, 'site'), path.join(work, 'site.html'));
     const viewerUrl = pathToFileURL(VIEWER).href;
 
-    // ------------------------------------------------------------ 閲覧モード
-    await step('起動: 開始画面が表示され、初期化でエラーが出ていない', async () => {
+    // ------------------------------------------------------------ Viewer mode
+    await step('Startup: the start screen appears and initialization raises no errors', async () => {
       await open(viewerUrl);
       const r = await d.exec(() => ({
         view: window.MDV.app.state.view, mode: window.MDV.app.state.mode, locked: window.MDV.app.state.mediaLocked,
@@ -96,40 +96,40 @@ export async function runSmoke(d, engine, log = console.log, shots = null) {
         picker: typeof window.showDirectoryPicker, ua: navigator.userAgent
       }));
       assert.deepEqual({ view: r.view, mode: r.mode, locked: r.locked, root: r.root, buttons: r.buttons, csp: r.csp }, { view: 'welcome', mode: 'viewer', locked: true, root: false, buttons: true, csp: 2 });
-      return `フォルダ選択 API: ${r.picker === 'function' ? 'あり' : 'なし（<input> 方式を使う）'}`;
+      return `folder picker API: ${r.picker === 'function' ? 'available' : 'not available (uses the <input> method)'}`;
     });
 
-    await step('ファイルを開く（<input type="file">）: 選んだ文書を読み込んで表示する', async () => {
+    await step('Open files (<input type="file">): loads and displays the chosen document', async () => {
       const files = [path.join(FIXTURES, 'single/one.md'), path.join(FIXTURES, 'single/other.md')];
       await d.sendKeys('.mdv-input-files', files.join('\n'));
-      await d.wait(() => window.MDV.app.state.view === 'doc' && !!document.querySelector('.mdv-prose h1'), [], 20000, '文書の表示');
+      await d.wait(() => window.MDV.app.state.view === 'doc' && !!document.querySelector('.mdv-prose h1'), [], 20000, 'document display');
       const r = await d.exec(() => ({ docs: window.MDV.app.state.set.docs.slice(), h1: document.querySelector('.mdv-prose h1').textContent.replace('#', '').trim(), hash: location.hash }));
       assert.deepEqual(r.docs.slice().sort(), ['one.md', 'other.md']);
-      return `表示: ${r.h1}`;
+      return `shown: ${r.h1}`;
     });
 
-    await step('フォルダを開く（<input webkitdirectory>）: フォルダの構造ごと読み込める', async () => {
+    await step('Open folder (<input webkitdirectory>): loads the folder with its structure', async () => {
       await open(viewerUrl);
       const supported = await d.exec(() => 'webkitdirectory' in HTMLInputElement.prototype);
-      if (!supported) return { skip: 'このエンジンは webkitdirectory に対応していない' };
+      if (!supported) return { skip: 'this engine does not support webkitdirectory' };
       try {
         await d.sendKeys('.mdv-input-dir', path.join(FIXTURES, 'nav'));
       } catch (e) {
-        return { skip: '自動操作ではフォルダを指定できない（手動での確認が必要）' };
+        return { skip: 'automation cannot specify a folder (needs a manual check)' };
       }
-      const ok = await d.wait(() => window.MDV.app.state.view === 'doc', [], 8000, 'フォルダの読み込み').then(() => true, () => false);
-      if (!ok) return { skip: '自動操作ではフォルダを指定できない（手動での確認が必要）' };
+      const ok = await d.wait(() => window.MDV.app.state.view === 'doc', [], 8000, 'folder loading').then(() => true, () => false);
+      if (!ok) return { skip: 'automation cannot specify a folder (needs a manual check)' };
       const r = await d.exec(() => ({ docs: window.MDV.app.state.set.docs.slice(), nav: document.querySelectorAll('.mdv-sidenav a').length }));
-      assert.ok(r.docs.includes('b/c.md'), 'サブフォルダの文書: ' + r.docs.join(', '));
-      assert.ok(r.nav >= 3, 'カスタムナビ');
-      return `文書 ${r.docs.length} 件`;
+      assert.ok(r.docs.includes('b/c.md'), 'documents in subfolders: ' + r.docs.join(', '));
+      assert.ok(r.nav >= 3, 'custom navigation');
+      return `${r.docs.length} documents`;
     });
 
-    // ------------------------------------------------------------ サイトモード
-    await step('書き出したサイト: 開くだけで表示され、埋め込み画像（PNG・SVG）が出る', async () => {
+    // ------------------------------------------------------------ Site mode
+    await step('Exported site: displays just by opening it, and embedded images (PNG, SVG) appear', async () => {
       await open(siteUrl);
-      await d.wait(headingIs, ['テスト用サイト'], 20000, 'ホーム文書');
-      await d.wait(() => { const list = Array.from(document.querySelectorAll('.mdv-prose img')); return list.length === 3 && list.every((i) => i.complete && i.naturalWidth > 0); }, [], 20000, '画像');
+      await d.wait(headingIs, ['テスト用サイト'], 20000, 'home document');
+      await d.wait(() => { const list = Array.from(document.querySelectorAll('.mdv-prose img')); return list.length === 3 && list.every((i) => i.complete && i.naturalWidth > 0); }, [], 20000, 'images');
       const r = await d.exec(() => ({
         mode: window.MDV.app.state.mode, widths: Array.from(document.querySelectorAll('.mdv-prose img')).map((i) => i.naturalWidth),
         tree: document.querySelectorAll('.mdv-side-tree a').length, toc: document.querySelectorAll('.mdv-toc .mdv-toc-link').length,
@@ -140,10 +140,10 @@ export async function runSmoke(d, engine, log = console.log, shots = null) {
       assert.deepEqual(r, { mode: 'site', widths: [64, 120, 64], tree: 11, toc: 5, title: 'テスト用サイト - site', overflow: false, header: 52, sidebar: true });
     });
 
-    await step('記法: 表・コードの色分け・数式（KaTeX）・図（Mermaid）・脚注・タスクリスト', async () => {
+    await step('Syntax: tables, code highlighting, math (KaTeX), diagrams (Mermaid), footnotes, task lists', async () => {
       await d.exec(() => { location.hash = '#/syntax.md'; });
-      await d.wait(headingIs, ['記法'], 20000, '記法の文書');
-      await d.wait(() => document.querySelectorAll('.mdv-mermaid svg').length >= 1 && document.querySelectorAll('.mdv-mermaid-error').length >= 1, [], 30000, '図の描画');
+      await d.wait(headingIs, ['記法'], 20000, 'syntax document');
+      await d.wait(() => document.querySelectorAll('.mdv-mermaid svg').length >= 1 && document.querySelectorAll('.mdv-mermaid-error').length >= 1, [], 30000, 'diagram rendering');
       const r = await d.exec(() => {
         const p = document.querySelector('.mdv-prose');
         return {
@@ -162,7 +162,7 @@ export async function runSmoke(d, engine, log = console.log, shots = null) {
         katex: true, katexCss: true, mathWidth: true, mermaidNodes: true, hljs: true, code: 'const x = 1;\n', tables: true, footnotes: true,
         tasks: ['false:true:名前あり', 'true:true:名前あり'], alerts: true, libs: '{"katex":true,"mermaid":true}', wideTable: 1
       });
-      return 'あとから読み込むスクリプト（CSP のハッシュで許可）も実行できる';
+      return 'scripts loaded later (allowed by CSP hashes) can also run';
     });
 
     if (shots) {
@@ -171,73 +171,73 @@ export async function runSmoke(d, engine, log = console.log, shots = null) {
       await shots('syntax');
     }
 
-    await step('文字コード: Shift_JIS と UTF-16 の文書を正しく表示する', async () => {
+    await step('Character encodings: displays Shift_JIS and UTF-16 documents correctly', async () => {
       await d.exec(() => { location.hash = '#/sjis.md'; });
       await d.wait(headingIs, ['シフトJISの文書'], 20000, 'Shift_JIS');
       await d.exec(() => { location.hash = '#/utf16.md'; });
       await d.wait(headingIs, ['UTF-16 の文書'], 20000, 'UTF-16');
       await d.exec(() => { location.hash = '#/' + encodeURIComponent('日本語 フォルダ') + '/' + encodeURIComponent('仕様書 v1.0.md'); });
-      await d.wait(() => window.MDV.app.state.current === '日本語 フォルダ/仕様書 v1.0.md', [], 20000, '日本語のパス');
+      await d.wait(() => window.MDV.app.state.current === '日本語 フォルダ/仕様書 v1.0.md', [], 20000, 'Japanese path');
     });
 
-    await step('検索: 入力すると結果が出て、開くと一致語に印が付く', async () => {
-      await d.wait(() => { const s = window.MDV.app.state.set; return !s.indexing && s.indexed === s.docs.length; }, [], 30000, '索引');
+    await step('Search: typing shows results, and opening one marks the matched words', async () => {
+      await d.wait(() => { const s = window.MDV.app.state.set; return !s.indexing && s.indexed === s.docs.length; }, [], 30000, 'index');
       await d.exec(() => { const i = document.querySelector('.mdv-search-input'); i.focus(); i.value = 'イプシロン'; i.dispatchEvent(new Event('input', { bubbles: true })); });
-      await d.wait(() => document.querySelectorAll('.mdv-search-item').length === 1, [], 10000, '検索結果');
+      await d.wait(() => document.querySelectorAll('.mdv-search-item').length === 1, [], 10000, 'search results');
       const title = await d.exec(() => document.querySelector('.mdv-search-item').textContent);
       await d.exec(() => document.querySelector('.mdv-search-item').click());
-      await d.wait(headingIs, ['シフトJISの文書'], 20000, '結果の文書');
-      await d.wait(() => document.querySelectorAll('mark.mdv-hit').length > 0, [], 10000, '一致語の印');
+      await d.wait(headingIs, ['シフトJISの文書'], 20000, 'result document');
+      await d.wait(() => document.querySelectorAll('mark.mdv-hit').length > 0, [], 10000, 'match marks');
       assert.ok(title.includes('シフトJIS'));
-      // 全角・半角、大文字・小文字を区別しない
+      // Ignores full-width/half-width and case differences
       await d.exec(() => { const i = document.querySelector('.mdv-search-input'); i.value = 'ＭＡＲＫＤＯＷＮ'; i.dispatchEvent(new Event('input', { bubbles: true })); });
-      await d.wait(() => document.querySelectorAll('.mdv-search-item').length >= 2, [], 10000, '全角での検索');
+      await d.wait(() => document.querySelectorAll('.mdv-search-item').length >= 2, [], 10000, 'full-width search');
       await d.exec(() => { const i = document.querySelector('.mdv-search-input'); i.value = ''; i.dispatchEvent(new Event('input', { bubbles: true })); i.blur(); });
     });
 
-    await step('移動: リンク・戻る・進む・ページ内の見出し・URL を直接開く', async () => {
+    await step('Navigation: links, back, forward, in-page headings, opening a URL directly', async () => {
       await d.exec(() => { location.hash = '#/README.md'; });
-      await d.wait(headingIs, ['テスト用サイト'], 20000, 'ホーム');
+      await d.wait(headingIs, ['テスト用サイト'], 20000, 'home');
       await d.exec(() => Array.from(document.querySelectorAll('.mdv-prose a')).find((a) => a.textContent.indexOf('イントロ') >= 0).click());
-      await d.wait(headingIs, ['イントロダクション'], 20000, 'リンク先');
+      await d.wait(headingIs, ['イントロダクション'], 20000, 'link target');
       await d.exec(() => history.back());
-      await d.wait(headingIs, ['テスト用サイト'], 20000, '戻る');
+      await d.wait(headingIs, ['テスト用サイト'], 20000, 'back');
       await d.exec(() => history.forward());
-      await d.wait(headingIs, ['イントロダクション'], 20000, '進む');
+      await d.wait(headingIs, ['イントロダクション'], 20000, 'forward');
       const route = '#/guide/intro.md#' + encodeURIComponent('末尾');
       await open(siteUrl, route);
-      await d.wait(headingIs, ['イントロダクション'], 20000, '直接開く');
-      const r = await d.wait(() => { const el = document.getElementById('user-content-末尾'); const rect = el && el.getBoundingClientRect(); return rect && window.scrollY > 300 && rect.top >= 52 && rect.bottom <= window.innerHeight ? { y: Math.round(window.scrollY) } : false; }, [], 20000, '見出しの位置');
-      return `スクロール位置 ${r.y}px`;
+      await d.wait(headingIs, ['イントロダクション'], 20000, 'open directly');
+      const r = await d.wait(() => { const el = document.getElementById('user-content-末尾'); const rect = el && el.getBoundingClientRect(); return rect && window.scrollY > 300 && rect.top >= 52 && rect.bottom <= window.innerHeight ? { y: Math.round(window.scrollY) } : false; }, [], 20000, 'heading position');
+      return `scroll position ${r.y}px`;
     });
 
-    await step('テーマと言語: 切り替わり、再読み込みしても保たれる（設定の保存）', async () => {
+    await step('Theme and language: switch, and persist across reloads (saved settings)', async () => {
       await open(siteUrl);
-      await d.wait(headingIs, ['テスト用サイト'], 20000, 'ホーム');
+      await d.wait(headingIs, ['テスト用サイト'], 20000, 'home');
       const before = await d.exec(() => ({ theme: document.documentElement.getAttribute('data-theme'), lang: document.documentElement.lang }));
       await d.click('.mdv-btn-theme');
       await d.click('.mdv-btn-theme');
       const dark = await d.exec(() => ({ theme: document.documentElement.getAttribute('data-theme'), bg: getComputedStyle(document.body).backgroundColor }));
       assert.deepEqual(dark, { theme: 'dark', bg: 'rgb(15, 23, 34)' });
       await d.click('.mdv-btn-menu');
-      await d.wait(() => !document.querySelector('.mdv-menu').hidden, [], 5000, 'メニュー');
+      await d.wait(() => !document.querySelector('.mdv-menu').hidden, [], 5000, 'menu');
       await d.click('.mdv-menu-item[data-action="menuLanguage"]');
       const other = before.lang === 'ja' ? 'en' : 'ja';
-      await d.wait((l) => document.documentElement.lang === l, [other], 5000, '言語');
+      await d.wait((l) => document.documentElement.lang === l, [other], 5000, 'language');
       await d.refresh();
-      await d.wait(appReady, [], 20000, '再読み込み');
+      await d.wait(appReady, [], 20000, 'reload');
       const after = await d.exec(() => ({ theme: document.documentElement.getAttribute('data-theme'), lang: document.documentElement.lang, stored: !!localStorage.getItem('mdv:settings:v1') }));
       assert.deepEqual(after, { theme: 'dark', lang: other, stored: true });
-      // 元に戻す
+      // Restore the original
       await d.exec(() => { localStorage.removeItem('mdv:settings:v1'); });
-      return `言語 ${before.lang} → ${other}、テーマ ダーク`;
+      return `language ${before.lang} -> ${other}, theme dark`;
     });
 
-    // ------------------------------------------------------------ セキュリティ
-    await step('文書の中のスクリプトは実行されない（XSS の確認用文書）', async () => {
+    // ------------------------------------------------------------ Security
+    await step('Scripts in documents do not run (the XSS test document)', async () => {
       await open(siteUrl, '#/xss.md');
-      await d.wait(headingIs, ['XSS'], 20000, 'XSS の文書');
-      await d.wait(() => !!document.querySelector('.mdv-mermaid svg, .mdv-mermaid-error'), [], 30000, '図');
+      await d.wait(headingIs, ['XSS'], 20000, 'XSS document');
+      await d.wait(() => !!document.querySelector('.mdv-mermaid svg, .mdv-mermaid-error'), [], 30000, 'diagram');
       await new Promise((r) => setTimeout(r, 500));
       const r = await d.exec(() => {
         const p = document.querySelector('.mdv-prose');
@@ -253,13 +253,13 @@ export async function runSmoke(d, engine, log = console.log, shots = null) {
       assert.deepEqual(r, { xss: 'undefined', handlers: 0, bad: 0, jsLinks: 0, root: true, display: 'flex' });
     });
 
-    await step('CSP: eval・あとから足したスクリプト・イベント属性・通信は実行できない', async () => {
+    await step('CSP: eval, scripts added later, event attributes and network requests cannot run', async () => {
       sink.hits.length = 0;
       const r = await d.execAsync(async (origin) => {
         const out = {};
         const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
         await wait(20);
-        // 自動操作用のスクリプトは、ブラウザーによってはページとは別の権限で動く。ページ自身の eval を使って確かめる
+        // Automation scripts run with different privileges from the page in some browsers. Use the page's own eval to check
         try { out.eval = String(window.eval('1 + 1')); } catch (e) { out.eval = 'blocked'; }
         try { out.fn = String(new window.Function('return 1')()); } catch (e) { out.fn = 'blocked'; }
         const s = document.createElement('script'); s.textContent = 'window.__inline = 1'; document.head.appendChild(s);
@@ -275,11 +275,11 @@ export async function runSmoke(d, engine, log = console.log, shots = null) {
         return out;
       }, sink.origin);
       assert.deepEqual(r, { eval: 'blocked', fn: 'blocked', inline: 'undefined', handler: 'undefined', fetch: 'blocked', image: 'blocked' });
-      assert.deepEqual(sink.hits, [], 'サーバーに届いた通信');
+      assert.deepEqual(sink.hits, [], 'requests that reached the server');
     });
 
     let vectorsUrl = '';
-    await step('外部への通信: 既定では、図の中の画像指定を含めて 1 件も届かない（あとから追加した CSP が効いている）', async () => {
+    await step('External requests: by default none get through, including image references inside diagrams (the CSP added later is in effect)', async () => {
       sink.hits.length = 0;
       const O = sink.origin;
       const dir = writeTree(path.join(work, 'vectors'), {
@@ -290,77 +290,77 @@ export async function runSmoke(d, engine, log = console.log, shots = null) {
       });
       vectorsUrl = buildSite(dir, path.join(work, 'vectors.html'));
       await open(vectorsUrl);
-      await d.wait(headingIs, ['通信の確認'], 20000, '文書');
+      await d.wait(headingIs, ['通信の確認'], 20000, 'document');
       for (const name of ['m-shape', 'm-label', 'm-themecss']) {
         await d.exec((n) => { location.hash = '#/' + n + '.md'; }, name);
         await d.wait(headingIs, [name], 20000, name);
-        await d.wait(() => !!document.querySelector('.mdv-mermaid svg, .mdv-mermaid-error'), [], 30000, '図');
+        await d.wait(() => !!document.querySelector('.mdv-mermaid svg, .mdv-mermaid-error'), [], 30000, 'diagram');
         await new Promise((r) => setTimeout(r, 700));
       }
       const locked = await d.exec(() => window.MDV.app.state.mediaLocked);
       assert.equal(locked, true);
-      assert.deepEqual(sink.hits, [], 'サーバーに届いた通信');
+      assert.deepEqual(sink.hits, [], 'requests that reached the server');
     });
 
-    await step('外部の画像を許可: 確認 → 再読み込み → 画像・動画だけが読み込まれる。戻すとその場で止まる', async () => {
+    await step('Allow external images: confirm -> reload -> only images and videos load. Turning it back off stops them immediately', async () => {
       sink.hits.length = 0;
       await open(vectorsUrl);
-      await d.wait(headingIs, ['通信の確認'], 20000, '文書');
+      await d.wait(headingIs, ['通信の確認'], 20000, 'document');
       await d.click('.mdv-btn-menu');
-      await d.wait(() => !document.querySelector('.mdv-menu').hidden, [], 5000, 'メニュー');
+      await d.wait(() => !document.querySelector('.mdv-menu').hidden, [], 5000, 'menu');
       await d.click('.mdv-menu-item[data-action="menuExternalImages"]');
-      await d.wait(() => !!document.querySelector('dialog.mdv-dialog-external[open]'), [], 5000, '確認ダイアログ');
+      await d.wait(() => !!document.querySelector('dialog.mdv-dialog-external[open]'), [], 5000, 'confirmation dialog');
       assert.deepEqual(sink.hits, []);
       await d.exec(() => { window.__beforeReload = true; });
       await d.click('.mdv-external-run');
-      await d.wait(() => window.__beforeReload === undefined && !!(window.MDV && window.MDV.app) && window.MDV.app.state.mediaLocked === false, [], 20000, '再読み込み');
-      await d.wait(headingIs, ['通信の確認'], 20000, '文書');
-      await d.wait(() => { const i = document.querySelector('.mdv-prose img'); return !!i && i.complete && i.naturalWidth === 64; }, [], 20000, '外部の画像');
+      await d.wait(() => window.__beforeReload === undefined && !!(window.MDV && window.MDV.app) && window.MDV.app.state.mediaLocked === false, [], 20000, 'reload');
+      await d.wait(headingIs, ['通信の確認'], 20000, 'document');
+      await d.wait(() => { const i = document.querySelector('.mdv-prose img'); return !!i && i.complete && i.naturalWidth === 64; }, [], 20000, 'external image');
       await new Promise((r) => setTimeout(r, 800));
       const got = Array.from(new Set(sink.hits)).sort();
-      assert.ok(got.includes('/md-image.png') && got.includes('/html-image.png'), '画像: ' + got.join(', '));
-      for (const never of ['/style-bg.png', '/link.css', '/iframe.html']) assert.ok(!got.includes(never), `${never} は読み込まない`);
-      // 表示しない側へ戻す（確認なし・その場で反映）
+      assert.ok(got.includes('/md-image.png') && got.includes('/html-image.png'), 'images: ' + got.join(', '));
+      for (const never of ['/style-bg.png', '/link.css', '/iframe.html']) assert.ok(!got.includes(never), `${never} is not loaded`);
+      // Switch back to not showing them (no confirmation, takes effect immediately)
       await d.click('.mdv-btn-menu');
-      await d.wait(() => !document.querySelector('.mdv-menu').hidden, [], 5000, 'メニュー');
+      await d.wait(() => !document.querySelector('.mdv-menu').hidden, [], 5000, 'menu');
       await d.click('.mdv-menu-item[data-action="menuExternalImages"]');
-      await d.wait(() => window.MDV.app.state.mediaLocked === true && !document.querySelector('.mdv-prose img'), [], 10000, '遮断');
+      await d.wait(() => window.MDV.app.state.mediaLocked === true && !document.querySelector('.mdv-prose img'), [], 10000, 'blocking');
       const before = sink.hits.length;
       const probe = await d.execAsync((origin) => new Promise((resolve) => { const i = new Image(); i.onload = () => resolve('loaded'); i.onerror = () => resolve('blocked'); i.src = origin + '/after-off.png'; }), sink.origin);
       assert.equal(probe, 'blocked');
-      assert.equal(sink.hits.length, before, '遮断後の通信');
+      assert.equal(sink.hits.length, before, 'requests after blocking');
       await d.exec(() => { localStorage.removeItem('mdv:settings:v1'); });
-      return `許可中に届いたもの: ${got.join(', ')}`;
+      return `received while allowed: ${got.join(', ')}`;
     });
 
-    // ------------------------------------------------------------ 別のページの中に埋め込んだ場合
-    await step('埋め込み（srcdoc のフレーム）: 表示でき、リンク・戻るで移動できる', async () => {
-      // srcdoc では、文書の URL（about:srcdoc）とリンクの基準 URL（親ページ）が異なる。
-      // リンクをブラウザーに任せると、フレームが親ページの URL へ移動してしまう
+    // ------------------------------------------------------------ Embedded in another page
+    await step('Embedded (srcdoc frame): displays, and links and back navigate', async () => {
+      // With srcdoc, the document URL (about:srcdoc) differs from the base URL for links (the parent page).
+      // If links were left to the browser, the frame would navigate to the parent page's URL
       const html = fs.readFileSync(path.join(work, 'site.html'), 'utf8');
       const host = await serve(hostPage(`<iframe id="page" sandbox="allow-scripts allow-same-origin" srcdoc="${html.replace(/&/g, '&amp;').replace(/"/g, '&quot;')}"></iframe>`), '127.0.0.1');
       try {
         await d.goto('about:blank');
         await d.goto(host.url);
         await d.frame(0);
-        await d.wait(appReady, [], 20000, 'フレームの中のアプリ');
-        await d.wait(headingIs, ['テスト用サイト'], 20000, 'ホーム');
+        await d.wait(appReady, [], 20000, 'app inside the frame');
+        await d.wait(headingIs, ['テスト用サイト'], 20000, 'home');
         const env = await d.exec(() => ({ href: location.href.split('#')[0], sameBase: document.baseURI.split('#')[0] === location.href.split('#')[0] }));
         assert.deepEqual(env, { href: 'about:srcdoc', sameBase: false });
         await d.click('.mdv-side-tree a[href="#/syntax.md"]');
-        await d.wait(headingIs, ['記法'], 20000, 'リンク先');
+        await d.wait(headingIs, ['記法'], 20000, 'link target');
         const after = await d.exec(() => location.href);
         assert.equal(after, 'about:srcdoc#/syntax.md');
         await d.exec(() => history.back());
-        await d.wait(headingIs, ['テスト用サイト'], 20000, '戻る');
-        return 'フレームの URL は about:srcdoc のまま';
+        await d.wait(headingIs, ['テスト用サイト'], 20000, 'back');
+        return 'the frame URL stays about:srcdoc';
       } finally {
         await d.frame(null).catch(() => {});
         await host.close();
       }
     });
 
-    await step('埋め込み（別オリジンのサンドボックス化したフレーム）: 公開ページ用に変換した HTML が動く', async () => {
+    await step('Embedded (sandboxed cross-origin frame): HTML converted for public pages works', async () => {
       const hosted = path.join(work, 'hosted.html');
       execFileSync(process.execPath, [path.join(ROOT, 'tools/dev/make-hosted.mjs'), path.join(work, 'site.html'), hosted], { cwd: ROOT });
       const csp = ["default-src 'none'", "script-src 'unsafe-inline'", "style-src 'unsafe-inline'", 'font-src data:', 'img-src data: blob:', 'media-src data: blob:', "connect-src 'none'", "frame-src 'none'", "object-src 'none'", "base-uri 'none'"].join('; ');
@@ -371,38 +371,38 @@ export async function runSmoke(d, engine, log = console.log, shots = null) {
         await d.goto('about:blank');
         await d.goto(outer.url);
         await d.frame(0);
-        await d.wait(appReady, [], 20000, 'フレームの中のアプリ');
-        await d.wait(headingIs, ['テスト用サイト'], 20000, 'ホーム');
+        await d.wait(appReady, [], 20000, 'app inside the frame');
+        await d.wait(headingIs, ['テスト用サイト'], 20000, 'home');
         const start = await d.exec(() => {
           const c = window.MDV.app.state.config;
           return { runtime: window.__hostRuntime, mode: window.MDV.app.state.mode, locked: window.MDV.app.state.mediaLocked, flags: [c.allowDownloads, c.lockExternalImages, c.hosted], ownCsp: document.querySelectorAll('meta[http-equiv="Content-Security-Policy"]:not([data-mdv-dyn])').length };
         });
         assert.deepEqual(start, { runtime: 1, mode: 'site', locked: true, flags: [false, true, true], ownCsp: 0 });
-        // メニューに、動かない項目（書き出し・外部の画像）がない
+        // The menu has no items that cannot work (export, external images)
         await d.click('.mdv-btn-menu');
-        await d.wait(() => !document.querySelector('.mdv-menu').hidden, [], 5000, 'メニュー');
+        await d.wait(() => !document.querySelector('.mdv-menu').hidden, [], 5000, 'menu');
         const actions = await d.exec(() => Array.from(document.querySelectorAll('.mdv-menu-item')).filter((b) => !b.hidden).map((b) => b.getAttribute('data-action')));
         assert.deepEqual(actions, ['menuLanguage', 'menuHelp', 'menuAbout']);
         await d.keys('\uE00C');
-        // 画像（blob:）。画面に入ってから読み込む（loading="lazy"）ので、先にその位置まで動かす
+        // Images (blob:). They load once on screen (loading="lazy"), so scroll to them first
         await d.exec(() => { document.querySelector('.mdv-prose img').scrollIntoView({ block: 'center' }); });
-        await d.wait(() => { const i = document.querySelector('.mdv-prose img'); return !!i && i.complete && i.naturalWidth > 0; }, [], 20000, '埋め込みの画像');
-        // あとから読み込むライブラリ（数式・図）
+        await d.wait(() => { const i = document.querySelector('.mdv-prose img'); return !!i && i.complete && i.naturalWidth > 0; }, [], 20000, 'embedded image');
+        // Libraries loaded later (math, diagrams)
         await d.click('.mdv-side-tree a[href="#/syntax.md"]');
-        await d.wait(headingIs, ['記法'], 20000, 'リンク先');
-        await d.wait(() => document.querySelectorAll('.katex').length >= 2 && !!document.querySelector('.mdv-mermaid svg'), [], 40000, '数式と図');
-        // コードのコピー（フレームの中では、ブラウザーによって結果が異なる。どちらの場合も、結果を正しく表示する）
+        await d.wait(headingIs, ['記法'], 20000, 'link target');
+        await d.wait(() => document.querySelectorAll('.katex').length >= 2 && !!document.querySelector('.mdv-mermaid svg'), [], 40000, 'math and diagrams');
+        // Copying code (inside a frame the outcome differs by browser; either way, the result must be shown correctly)
         await d.click('.mdv-code .mdv-copy');
-        // 画面の言語はブラウザーの設定によって変わるので、表示中の言語の文言と比べる
-        const copy = await d.wait(() => { const T = window.MDV.i18n[document.documentElement.lang]; const text = document.querySelector('.mdv-code .mdv-copy').textContent; return text === T.copied ? 'copied' : text === T.copyFailed ? 'copyFailed' : false; }, [], 10000, 'コピーの結果');
-        // 添付は保存を始めず、保存できないことを伝える
+        // The UI language depends on browser settings, so compare with the text for the language currently shown
+        const copy = await d.wait(() => { const T = window.MDV.i18n[document.documentElement.lang]; const text = document.querySelector('.mdv-code .mdv-copy').textContent; return text === T.copied ? 'copied' : text === T.copyFailed ? 'copyFailed' : false; }, [], 10000, 'copy result');
+        // Attachments do not start a download, and the user is told they cannot be saved
         await d.exec(() => { location.hash = '#/README.md'; });
-        await d.wait(headingIs, ['テスト用サイト'], 20000, 'ホーム');
+        await d.wait(headingIs, ['テスト用サイト'], 20000, 'home');
         await d.exec(() => Array.from(document.querySelectorAll('.mdv-prose a')).find((a) => a.textContent.indexOf('添付 CSV') >= 0).click());
-        await d.wait(() => !!document.querySelector('.mdv-empty-body'), [], 10000, '添付の説明');
+        await d.wait(() => !!document.querySelector('.mdv-empty-body'), [], 10000, 'attachment notice');
         const message = await d.exec(() => { const T = window.MDV.i18n[document.documentElement.lang]; return { expected: document.querySelector('.mdv-empty-body').textContent === T.assetNoSave.replace('{0}', 'data.csv'), button: document.querySelectorAll('.mdv-download').length }; });
         assert.deepEqual(message, { expected: true, button: 0 });
-        return `コードのコピー: ${copy === 'copied' ? 'できる' : 'このブラウザーではできない（できないと表示する）'}`;
+        return `copying code: ${copy === 'copied' ? 'works' : 'not possible in this browser (shown as not possible)'}`;
       } finally {
         await d.frame(null).catch(() => {});
         await outer.close();
@@ -410,40 +410,40 @@ export async function runSmoke(d, engine, log = console.log, shots = null) {
       }
     });
 
-    // ------------------------------------------------------------ 隣の mdfolio.css（SPEC 3.10）
-    await step('隣の mdfolio.css: 書き出したサイトの隣に置くと、本文・図の見た目に反映される', async () => {
+    // ------------------------------------------------------------ Neighboring mdfolio.css (SPEC 3.10)
+    await step('Neighboring mdfolio.css: placed next to an exported site, it changes the look of the body and diagrams', async () => {
       const dir = path.join(work, 'style');
       fs.mkdirSync(dir, { recursive: true });
       fs.copyFileSync(path.join(ROOT, 'dist/sample-site.html'), path.join(dir, 'site.html'));
-      // 利用者の CSS（配色の変数と本文の規則）
+      // The user's CSS (color variables and body rules)
       fs.writeFileSync(path.join(dir, 'mdfolio.css'), ':root { --accent: #8A1C14; }\n.mdv-prose h2 { color: #0B6E80; }\n');
       await d.goto('about:blank');
       await d.goto(pathToFileURL(path.join(dir, 'site.html')).href + '#/guide/' + encodeURIComponent('Markdown記法') + '.md');
-      await d.wait(appReady, [], 20000, 'アプリ');
-      await d.wait(headingIs, ['Markdown 記法'], 20000, '記法の文書');
-      await d.wait(() => document.querySelectorAll('.mdv-mermaid svg').length === 2, [], 20000, '図');
+      await d.wait(appReady, [], 20000, 'app');
+      await d.wait(headingIs, ['Markdown 記法'], 20000, 'syntax document');
+      await d.wait(() => document.querySelectorAll('.mdv-mermaid svg').length === 2, [], 20000, 'diagrams');
       const r = await d.exec(() => ({
         link: getComputedStyle(document.querySelector('.mdv-prose a')).color,
         h2: getComputedStyle(document.querySelector('.mdv-prose h2')).color,
         diagram: /#8A1C14|rgb\(138, ?28, ?20\)/i.test(document.querySelector('.mdv-mermaid svg').outerHTML)
       }));
       assert.deepEqual(r, { link: 'rgb(138, 28, 20)', h2: 'rgb(11, 110, 128)', diagram: true });
-      // インラインのスクリプトは実行されない（CSP。style-src を広げてもスクリプトの許可は変わらない）
+      // Inline scripts do not run (CSP: widening style-src does not change what scripts are allowed)
       await d.exec(() => { const el = document.createElement('script'); el.textContent = 'window.__styleInjected = 1'; document.body.appendChild(el); });
       await new Promise((res) => setTimeout(res, 200));
       assert.equal(await d.exec(() => window.__styleInjected === undefined), true);
-      return 'CSS の変更が本文・図に反映される';
+      return 'CSS changes are reflected in the body and diagrams';
     });
 
-    await step('狭い画面: 横にはみ出さず、サイドバーはドロワーになる', async () => {
+    await step('Narrow screen: no horizontal overflow, and the sidebar becomes a drawer', async () => {
       await d.setSize(420, 800);
       await open(siteUrl);
-      await d.wait(headingIs, ['テスト用サイト'], 20000, 'ホーム');
+      await d.wait(headingIs, ['テスト用サイト'], 20000, 'home');
       const r = await d.exec(() => ({ w: window.innerWidth, overflow: document.documentElement.scrollWidth > window.innerWidth + 1, drawer: document.querySelector('.mdv-sidebar').getBoundingClientRect().right <= 0 || getComputedStyle(document.querySelector('.mdv-sidebar')).visibility === 'hidden' }));
       await d.setSize(1280, 900);
-      if (r.w > 799) return { skip: `ウィンドウを狭くできなかった（幅 ${r.w}px）` };
+      if (r.w > 799) return { skip: `could not make the window narrow (width ${r.w}px)` };
       assert.deepEqual({ overflow: r.overflow, drawer: r.drawer }, { overflow: false, drawer: true });
-      return `幅 ${r.w}px`;
+      return `width ${r.w}px`;
     });
   } finally {
     await sink.close();

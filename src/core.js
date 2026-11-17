@@ -1,5 +1,5 @@
 /*!
- * mdfolio core — DOM に依存しない処理（ブラウザ・Node.js 共用）
+ * mdfolio core — DOM-independent processing (shared by browser and Node.js)
  * MIT License
  */
 (function (root, factory) {
@@ -19,16 +19,16 @@
   var DOC_EXT_RE = new RegExp('\\.(' + DOC_EXTS.join('|') + ')$', 'i');
 
   var LIMITS = {
-    maxDocs: 5000,                      // 文書数の上限
-    maxEntries: 50000,                  // 走査するファイル・フォルダ数の上限
-    maxDocBytes: 10 * 1024 * 1024,      // これを超える文書はプレーンテキスト表示
-    maxAssetBytes: 20 * 1024 * 1024,    // 書き出し時に埋め込む添付 1 件の上限
-    maxUserCssBytes: 1024 * 1024,       // 書き出しに埋め込む CSS の上限（FR-1005）
-    warnTotalBytes: 100 * 1024 * 1024   // 書き出し合計サイズの警告しきい値
+    maxDocs: 5000,                      // Maximum number of documents
+    maxEntries: 50000,                  // Maximum number of files and folders to scan
+    maxDocBytes: 10 * 1024 * 1024,      // Documents larger than this are shown as plain text
+    maxAssetBytes: 20 * 1024 * 1024,    // Maximum size of a single attachment embedded on export
+    maxUserCssBytes: 1024 * 1024,       // Maximum size of CSS embedded on export (FR-1005)
+    warnTotalBytes: 100 * 1024 * 1024   // Warning threshold for total export size
   };
 
   // ---------------------------------------------------------------------------
-  // 文字列ユーティリティ
+  // String utilities
   // ---------------------------------------------------------------------------
 
   function nfc(s) {
@@ -48,7 +48,7 @@
     try {
       return decodeURIComponent(s);
     } catch (e) {
-      // 一部だけ不正な場合は、デコードできる部分だけデコードする
+      // If only part is invalid, decode just the parts that can be decoded
       return s.replace(/(?:%[0-9a-fA-F]{2})+/g, function (m) {
         try { return decodeURIComponent(m); } catch (e2) { return m; }
       });
@@ -82,10 +82,10 @@
   }
 
   // ---------------------------------------------------------------------------
-  // パス
+  // Paths
   // ---------------------------------------------------------------------------
 
-  /** 区切りを / に統一し、. と .. を解決する。ルートより上に出る場合は null。 */
+  /** Normalize separators to / and resolve "." and "..". Returns null if the path goes above the root. */
   function normalizePath(p) {
     if (p == null) return null;
     var parts = String(p).replace(/\\/g, '/').split('/');
@@ -113,7 +113,7 @@
     return i < 0 ? p : p.slice(i + 1);
   }
 
-  /** 拡張子（小文字、ドットなし）。なければ空文字。 */
+  /** Extension (lowercase, without dot). Empty string if none. */
   function extname(p) {
     var b = basename(p);
     var i = b.lastIndexOf('.');
@@ -128,7 +128,7 @@
     return name.replace(DOC_EXT_RE, '');
   }
 
-  /** 名前が . で始まる要素、または node_modules を含むパスは読み込まない。 */
+  /** Do not load paths containing a component that starts with . or node_modules. */
   function isIgnoredPath(p) {
     var segs = String(p).split('/');
     for (var i = 0; i < segs.length; i++) {
@@ -141,7 +141,7 @@
     return name.charAt(0) === '.' || name === 'node_modules';
   }
 
-  /** 文書 basePath から見た相対パス target を、ルート基準のパスに解決する。 */
+  /** Resolve target, relative to the document's basePath, into a root-relative path. */
   function resolveRelative(basePath, target) {
     var t = String(target).replace(/\\/g, '/');
     if (t.charAt(0) === '/') return normalizePath(t);
@@ -150,7 +150,7 @@
   }
 
   // ---------------------------------------------------------------------------
-  // リンク解決（仕様 5.3）
+  // Link resolution (spec 5.3)
   // ---------------------------------------------------------------------------
 
   var SCHEME_RE = /^[a-zA-Z][a-zA-Z0-9+.\-]*:/;
@@ -174,7 +174,7 @@
   }
 
   /**
-   * 照合用の索引を作る。
+   * Build an index for matching.
    * @param {Array<{path:string, kind:string}>} entries
    */
   function createIndex(entries) {
@@ -206,7 +206,7 @@
     return { path: p, kind: index.exact.get(p) };
   }
 
-  /** 完全一致 → 大文字小文字無視 → .md 補完 → .html の読み替え → フォルダの README / index。 */
+  /** Exact match -> case-insensitive -> append .md -> treat .html as .md -> folder README / index. */
   function lookupPath(index, p) {
     if (p == null) return null;
     var i, cand;
@@ -243,8 +243,8 @@
   }
 
   /**
-   * 文書中の href / src を解決する。
-   * 戻り値の type: 'empty' | 'fragment' | 'external' | 'doc' | 'asset' | 'missing'
+   * Resolve an href / src in a document.
+   * Return value type: 'empty' | 'fragment' | 'external' | 'doc' | 'asset' | 'missing'
    */
   function resolveLink(index, basePath, href) {
     var kind = classifyHref(href);
@@ -264,7 +264,7 @@
   }
 
   // ---------------------------------------------------------------------------
-  // ルート（URL ハッシュ、仕様 5.2）
+  // Routes (URL hash, spec 5.2)
   // ---------------------------------------------------------------------------
 
   function encodePath(p) {
@@ -301,7 +301,7 @@
   }
 
   // ---------------------------------------------------------------------------
-  // 見出し ID（GitHub 方式）
+  // Heading IDs (GitHub style)
   // ---------------------------------------------------------------------------
 
   var SLUG_REMOVE_RE = /[^\p{L}\p{M}\p{N}\p{Pc}\- ]/gu;
@@ -310,7 +310,7 @@
     return String(text).trim().toLowerCase().replace(SLUG_REMOVE_RE, '').replace(/ /g, '-');
   }
 
-  /** 同じ文書内で重複しない ID を返す関数を作る。 */
+  /** Create a function that returns IDs that are unique within the same document. */
   function createSlugger() {
     var seen = Object.create(null);
     return function (text) {
@@ -328,13 +328,13 @@
   }
 
   // ---------------------------------------------------------------------------
-  // フロントマター
+  // Front matter
   // ---------------------------------------------------------------------------
 
   var FM_MAX_LINES = 200;
   var FM_LINE_OK_RE = /^(?:\s*$|\s*#|[A-Za-z0-9_\-."' ]+\s*:(?:\s|$)|\s*-(?:\s|$)|\s+\S)/;
 
-  /** 先頭の YAML フロントマターを取り除く。data には最上位の「key: value」だけを入れる。 */
+  /** Strip leading YAML front matter. data holds only top-level "key: value" pairs. */
   function parseFrontMatter(text) {
     var src = String(text);
     if (src.charCodeAt(0) === 0xFEFF) src = src.slice(1);
@@ -370,14 +370,14 @@
   }
 
   // ---------------------------------------------------------------------------
-  // 文字コード判定
+  // Encoding detection
   // ---------------------------------------------------------------------------
 
   function decodeBytes(label, u8, fatal) {
     return new TextDecoder(label, { fatal: fatal }).decode(u8);
   }
 
-  /** BOM → UTF-8 厳密 → Shift_JIS 厳密 → UTF-8（置換文字あり）の順で判定する。 */
+  /** Detect in this order: BOM -> strict UTF-8 -> strict Shift_JIS -> UTF-8 (with replacement characters). */
   function detectAndDecode(bytes) {
     var u8 = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
     var n = u8.length;
@@ -392,20 +392,20 @@
     }
     try {
       return { text: decodeBytes('utf-8', u8, true), encoding: 'utf-8' };
-    } catch (e) { /* UTF-8 ではない */ }
+    } catch (e) { /* not UTF-8 */ }
     try {
       return { text: decodeBytes('shift_jis', u8, true), encoding: 'shift_jis' };
-    } catch (e2) { /* Shift_JIS でもない、または未対応 */ }
+    } catch (e2) { /* not Shift_JIS either, or unsupported */ }
     return { text: decodeBytes('utf-8', u8, false), encoding: 'unknown' };
   }
 
   // ---------------------------------------------------------------------------
-  // 見出し・本文テキストの抽出（検索・タイトル用の簡易解析）
+  // Extracting headings and body text (simple parsing for search and titles)
   // ---------------------------------------------------------------------------
 
   var ENTITY_MAP = { amp: '&', lt: '<', gt: '>', quot: '"', '#39': "'", nbsp: ' ' };
 
-  /** インライン記法の記号を取り除く。 */
+  /** Strip inline markup symbols. */
   function stripInline(s) {
     return String(s)
       .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
@@ -421,7 +421,7 @@
       .replace(/&(amp|lt|gt|quot|#39|nbsp);/g, function (m, k) { return ENTITY_MAP[k]; });
   }
 
-  /** フェンスコードを追跡しながら行ごとに処理する。type: text | code | fence */
+  /** Process line by line while tracking fenced code. type: text | code | fence */
   function scanLines(body, onLine) {
     var lines = String(body).split(/\r?\n/);
     var fence = null;
@@ -449,10 +449,10 @@
   var ATX_RE = /^ {0,3}(#{1,6})(?:[ \t]+(.*?))?(?:[ \t]+#+)?[ \t]*$/;
   var NOT_PARAGRAPH_RE = /^ {0,3}(?:#{1,6}(?:\s|$)|>|[-*+](?:\s|$)|\d+[.)]\s|\||```|~~~)/;
 
-  /** 見出しの一覧（level, text）。 */
+  /** List of headings (level, text). */
   function extractHeadings(body) {
     var out = [];
-    var prev = null; // 直前の段落行
+    var prev = null; // The previous paragraph line
     scanLines(body, function (line, type) {
       if (type !== 'text') { prev = null; return; }
       var m = ATX_RE.exec(line);
@@ -474,14 +474,14 @@
 
   var TABLE_SEP_RE = /^\s*\|?\s*:?-{2,}:?\s*(?:\|\s*:?-{2,}:?\s*)*\|?\s*$/;
 
-  /** Markdown の記法記号を取り除いた検索用テキスト。 */
+  /** Search text with Markdown markup symbols stripped. */
   function toPlainText(body) {
     var out = [];
     scanLines(body, function (line, type) {
       if (type === 'fence') return;
       if (type === 'code') { out.push(line); return; }
       if (TABLE_SEP_RE.test(line) || /^ {0,3}(?:[-*_][ \t]*){3,}$/.test(line) || /^ {0,3}=+[ \t]*$/.test(line)) return;
-      if (/^ {0,3}\[[^\]^][^\]]*\]:\s*\S/.test(line)) return; // リンク参照定義
+      if (/^ {0,3}\[[^\]^][^\]]*\]:\s*\S/.test(line)) return; // Link reference definition
       var s = line
         .replace(/^\s*(?:>\s?)+/, '')
         .replace(/^\s*\[!(?:NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*$/i, '')
@@ -497,7 +497,7 @@
     return out.join('\n').replace(/[ \t]+/g, ' ').replace(/ ?\n ?/g, '\n').replace(/\n{2,}/g, '\n').trim();
   }
 
-  /** 文書の解析結果（タイトル・見出し・検索用テキスト）。 */
+  /** Document analysis result (title, headings, search text). */
   function analyzeDoc(text, fallbackTitle) {
     var fm = parseFrontMatter(text);
     var headings = extractHeadings(fm.body);
@@ -517,7 +517,7 @@
   }
 
   // ---------------------------------------------------------------------------
-  // 検索（大文字小文字・全角半角を区別しない）
+  // Search (case-insensitive and full-width/half-width-insensitive)
   // ---------------------------------------------------------------------------
 
   function isCombining(c) {
@@ -526,7 +526,7 @@
       c === 0xFF9E || c === 0xFF9F;
   }
 
-  /** NFKC・小文字化で変化しないコード単位（高速化のための判定）。 */
+  /** Code units that do not change under NFKC or lowercasing (a check for speed). */
   function isStable(c) {
     if (c < 0x80) return !(c >= 0x41 && c <= 0x5A);
     return (c >= 0x3041 && c <= 0x3096) || (c >= 0x30A1 && c <= 0x30FA) || c === 0x30FC ||
@@ -534,8 +534,8 @@
   }
 
   /**
-   * 照合用に文字列をたたむ（NFKC ＋小文字化）。
-   * wantMap が真なら、たたんだ文字列の各位置 → 元の文字列の位置 の対応表も返す。
+   * Fold a string for matching (NFKC + lowercasing).
+   * If wantMap is truthy, also return a map from each position in the folded string to the position in the original string.
    */
   function foldImpl(src, wantMap) {
     src = String(src);
@@ -600,7 +600,7 @@
   function fold(s) { return foldImpl(s, false); }
   function foldWithMap(s) { return foldImpl(s, true); }
 
-  /** 検索語を空白で分割し、たたんだ語の配列にする（重複は除く）。 */
+  /** Split the query on whitespace into an array of folded terms (duplicates removed). */
   function tokenizeQuery(q) {
     var f = fold(String(q == null ? '' : q)).trim();
     if (!f) return [];
@@ -638,8 +638,8 @@
   }
 
   /**
-   * AND 検索。タイトル・見出し・パスでの一致を優先し、次に本文の一致数で並べる。
-   * @param {Array} entries makeSearchEntry の結果の配列
+   * AND search. Prioritizes matches in title, headings and path, then orders by number of body matches.
+   * @param {Array} entries array of makeSearchEntry results
    */
   function searchDocs(entries, terms, limit) {
     var results = [];
@@ -667,7 +667,7 @@
     return { total: results.length, results: results.slice(0, limit || 50) };
   }
 
-  /** text の中で terms（たたみ済み）に一致する範囲を、元の文字列の位置で返す。 */
+  /** Return the ranges in text matching terms (already folded), as positions in the original string. */
   function findRanges(text, terms) {
     var src = String(text);
     if (!src || !terms || !terms.length) return [];
@@ -683,7 +683,7 @@
         var s = f.map[i];
         var e = f.map[i + term.length];
         if (e <= s) {
-          // 1 文字が複数文字に展開された途中で終わった場合は、その文字の終わりまで含める
+          // If it ends partway through a character that expanded into several characters, extend to the end of that character
           var k = i + term.length;
           while (k < f.text.length && f.map[k] <= s) k++;
           e = f.map[k];
@@ -706,8 +706,8 @@
   function isLowSurrogate(c) { return c >= 0xDC00 && c <= 0xDFFF; }
 
   /**
-   * 一致箇所の前後を切り出した抜粋を作る。
-   * hint は、たたんだ本文での最初の一致位置（分かっていれば）。大きな文書で全体を走査しないために使う。
+   * Build an excerpt around a match.
+   * hint is the position of the first match in the folded body text (if known). Used to avoid scanning the whole of a large document.
    */
   function makeSnippet(plain, terms, radius, hint) {
     radius = radius || 40;
@@ -747,12 +747,12 @@
   }
 
   // ---------------------------------------------------------------------------
-  // ツリー
+  // Tree
   // ---------------------------------------------------------------------------
 
   var collator;
 
-  /** 自然順の比較。利用者の環境によらず同じ順になるよう、照合規則を固定する。 */
+  /** Natural-order comparison. Fixes the collation rules so the order is the same regardless of the user's environment. */
   function compareNames(a, b) {
     if (collator === undefined) {
       try { collator = new Intl.Collator('ja', { numeric: true, sensitivity: 'base' }); } catch (e) { collator = null; }
@@ -775,7 +775,7 @@
     return ra !== rb ? ra - rb : compareNames(a.name, b.name);
   }
 
-  /** 文書パスの配列からツリーを作る。各階層は「ファイル（README / index が先頭）→ フォルダ」の順。 */
+  /** Build a tree from an array of document paths. Each level is ordered "files (README / index first) -> folders". */
   function buildTree(docPaths) {
     var root = { name: '', path: '', dirs: [], files: [], map: Object.create(null) };
     docPaths.forEach(function (p) {
@@ -802,7 +802,7 @@
     return root;
   }
 
-  /** ツリーの表示順（ファイル → フォルダ）で文書パスを並べる。 */
+  /** Sort document paths in tree display order (files -> folders). */
   function flattenTree(node, out) {
     out = out || [];
     node.files.forEach(function (f) { out.push(f.path); });
@@ -810,7 +810,7 @@
     return out;
   }
 
-  /** ホーム文書: 設定の home → ルートの README → ルートの index → ツリー順で最初の文書。 */
+  /** Home document: the home setting -> root README -> root index -> first document in tree order. */
   function pickHome(index, orderedDocs, configHome) {
     var found;
     if (configHome) {
@@ -823,7 +823,7 @@
   }
 
   // ---------------------------------------------------------------------------
-  // style 属性のフィルタ（仕様 SEC-3）
+  // style attribute filter (spec SEC-3)
   // ---------------------------------------------------------------------------
 
   var STYLE_PROPS = (
@@ -849,8 +849,8 @@
   var STYLE_FORBIDDEN_RE = /(?:url|image|image-set|cross-fade|element|paint|src|attr|env|expression)\s*\(/i;
 
   /**
-   * style 属性の値から、許可したプロパティ・安全な値だけを残す。
-   * 引用符・バックスラッシュ・コメントを含む宣言は丸ごと捨てる（エスケープによる回避を防ぐ）。
+   * Keep only allowed properties and safe values from a style attribute value.
+   * Drop entire declarations containing quotes, backslashes or comments (to prevent bypass via escapes).
    */
   function filterStyle(styleText) {
     var src = String(styleText == null ? '' : styleText);
@@ -873,7 +873,7 @@
   }
 
   // ---------------------------------------------------------------------------
-  // サイトデータ・HTML の組み立て（仕様 5.5、8.2）
+  // Assembling site data and HTML (spec 5.5, 8.2)
   // ---------------------------------------------------------------------------
 
   var MIME_TYPES = {
@@ -916,11 +916,11 @@
     return u8;
   }
 
-  // 行区切り文字（U+2028 / U+2029）。ソースに直接書くと行末として扱われるため、コードポイントから作る
+  // Line separator characters (U+2028 / U+2029). Written literally in source they are treated as line ends, so build them from code points
   var LINE_SEP_RE = new RegExp(String.fromCharCode(0x2028), 'g');
   var PARA_SEP_RE = new RegExp(String.fromCharCode(0x2029), 'g');
 
-  /** <script type="application/json"> に安全に埋め込める JSON 文字列。 */
+  /** A JSON string that can be safely embedded in <script type="application/json">. */
   function jsonForScript(value) {
     return JSON.stringify(value)
       .replace(/</g, '\\u003c')
@@ -928,13 +928,13 @@
       .replace(PARA_SEP_RE, '\\u2029');
   }
 
-  // allowDownloads / lockExternalImages は、ファイルの保存や外部の読み込みができない環境（サンドボックス化された
-  // フレームの中など）に置く場合や、配布先でそれらを使わせたくない場合のための指定。
-  // hosted は、HTML に書いた CSP を外して外部のホスティング環境に置いたお試し用のページであることを示す
-  // （開始画面と使い方に、その旨を表示する）
+  // allowDownloads / lockExternalImages are for placing the page where saving files or loading external resources is not possible
+  // (e.g. inside a sandboxed frame), or where the distributor does not want those features used.
+  // hosted indicates a trial page placed on an external hosting service with the CSP written in the HTML removed
+  // (the start screen and help say so)
   var DEFAULT_CONFIG = { title: '', lang: 'auto', theme: 'auto', home: '', allowExternalImages: false, allowDownloads: true, lockExternalImages: false, hosted: false };
 
-  /** 設定ブロックの内容を検証して既定値で補う。 */
+  /** Validate the config block contents and fill in defaults. */
   function normalizeConfig(raw) {
     var c = {};
     var src = raw && typeof raw === 'object' ? raw : {};
@@ -950,8 +950,8 @@
   }
 
   /**
-   * サイトデータを作る。
-   * @param {string} name 文書セットの名前
+   * Build the site data.
+   * @param {string} name name of the document set
    * @param {Array} files {path, kind:'doc', text, mtime} / {path, kind:'asset', mime, base64, mtime}
    */
   function buildSiteData(name, files, created) {
@@ -988,10 +988,10 @@
   var BLOCK_ID_RE = /^mdv-[a-z0-9-]+$/;
 
   /**
-   * HTML 全体を組み立てる。ビルド・アプリ内の書き出し・CLI の 3 か所から使う唯一の実装。
+   * Assemble the whole HTML. The single implementation used by all three of: the build, in-app export, and the CLI.
    * parts: { lang, title, csp, generator, css, blocks: [{id, type, text}] }
    */
-  // タブのアイコン。HTML の中に持たせて、http(s) で配信したときに favicon.ico を取りに行かせない
+  // Tab icon. Kept inside the HTML so that serving over http(s) does not trigger a fetch of favicon.ico
   var FAVICON = 'data:image/svg+xml,'
     + '%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E'
     + '%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%231D4F91%27/%3E'
@@ -999,7 +999,7 @@
     + '%3Cpath d=%27M12 15h9M12 19h9M12 23h5%27 stroke=%27%231D4F91%27 stroke-width=%271.8%27/%3E'
     + '%3C/svg%3E';
 
-  /** 隣に置いて見た目を上書きする CSS のファイル名（SPEC 3.10） */
+  /** File name of the CSS placed alongside to override the look (SPEC 3.10) */
   var USER_CSS_FILE = 'mdfolio.css';
 
   function composeHtml(parts) {
@@ -1020,7 +1020,7 @@
     out.push('<link rel="icon" href="' + FAVICON + '">');
     out.push('<title>' + escapeHtml(parts.title || NAME) + '</title>');
     out.push('<style id="mdv-style">' + css + '</style>');
-    // 利用者の CSS: 埋め込んだもの（書き出しで選んだもの）→ 隣の mdfolio.css の順。あとのものが勝つ（FR-1001、FR-1002）
+    // User CSS: the embedded one (chosen at export) -> the adjacent mdfolio.css. Later ones win (FR-1001, FR-1002)
     if (userCss) out.push('<style id="mdv-user-style">' + userCss + '</style>');
     out.push('<link rel="stylesheet" href="' + USER_CSS_FILE + '" id="mdv-user-css">');
     out.push('</head>');
@@ -1040,7 +1040,7 @@
     return out.join('\n') + '\n';
   }
 
-  /** composeHtml で作った HTML を部品に分解する（CLI 用）。 */
+  /** Split HTML made by composeHtml into its parts (for the CLI). */
   function extractParts(html) {
     var src = String(html).replace(/\r\n?/g, '\n');
     var parts = { blocks: [] };
@@ -1056,7 +1056,7 @@
     m = /<style id="mdv-style">([\s\S]*?)<\/style>/.exec(src);
     if (!m) throw new Error('extractParts: style block not found');
     parts.css = m[1];
-    // <head> の中だけを探す（スクリプトの本文にも同じ文字列があるため）
+    // Search only inside <head> (the same strings also appear in script bodies)
     var headEnd = src.indexOf('</head>');
     m = /<style id="mdv-user-style">([\s\S]*?)<\/style>/.exec(headEnd >= 0 ? src.slice(0, headEnd) : src);
     parts.userCss = m ? m[1] : '';
@@ -1076,12 +1076,12 @@
   }
 
   /**
-   * ビューアの部品に設定とサイトデータを差し込み、サイト HTML の部品にする。
+   * Insert the config and site data into the viewer parts to produce the site HTML parts.
    * options: { config, siteData, title, dropLibs: ['katex','mermaid'] }
    */
   /**
-   * 取り除くライブラリのハッシュを CSP からも外す（使わないスクリプトを許可したままにしない）。
-   * ビルドは script-src のハッシュを「本体 2 つ → 数式 → 図」の順に並べる。この並びと一致しない場合は何も変えない。
+   * Also remove the hashes of dropped libraries from the CSP (do not keep allowing unused scripts).
+   * The build orders the script-src hashes as "two core scripts -> math -> diagrams". If they do not match this order, nothing is changed.
    */
   function pruneScriptHashes(parts, drop) {
     var csp = String(parts.csp || '');
@@ -1131,30 +1131,30 @@
     FAVICON: FAVICON,
     USER_CSS_FILE: USER_CSS_FILE,
     NOSCRIPT: NOSCRIPT,
-    // 文字列
+    // Strings
     nfc: nfc, escapeHtml: escapeHtml, unescapeHtml: unescapeHtml, safeDecode: safeDecode,
     formatBytes: formatBytes, formatDate: formatDate, sanitizeFileName: sanitizeFileName,
-    // パス
+    // Paths
     normalizePath: normalizePath, dirname: dirname, basename: basename, extname: extname,
     isDocPath: isDocPath, stripDocExt: stripDocExt, isIgnoredPath: isIgnoredPath, isIgnoredName: isIgnoredName,
     resolveRelative: resolveRelative,
-    // リンク
+    // Links
     classifyHref: classifyHref, splitHref: splitHref, createIndex: createIndex, lookupPath: lookupPath, resolveLink: resolveLink,
-    // ルート
+    // Routes
     encodePath: encodePath, buildRoute: buildRoute, buildHelpRoute: buildHelpRoute, parseRoute: parseRoute,
-    // 見出し ID
+    // Heading IDs
     slugify: slugify, createSlugger: createSlugger,
-    // 文書解析
+    // Document analysis
     parseFrontMatter: parseFrontMatter, detectAndDecode: detectAndDecode,
     stripInline: stripInline, extractHeadings: extractHeadings, toPlainText: toPlainText, analyzeDoc: analyzeDoc,
-    // 検索
+    // Search
     fold: fold, foldWithMap: foldWithMap, tokenizeQuery: tokenizeQuery, makeSearchEntry: makeSearchEntry,
     searchDocs: searchDocs, findRanges: findRanges, makeSnippet: makeSnippet,
-    // ツリー
+    // Tree
     compareNames: compareNames, buildTree: buildTree, flattenTree: flattenTree, pickHome: pickHome,
-    // セキュリティ
+    // Security
     filterStyle: filterStyle,
-    // サイトデータ・HTML
+    // Site data and HTML
     mimeOf: mimeOf, bytesToBase64: bytesToBase64, base64ToBytes: base64ToBytes, jsonForScript: jsonForScript,
     normalizeConfig: normalizeConfig, buildSiteData: buildSiteData, validateSiteData: validateSiteData,
     composeHtml: composeHtml, extractParts: extractParts, findBlock: findBlock, applySite: applySite

@@ -1,24 +1,24 @@
 #!/usr/bin/env node
 /**
- * ホスティング環境向けの変換（お試し用のページを公開するときに使う）
+ * Conversion for hosting environments (used when publishing a page for trying mdfolio out)
  *
- *   node tools/dev/make-hosted.mjs <入力.html> <出力.html> [--title <タイトル>] [--page-title <ページ名>]
+ *   node tools/dev/make-hosted.mjs <input.html> <output.html> [--title <title>] [--page-title <page name>]
  *
- *   --title        サイトのタイトル（画面の見出しにも使う）
- *   --page-title   HTML の <title> だけを変える（画面の見出しは変えない）
+ *   --title        Site title (also used as the heading on screen)
+ *   --page-title   Changes only the HTML <title> (not the heading on screen)
  *
- * ページを「サンドボックス化したフレーム」の中で表示し、ページの中へ独自のスクリプトを差し込む種類の
- * ホスティング環境（Claude のアーティファクトなど）に、mdfolio の HTML を置くための変換を行う。
+ * Converts an mdfolio HTML file so it can be placed in a hosting environment that shows the page inside a
+ * sandboxed frame and injects its own scripts into the page (such as Claude artifacts).
  *
- *   1. 設定を変える: 保存を伴う操作を出さない（allowDownloads: false）、外部の画像を常に読み込まない
- *      （lockExternalImages: true）。こうした環境では、どちらも動かないため。
- *      あわせて、お試し用の公開ページであること（hosted: true）を開始画面と使い方に表示する。
- *   2. 置換文字（U+FFFD）を、同じ意味のエスケープに書き換える。この文字を含むファイルを受け付けない
- *      ホスティング環境があるため。
- *   3. HTML に書いてある CSP（スクリプトをハッシュで限定する指定）を取り除く。残したままだと、ホスティング側が
- *      差し込むスクリプトまで止めてしまう。外部との通信は、ホスティング側の CSP が止める前提。
+ *   1. Change the settings: hide actions that save files (allowDownloads: false) and never load external images
+ *      (lockExternalImages: true), because neither works in such environments.
+ *      Also show on the start screen and in the help that this is a public trial page (hosted: true).
+ *   2. Rewrite the replacement character (U+FFFD) as an escape with the same meaning, because some
+ *      hosting environments do not accept files that contain this character.
+ *   3. Remove the CSP written in the HTML (which limits scripts by their hashes). If it stayed, it would also
+ *      block the scripts injected by the host. We rely on the host's CSP to block network access.
  *
- * 3 は安全のための仕組みを 1 つ外すことになる。手元で開く・社内で配布する用途には、変換前の HTML を使うこと。
+ * Step 3 removes one of the safety measures. For opening locally or distributing within an organization, use the HTML before conversion.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -30,7 +30,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 const core = createRequire(import.meta.url)(path.join(ROOT, 'src/core.js'));
 
 function fail(message) {
-  console.error('エラー: ' + message);
+  console.error('Error: ' + message);
   process.exit(1);
 }
 
@@ -41,13 +41,13 @@ const files = [];
 for (let i = 0; i < argv.length; i++) {
   if (argv[i] === '--title') title = argv[++i];
   else if (argv[i] === '--page-title') pageTitle = argv[++i];
-  else if (argv[i].startsWith('-')) fail('不明なオプション: ' + argv[i]);
+  else if (argv[i].startsWith('-')) fail('Unknown option: ' + argv[i]);
   else files.push(argv[i]);
 }
-if (files.length !== 2) fail('入力と出力のファイルを指定してください');
-if (title === undefined || pageTitle === undefined) fail('--title / --page-title には値が必要です');
+if (files.length !== 2) fail('Specify the input and output files');
+if (title === undefined || pageTitle === undefined) fail('--title / --page-title requires a value');
 const [input, output] = files;
-if (!fs.existsSync(input)) fail('入力が見つかりません: ' + input);
+if (!fs.existsSync(input)) fail('Input not found: ' + input);
 
 const html = fs.readFileSync(input, 'utf8');
 let parts = null;
@@ -56,9 +56,9 @@ try {
 } catch (e) {
   parts = null;
 }
-if (!parts || core.composeHtml(parts) !== html) fail('mdfolio の HTML として読み取れません: ' + input);
+if (!parts || core.composeHtml(parts) !== html) fail('Cannot read as an mdfolio HTML file: ' + input);
 
-// 1. 設定
+// 1. Settings
 const configBlock = core.findBlock(parts, 'mdv-config');
 const config = core.normalizeConfig(JSON.parse(configBlock.text));
 config.allowDownloads = false;
@@ -69,47 +69,47 @@ if (title !== null) { config.title = title; parts.title = title; }
 if (pageTitle !== null) parts.title = pageTitle;
 configBlock.text = core.jsonForScript(config);
 
-// 2. 置換文字（U+FFFD）を、同じ意味のエスケープに書き換える
-//    この文字は「文字コードの変換に失敗した印」でもあるため、ホスティング環境によっては、含まれているだけで
-//    ファイルを受け付けない。同梱ライブラリ（markdown-it）は、不正な入力をこの文字に置き換える処理の中で、
-//    この文字そのものを書いている。文書のデータに含まれることもある。
+// 2. Rewrite the replacement character (U+FFFD) as an escape with the same meaning
+//    This character is also a sign of a failed character encoding conversion, so some hosting environments
+//    reject a file just because it contains it. The bundled library (markdown-it) writes this character literally
+//    in the code that replaces invalid input with it. It can also appear in document data.
 const REPLACEMENT = String.fromCharCode(0xFFFD);
 const ESCAPED = '\\' + 'uFFFD';
 for (const block of parts.blocks) {
   if (block.text.indexOf(REPLACEMENT) < 0) continue;
   if (block.type === 'application/json') {
-    // JSON では、この文字は文字列の中にしか現れない。エスケープに書き換えても、読み取った結果は変わらない
+    // In JSON this character can only appear inside strings. Rewriting it as an escape does not change the parsed result
     const before = JSON.parse(block.text);
     block.text = block.text.split(REPLACEMENT).join(ESCAPED.toLowerCase());
-    if (JSON.stringify(JSON.parse(block.text)) !== JSON.stringify(before)) fail('置換文字を書き換えられません: ' + block.id);
+    if (JSON.stringify(JSON.parse(block.text)) !== JSON.stringify(before)) fail('Cannot rewrite the replacement character: ' + block.id);
   } else {
-    // スクリプトでは、「置換文字だけでできた文字列」に限って書き換える（'…' "…" と、タグの付かない `…`）。
-    // それ以外の場所にある場合は、意味を変えずに書き換えられると言い切れないので、変換をやめる
+    // In scripts, rewrite only string literals made up of nothing but replacement characters ('…', "…" and untagged `…`).
+    // Anywhere else we cannot be sure the rewrite keeps the meaning, so the conversion stops
     const quoted = new RegExp('(^|[^\\\\])([\'"])(' + REPLACEMENT + '+)\\2', 'g');
     const template = new RegExp('(^|[^\\\\\\w$)\\]])(`)(' + REPLACEMENT + '+)`', 'g');
     const rewrite = (m, before, quote, run) => before + quote + ESCAPED.repeat(run.length) + quote;
     const text = block.text.replace(quoted, rewrite).replace(template, rewrite);
-    if (text.indexOf(REPLACEMENT) >= 0) fail('スクリプトの中の置換文字（U+FFFD）を、安全に書き換えられません: ' + block.id);
+    if (text.indexOf(REPLACEMENT) >= 0) fail('Cannot safely rewrite the replacement character (U+FFFD) in the script: ' + block.id);
     try {
       new vm.Script(text, { filename: block.id });
     } catch (e) {
-      fail('書き換えたスクリプトが構文エラーになりました: ' + block.id + ' ' + e.message);
+      fail('The rewritten script has a syntax error: ' + block.id + ' ' + e.message);
     }
     block.text = text;
   }
 }
 
-// 3. CSP を取り除く
+// 3. Remove the CSP
 let out = core.composeHtml(parts);
 const cspLine = '<meta http-equiv="Content-Security-Policy" content="' + core.escapeHtml(parts.csp) + '">\n';
-if (out.split(cspLine).length !== 2) fail('CSP の指定が見つかりません');
+if (out.split(cspLine).length !== 2) fail('CSP declaration not found');
 out = out.replace(cspLine, '');
-if (/http-equiv="Content-Security-Policy"/.test(out.slice(0, out.indexOf('<style')))) fail('CSP の指定が残っています');
+if (/http-equiv="Content-Security-Policy"/.test(out.slice(0, out.indexOf('<style')))) fail('A CSP declaration remains');
 
-// 4. 隣の mdfolio.css を読む指定を取り除く（公開先には隣のファイルを置けず、見つからない読み込みが起きるだけのため）
+// 4. Remove the link to the neighboring mdfolio.css (the host cannot hold a file next to the page, so it would only cause a failed request)
 out = out.replace('<link rel="stylesheet" href="' + core.USER_CSS_FILE + '" id="mdv-user-css">\n', '');
-if (out.indexOf(REPLACEMENT) >= 0) fail('置換文字（U+FFFD）が残っています（タイトルやスタイルに含まれていないか確認してください）');
+if (out.indexOf(REPLACEMENT) >= 0) fail('A replacement character (U+FFFD) remains (check whether the title or styles contain one)');
 
 fs.mkdirSync(path.dirname(path.resolve(output)), { recursive: true });
 fs.writeFileSync(output, out);
-console.log(`${output} を書き出しました（${(Buffer.byteLength(out) / 1024 / 1024).toFixed(2)} MB、${JSON.parse(core.findBlock(parts, 'mdv-site').text) ? 'サイトモード' : '閲覧モード'}）`);
+console.log(`Wrote ${output} (${(Buffer.byteLength(out) / 1024 / 1024).toFixed(2)} MB, ${JSON.parse(core.findBlock(parts, 'mdv-site').text) ? 'site mode' : 'viewer mode'})`);

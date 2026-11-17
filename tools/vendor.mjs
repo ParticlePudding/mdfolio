@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 /**
- * 同梱ライブラリの更新（保守者向け）
+ * Updates the bundled libraries (for maintainers)
  *
- *   npm install             devDependencies を取得
- *   node tools/vendor.mjs   node_modules から vendor/ へ配布ファイルをコピーし、
- *                           vendor/manifest.json と THIRD-PARTY-NOTICES.txt を生成
+ *   npm install             Fetch the devDependencies
+ *   node tools/vendor.mjs   Copy the distributed files from node_modules to vendor/,
+ *                           and generate vendor/manifest.json and THIRD-PARTY-NOTICES.txt
  *
- * 許可ライセンス一覧（ALLOWED_LICENSES）にないライセンスを検出したら、何も書き出さずに止まる。
- * ふだんのビルド（tools/build.mjs）はこのスクリプトも npm も必要としない。
+ * If it finds a license that is not in the allowed list (ALLOWED_LICENSES), it stops without writing anything.
+ * The normal build (tools/build.mjs) needs neither this script nor npm.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -20,13 +20,13 @@ const NM = path.join(ROOT, 'node_modules');
 const OUT = path.join(ROOT, 'vendor');
 const require = createRequire(import.meta.url);
 
-/** 同梱を許可するライセンス（寛容型のみ）。 */
+/** Licenses allowed for bundled code (permissive licenses only). */
 const ALLOWED_LICENSES = new Set([
   'MIT', 'ISC', 'BSD-2-Clause', 'BSD-3-Clause', 'Apache-2.0', '0BSD', 'Unlicense', 'CC0-1.0', 'BlueOak-1.0.0',
-  '(MPL-2.0 OR Apache-2.0)' // DOMPurify。Apache-2.0 を選択する
+  '(MPL-2.0 OR Apache-2.0)' // DOMPurify. We choose Apache-2.0
 ]);
 
-/** highlight.js の標準セットに追加する言語。増やす場合はここに追記して再実行する。 */
+/** Languages added to the highlight.js default set. To add more, list them here and run this script again. */
 const HLJS_EXTRA = [
   'powershell', 'dos', 'dockerfile', 'nginx', 'apache', 'cmake', 'matlab', 'latex', 'protobuf', 'vbscript',
   'armasm', 'verilog', 'vhdl', 'fortran', 'scala', 'dart', 'haskell', 'julia', 'groovy', 'gradle',
@@ -39,7 +39,7 @@ const COMPONENTS = [
   {
     id: 'markdown-it', pkg: 'markdown-it', role: 'Markdown parser',
     files: [['dist/browser/markdown-it.umd.min.js', 'markdown-it/markdown-it.umd.min.js']],
-    // ブラウザ用ビルドに取り込まれている依存。argparse はコマンドライン用で含まれない
+    // Dependencies included in the browser build. argparse is for the command line and is not included
     bundles: { from: 'markdown-it', exclude: ['argparse'] }
   },
   {
@@ -50,7 +50,7 @@ const COMPONENTS = [
     id: 'dompurify', pkg: 'dompurify', role: 'HTML sanitizer',
     licenseNote: 'Dual-licensed (MPL-2.0 OR Apache-2.0). mdfolio uses it under Apache-2.0.',
     files: [['dist/purify.min.js', 'dompurify/purify.min.js']],
-    // 配布ファイル内のコメントが示す、取り込まれた Babel ヘルパー
+    // Babel helpers included in the build, as noted in the comments of the distributed file
     extraBundles: ['regenerator-runtime', '@babel/helpers']
   },
   {
@@ -70,15 +70,16 @@ const COMPONENTS = [
   {
     id: 'mermaid', pkg: '@mermaid-js/tiny', role: 'Diagrams (tiny build of Mermaid)',
     files: [['dist/mermaid.tiny.js', 'mermaid/mermaid.tiny.js']],
-    // 軽量版に取り込まれている依存は配布物から機械的に確定できないため、mermaid 本体の依存ツリーから
-    // 安全側に列挙する。次のものは軽量版に含まれないことを確認済みのため除く:
-    //   elkjs（EPL-2.0 OR GPL-3.0-or-later）、cytoscape 系（Mindmap / Architecture 図用）、katex、型定義のみのパッケージ
+    // The dependencies included in the tiny build cannot be determined mechanically from the distributed file,
+    // so they are listed conservatively from the dependency tree of the main mermaid package. The following are
+    // left out because we have confirmed they are not in the tiny build:
+    //   elkjs (EPL-2.0 OR GPL-3.0-or-later), the cytoscape packages (for Mindmap / Architecture diagrams), katex, type-only packages
     bundles: { from: 'mermaid', exclude: ['elkjs', 'cytoscape', 'cytoscape-cose-bilkent', 'cytoscape-fcose', 'katex', /^@types\//] },
     bundlesNote: 'Listed conservatively from the dependency tree of the "mermaid" package; ' +
       'some of these may not actually be present in the tiny build.',
-    // 取り込まれている DOMPurify の配布コメントが示す Babel ヘルパー
+    // Babel helpers noted in the comments of the bundled DOMPurify
     extraBundles: ['regenerator-runtime', '@babel/helpers'],
-    // 軽量版に入っていてはならないコードの目印（見つかったら止める）
+    // Markers of code that must not be in the tiny build (stop if found)
     mustNotContain: [['dist/mermaid.tiny.js', 'org.eclipse.elk']]
   }
 ];
@@ -117,9 +118,9 @@ function describe(name) {
   const text = licFile ? fs.readFileSync(licFile, 'utf8').replace(/\r\n?/g, '\n').trim() : null;
   let license = typeof pkg.license === 'string' ? pkg.license : null;
   if (!license && text) license = inferLicense(text);
-  if (!license) throw new Error(`ライセンスを特定できません: ${name}`);
-  if (!ALLOWED_LICENSES.has(license)) throw new Error(`許可していないライセンスです: ${name}@${pkg.version} (${license})`);
-  if (!text) throw new Error(`ライセンスファイルがありません: ${name}`);
+  if (!license) throw new Error(`Cannot determine the license: ${name}`);
+  if (!ALLOWED_LICENSES.has(license)) throw new Error(`License not allowed: ${name}@${pkg.version} (${license})`);
+  if (!text) throw new Error(`No license file: ${name}`);
   const notice = noticeFileOf(dir);
   let repo = pkg.homepage || (pkg.repository && (pkg.repository.url || pkg.repository)) || '';
   repo = String(repo).replace(/^git\+/, '').replace(/\.git$/, '').replace(/^git:\/\//, 'https://');
@@ -131,7 +132,7 @@ function describe(name) {
   };
 }
 
-/** 本番依存（dependencies）を再帰的にたどる。 */
+/** Follows the production dependencies (dependencies) recursively. */
 function walkDeps(rootName, exclude) {
   const seen = new Set();
   const isExcluded = (n) => exclude.some((x) => (x instanceof RegExp ? x.test(n) : x === n));
@@ -157,7 +158,7 @@ function lockInfo(name) {
 // ---------------------------------------------------------------------------
 
 const manifest = { note: 'Generated by tools/vendor.mjs. Do not edit by hand.', components: [], hljsExtraLanguages: HLJS_EXTRA };
-const sections = [];   // ライセンス表記の本文
+const sections = [];   // bodies of the license notices
 const summary = [];
 const copies = [];     // [from, to]
 
@@ -167,7 +168,7 @@ for (const c of COMPONENTS) {
 
   for (const [file, needle] of c.mustNotContain || []) {
     if (fs.readFileSync(path.join(dir, file), 'utf8').includes(needle)) {
-      throw new Error(`${c.pkg}: ${file} に含まれてはならないコード（${needle}）が見つかりました`);
+      throw new Error(`${c.pkg}: ${file} contains code that must not be there (${needle})`);
     }
   }
 
@@ -180,7 +181,7 @@ for (const c of COMPONENTS) {
   copies.push([info.licenseFile, path.join(OUT, path.dirname(c.files[0][1]).split('/')[0], 'LICENSE')]);
 
   const bundled = c.bundles ? walkDeps(c.bundles.from, c.bundles.exclude || []).map(describe) : [];
-  // mermaid 軽量版の場合、依存ツリーの起点（mermaid 本体）自身も取り込まれている
+  // For the tiny build of mermaid, the root of the dependency tree (the main mermaid package) is itself included
   if (c.bundles && c.bundles.from !== c.pkg) bundled.unshift(describe(c.bundles.from));
   for (const name of c.extraBundles || []) {
     if (!bundled.some((b) => b.name === name)) bundled.push(describe(name));
@@ -209,7 +210,7 @@ for (const c of COMPONENTS) {
   }
 }
 
-// 同じ文面のライセンスはまとめる
+// Group licenses with the same text
 const groups = new Map();
 for (const s of sections) {
   const key = sha256(s.text.replace(/\s+/g, ' '));
@@ -241,7 +242,7 @@ for (const g of groups.values()) {
   }
 }
 
-// ここまで例外なく到達したら書き出す
+// Write the files only if we got here without an exception
 fs.rmSync(OUT, { recursive: true, force: true });
 for (const [from, to] of copies) {
   fs.mkdirSync(path.dirname(to), { recursive: true });
@@ -251,6 +252,6 @@ fs.writeFileSync(path.join(OUT, 'manifest.json'), JSON.stringify(manifest, null,
 fs.writeFileSync(path.join(ROOT, 'THIRD-PARTY-NOTICES.txt'), out);
 
 const total = manifest.components.reduce((n, c) => n + c.files.reduce((m, f) => m + f.bytes, 0), 0);
-console.log(`vendor/ を更新しました: ${manifest.components.length} コンポーネント、${copies.length} ファイル、${(total / 1024 / 1024).toFixed(2)} MB`);
-console.log(`THIRD-PARTY-NOTICES.txt: ${(out.length / 1024).toFixed(1)} KB、ライセンス文面 ${groups.size} 種、パッケージ ${sections.length} 件`);
+console.log(`Updated vendor/: ${manifest.components.length} components, ${copies.length} files, ${(total / 1024 / 1024).toFixed(2)} MB`);
+console.log(`THIRD-PARTY-NOTICES.txt: ${(out.length / 1024).toFixed(1)} KB, ${groups.size} distinct license texts, ${sections.length} packages`);
 for (const c of manifest.components) console.log(`  ${c.package} ${c.version} (${c.license})` + (c.bundles.length ? ` + ${c.bundles.length} bundled` : ''));

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// テストをファイルごとに実行して、件数と所要時間を test-results/summary.json にまとめる（テスト報告書の元データ）。
+// Runs the tests file by file and records the counts and durations in test-results/summary.json (source data for the test report).
 //   node tools/dev/test-summary.mjs [unit|e2e]
 import fs from 'node:fs';
 import path from 'node:path';
@@ -30,7 +30,7 @@ for (const [kind, dir, re] of groups) {
     const notes = tap.split('\n').filter((l) => /^\s+# (?!Subtest)/.test(l)).map((l) => l.trim().replace(/^# /, ''));
     summary.files[rel] = { kind, tests: num('tests'), pass: num('pass'), fail: num('fail'), skipped: num('skipped'), seconds: Math.round((Date.now() - t0) / 100) / 10, notes };
     failed += num('fail') + (r.status ? 1 : 0) - (num('fail') ? 1 : 0);
-    console.log(`${rel.padEnd(34)} ${String(num('pass')).padStart(3)} / ${String(num('tests')).padStart(3)}  ${summary.files[rel].seconds}s${num('fail') ? '  ← 失敗あり' : ''}`);
+    console.log(`${rel.padEnd(34)} ${String(num('pass')).padStart(3)} / ${String(num('tests')).padStart(3)}  ${summary.files[rel].seconds}s${num('fail') ? '  <- has failures' : ''}`);
   }
 }
 const all = Object.values(summary.files);
@@ -38,5 +38,5 @@ summary.total = { tests: all.reduce((a, f) => a + f.tests, 0), pass: all.reduce(
 summary.date = new Date().toISOString();
 summary.node = process.version;
 fs.writeFileSync(summaryPath, JSON.stringify(summary, null, 2) + '\n');
-console.log(`合計 ${summary.total.pass} / ${summary.total.tests}（失敗 ${summary.total.fail}、スキップ ${summary.total.skipped}）`);
+console.log(`Total ${summary.total.pass} / ${summary.total.tests} (failed ${summary.total.fail}, skipped ${summary.total.skipped})`);
 process.exit(summary.total.fail || failed ? 1 : 0);

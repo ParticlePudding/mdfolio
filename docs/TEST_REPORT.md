@@ -1,313 +1,321 @@
-# mdfolio テスト報告書
+# mdfolio Test Report
 
-| 項目 | 内容 |
+| Item | Details |
 |---|---|
-| 対象 | mdfolio 1.3.0（単一 HTML 版 `dist/mdfolio.html`、4,338,005 バイト、SHA-256 `80bfb828…11503d836`） |
-| 基準 | [SPEC.md](SPEC.md) 1.9 |
-| 実施日 | 2026-11-13（1.0.1）、2026-11-15（1.1.0）、2026-11-16（1.1.0 の著作権者名の変更後に再実行、1.2.0）、2026-11-17（1.3.0） |
-| 実施者 | 実装者自身（Claude）。**第三者によるテストではない** |
+| Target | mdfolio 1.3.0 (single-HTML version `dist/mdfolio.html`, 4,338,005 bytes, SHA-256 `80bfb828…11503d836`) |
+| Basis | [SPEC.md](SPEC.md) 1.9 |
+| Dates | 2026-11-13 (1.0.1), 2026-11-15 (1.1.0), 2026-11-16 (re-run after the copyright holder name change in 1.1.0; 1.2.0), 2026-11-17 (1.3.0) |
+| Tested by | The implementer (Claude). **Not tested by a third party** |
 
 ---
 
-## 1. 結論
+## 1. Conclusion
 
-### 1.3.0（隣の mdfolio.css、フォルダ版の廃止）
+### Unreleased (English-first project, translation of documents and comments)
 
-- 自動テスト **385 件がすべて合格**しました（単体 187 件、ブラウザーを操作するテスト 198 件）。フォルダ版のテスト（単体・E2E）を消し、隣の `mdfolio.css` と書き出しへの埋め込みのテストを加えました（E2E 7 件、単体 5 件）。
-- 確かめたこと: 隣の `mdfolio.css` がないときは内蔵の見た目でエラーなく表示すること。あれば本文・リンク・図の色に反映すること。文書の中の `<link>`・`<style>` では別の CSS を読み込ませられないこと。`file://` で開いたとき、書き出しの画面が「隣の CSS は書き出しに入らない」と知らせること。「CSS を選ぶ」で選んだ CSS が書き出しに入り、書き出したサイトを CSS のない場所で開いてもその見た目になること。「埋め込まない」で取り消せること。`</style` を含む CSS と 1MB を超える CSS を受け付けないこと。今の HTML に埋め込まれた CSS を引き継ぐこと。`http://` で開いたときは、選ばなくても隣の CSS を候補にし、書き出しに入れること。コマンドライン版の `--css`。CSP で `file:` を CSS にだけ認め、スクリプト・画像などには認めないこと。
-- 実装中に見つけた問題: (1) HTML を分解する処理が、スクリプトの本文の中の `<style id="mdv-user-style">` という文字列を CSS と取り違えた（ビルドの検査で発見。`<head>` の中だけを探すよう修正）。(2) 隣の CSS がないときも、Chromium は空の style sheet を作るので、「効いている」と誤って判断した（E2E で発見。同じファイルを画面に効かない形で読み込み直し、その成否で判断するよう修正）。
-- 公開用の一式（見た目の見本を含む日英の 12 ページ）を、GitHub Pages と同じ形で配信して確かめ、見た目の見本で色と見出しが変わることを画面で確かめました。
-- **確認できていないこと**: Gecko と WebKit での確認（`tests/cross/smoke.mjs` は `mdfolio.css` の項目に書き換えたが、この開発環境では動かしていない）。Firefox / Safari が、`file://` で開いた HTML の隣の CSS を読み込むかは未確認です。Windows / macOS の実機、スマートフォンの実機も未確認です。
+- The specification, review record, test report, source code comments, developer tool messages, and test names were translated into English. All automated tests pass after the translation: **385 tests** (unit 187, browser 198).
+- To confirm that the translation did not change the program, `src/app.js`, `src/core.js`, `src/md.js`, and `src/i18n.js` were parsed with a JavaScript parser and compared token by token with the previous version, ignoring comments: **no differences**. The CSS files were compared with comments removed.
+- Found during the translation: in `src/document.css`, the section divider comment before the "body text" rule was never closed, so the `.mdv-prose { font-family; font-size: 1rem; line-height: 1.8 }` rule had been commented out since 1.1.0. The comment was closed. The rendered values did not change (16px, line height 28.8px), because the same values already came from the `body` rule in `app.css`.
+- The public page (English at the top, Japanese under `ja/`, `en/` forwarding to the top) was served the same way as GitHub Pages and checked in Chromium: no errors, no external requests, no horizontal overflow, the language links work, and the samples show the expected interface language.
+- **Not verified**: the Gecko and WebKit checks (`tests/cross/smoke.mjs`; the tools are not available in this environment), the forwarding of `/en/` on the real github.io site, and review of the English by a native speaker.
 
-### 1.2.0（英語への対応の拡大、公開ページ、自動化）
+### 1.3.0 (adjacent mdfolio.css, folder version removed)
 
-- 自動テスト **395 件がすべて合格**しました（単体 191 件、ブラウザーを操作するテスト 204 件）。1.1.0 から増えたのは単体の 16 件です（見本文書 6 件、公開ページ 4 件、リリース 3 件、更新コマンドとコマンドライン版の書き出しの英語の表示 3 件）。
-- 更新コマンドとコマンドライン版の書き出しは、表示の言語が実行する機械の設定で変わるようになったため、テストでは環境変数 `MDFOLIO_LANG=ja` で日本語に固定し、英語は個別のテストで確かめています。
-- 図（Mermaid）の種類の記述（使い方と見本）は、実際にブラウザーで描いて確かめました。フローチャート、シーケンス図、クラス図、状態遷移図、ER 図、ガントチャート、円グラフは描け、マインドマップとアーキテクチャ図はエラーの表示になります。
-- リリースの zip を展開し、その中のフォルダ版の更新コマンド（英語の表示）と、コマンドライン版の書き出しが動くことを確かめました。
-- 公開用の一式（日本語と英語の 12 ページ）を、GitHub Pages と同じ形で配信して確かめました（2026-11-16 の追記と同じ項目）。
-- 英語の文章を見直したあと（レビュー記録 D-10）、自動テストをすべて再実行して合格しました。画面の英語の単数・複数の出し分けは、既存の単体テストに確認を加えました（件数は変わりません）。英語の文章を英語を母語とする人に確かめてもらうことは、できていません。
-- **確認できていないこと**: GitHub Actions の 2 つの自動実行（公開ページの更新、リリースの作成）は、この開発環境では動かせません。設定ファイルの形と、中で行う手順（ビルド、単体テスト、`make-pages.mjs`、`make-release.mjs`）は手元で確かめましたが、GitHub の上での初回の実行結果は、Actions の画面で確かめる必要があります。Gecko と WebKit での確認は、この開発環境に道具がないため再実行していません。Windows / macOS の実機、スマートフォンの実機も 1.1.0 と同じく未確認です。
+- All **385 automated tests passed** (187 unit tests, 198 browser-driven tests). The folder version's tests (unit and E2E) were removed, and tests were added for the adjacent `mdfolio.css` and for embedding it in exports (7 E2E, 5 unit).
+- What was verified: when there is no adjacent `mdfolio.css`, the page displays with the built-in look and no errors. When it exists, it is applied to the colors of the body text, links and diagrams. `<link>` and `<style>` inside a document cannot load a different CSS. When opened via `file://`, the export screen says that the adjacent CSS is not included in the export. CSS chosen with "Choose CSS…" is included in the export, and the exported site keeps that look even when opened in a location without the CSS. "Do not embed" cancels it. CSS that contains `</style` and CSS over 1MB are rejected. CSS embedded in the current HTML is carried over. When opened via `http://`, the adjacent CSS is offered as a candidate and included in the export even without choosing it. The command-line version's `--css`. The CSP allows `file:` only for CSS, not for scripts, images, etc.
+- Problems found during implementation: (1) The code that splits the HTML into parts mistook the string `<style id="mdv-user-style">` inside a script body for the CSS (found by the build check; fixed to search only inside `<head>`). (2) Even when there is no adjacent CSS, Chromium creates an empty style sheet, so the app wrongly concluded that the CSS was in effect (found by E2E; fixed to load the same file again in a form that does not affect the screen, and to decide based on whether that load succeeds).
+- The publishing set (12 pages in Japanese and English, including the appearance sample) was served the same way as GitHub Pages and checked, and it was confirmed on screen that the colors and headings change in the appearance sample.
+- **Not verified**: checks on Gecko and WebKit (`tests/cross/smoke.mjs` was rewritten for the `mdfolio.css` items, but it has not been run in this development environment). Whether Firefox / Safari load the adjacent CSS of an HTML file opened via `file://` is not verified. Real Windows / macOS machines and real smartphones are also not verified.
 
-### 1.1.0（フォルダ版の追加）
+### 1.2.0 (wider English support, public pages, automation)
 
-- **2026-11-16 追記**: `LICENSE` の著作権者名を「mdfolio contributors」から「Particle Pudding」に変えて作り直し、自動テスト 379 件（単体 175 件、ブラウザーを操作するテスト 204 件）がすべて合格しました。動作は変えていません。単一 HTML 版の大きさとハッシュは上の表のとおり変わりました。Gecko と WebKit での確認は再実行していません（この変更で動作に差が出る箇所はありません）。`dist/hosted/` の 2 件は 1.0.1 のときに公開したページの写しなので、作り直しておらず、古い名前のままです。
-- **2026-11-16 追記（GitHub Pages）**: 公開用の一式（`tools/dev/make-pages.mjs` の出力）を、GitHub Pages と同じ形（`/mdfolio/` の下に http で配信）で Chromium で開き、案内のページ・書き出しの見本・ビューア・フォルダ版の見本・説明書の 5 ページがエラーなく表示され、外部への通信と読み込みの失敗（404）がないこと、幅 390px で横にはみ出さないこと、フォルダ版で数式と図が `lib/` から読み込まれることを確認しました。**実際の公開先（github.io）で開いた確認はできていません**（この開発環境から公開先に接続できるかは未確認）。
-- **2026-11-16 追記（日本語と英語の両対応。SPEC 8.7）**: 英語の見本文書・README・公開ページを加えました。自動テスト **384 件がすべて合格**しました（単体 180 件、ブラウザーを操作するテスト 204 件）。増えたのは見本文書の単体テスト 5 件で、日本語と英語の見本の構成と記法の見本がそろっていること、英語の見本のファイル名が英語であること、両方の見本の相対リンク・画像・見出しへのリンクの参照先が実在すること（PG-4、PG-8）を確かめます。わざと見出しへのリンクを壊すと不合格になることも確かめました。
-  公開用の一式は、GitHub Pages と同じ形で配信して Chromium で確認しました（このテストは公開の手順の確認で、自動テストの件数には入れていません）: 日本語と英語の 12 ページがエラーなく表示され、外部への通信と読み込みの失敗がなく、幅 390px で横にはみ出さないこと。案内のページの言語の切り替えリンク、`hreflang`、すべてのカードのリンク先。見本と説明書を**反対の言語に設定したブラウザー**で開いても、画面の言語が文書の言語になること（PG-3）。英語の見本で、文書間の移動、見出しへのリンク、数式・図（図の中の英語の文字）、画像、検索（`MERMAID`）。
-  見本文書の見直しで、日本語の「配布方法」の「方法は 2 つあります」が、実際には 3 つ書かれていたので「3 つ」に直しました。
-  確認できていないこと: 実際の公開先（github.io）での表示。英語の文章の自然さは、英語を母語とする人に確かめてもらっていません。
-- **2026-11-16 追記（ライセンス表記。PG-9）**: 公開ページの案内（日本語・英語）に、ライセンス表記の全文を折りたたみの欄で載せました。単体テストを 4 件加え（計 184 件、すべて合格）、公開ページの 9 つの HTML すべてに `LICENSE` と `THIRD-PARTY-NOTICES.txt` の全文が入っていること（フォルダ版は `lib/resources.js`）、案内のページがスクリプトと外部の読み込みを使わないこと、見本の画面の言語の固定を確かめます。案内のページの欄が開けて、幅 390px でも横にはみ出さないことをブラウザーで確かめました。
-- 自動テスト **379 件がすべて合格**しました（単体 175 件、ブラウザーを操作するテスト 204 件）。1.0.1 から増えたのは、フォルダ版の単体 7 件と E2E 13 件です。1.0.1 までのテストは、CSS を 2 つのファイルに分けたあとの単一 HTML 版で、すべて合格しています。
-- Gecko と WebKit でも、フォルダ版を `file://` で開く確認を 2 項目加え、それぞれ 18 項目中 17 項目が合格、1 項目が未確認（自動操作できない操作。1.0.1 と同じ）でした。
-- 確認したのは、所定の文書の表示、`lib/` からの数式・図のライブラリの読み込み、`document.css` の変更が本文・画面・図（ライト・ダーク）と印刷に反映されること、別のフォルダを開いてから戻る操作、書き出し（更新コマンドで写した CSS が使われ、写す前の変更は入らないこと）、更新コマンドの動作（コマンドライン版の書き出しと同じデータを作ること、誤りのときにファイルを壊さないこと）、外部の画像を読み込まないこと、インラインのスクリプトが実行されないこと、既定の配色でのアクセシビリティの自動検査です。
-- 実装中に見つけて直した問題が 3 件あります（6 章 T-25〜T-27）。
-- 確認できていないこと: Windows と macOS の実機（特に、共有フォルダに置いて開いた場合）、Edge と製品版の Firefox / Safari。利用者が配色を変えた場合のコントラストは、自動では確かめていません（既定の配色だけを検査）。
+- All **395 automated tests passed** (191 unit tests, 204 browser-driven tests). The increase from 1.1.0 is 16 unit tests (6 for sample documents, 4 for public pages, 3 for releases, 3 for English output of the update command and the command-line export).
+- Because the display language of the update command and the command-line export now depends on the settings of the machine that runs them, the tests fix them to Japanese with the environment variable `MDFOLIO_LANG=ja`, and English is checked by separate tests.
+- The descriptions of diagram (Mermaid) types (in the usage guide and samples) were checked by actually drawing them in a browser. Flowcharts, sequence diagrams, class diagrams, state diagrams, ER diagrams, Gantt charts and pie charts can be drawn; mind maps and architecture diagrams show an error.
+- The release zip was extracted, and it was confirmed that the folder version's update command inside it (with English output) and the command-line export work.
+- The publishing set (12 pages in Japanese and English) was served the same way as GitHub Pages and checked (the same items as the 2026-11-16 addendum).
+- After the English text was revised (review record D-10), all automated tests were re-run and passed. Checks for English singular/plural forms on screen were added to existing unit tests (the count did not change). Having the English text checked by a native English speaker has not been done.
+- **Not verified**: the two GitHub Actions workflows (updating the public pages, creating a release) cannot be run in this development environment. The form of the configuration files and the steps they run (build, unit tests, `make-pages.mjs`, `make-release.mjs`) were checked locally, but the result of the first run on GitHub needs to be checked on the Actions screen. Checks on Gecko and WebKit were not re-run, because the tools are not available in this development environment. Real Windows / macOS machines and real smartphones remain not verified, as in 1.1.0.
+
+### 1.1.0 (folder version added)
+
+- **2026-11-16 addendum**: The copyright holder name in `LICENSE` was changed from "mdfolio contributors" to "Particle Pudding" and the build was redone; all 379 automated tests (175 unit tests, 204 browser-driven tests) passed. Behavior was not changed. The size and hash of the single-HTML version changed as shown in the table above. Checks on Gecko and WebKit were not re-run (this change touches nothing that could make behavior differ). The two files in `dist/hosted/` are copies of the pages published at 1.0.1, so they were not rebuilt and still carry the old name.
+- **2026-11-16 addendum (GitHub Pages)**: The publishing set (output of `tools/dev/make-pages.mjs`) was served the same way as GitHub Pages (over http under `/mdfolio/`) and opened in Chromium. It was confirmed that the 5 pages (landing page, export sample, viewer, folder version sample, documentation) display without errors, that there is no external traffic and no failed loads (404), that nothing overflows horizontally at a width of 390px, and that the folder version loads math and diagrams from `lib/`. **Opening the pages at the actual publishing location (github.io) has not been verified** (whether this development environment can connect to the publishing location is not verified).
+- **2026-11-16 addendum (Japanese and English support; SPEC 8.7)**: English sample documents, README and public pages were added. All **384 automated tests passed** (180 unit tests, 204 browser-driven tests). The increase is 5 unit tests for the sample documents. They check that the Japanese and English samples have matching structure and matching syntax samples, that the English samples have English file names, and that the targets of relative links, images and heading links in both samples exist (PG-4, PG-8). It was also confirmed that deliberately breaking a heading link makes the test fail.
+  The publishing set was served the same way as GitHub Pages and checked in Chromium (this is a check of the publishing procedure and is not counted among the automated tests): the 12 Japanese and English pages display without errors, with no external traffic and no failed loads, and nothing overflows horizontally at a width of 390px. The language switch link on the landing page, `hreflang`, and the targets of all card links. Even when the samples and documentation are opened in a browser **set to the opposite language**, the screen language matches the document language (PG-3). In the English sample: moving between documents, heading links, math and diagrams (English text inside diagrams), images, and search (`MERMAID`).
+  While revising the sample documents, the Japanese "Distribution" section said "there are 2 ways" but actually described 3, so it was corrected to "3".
+  Not verified: display at the actual publishing location (github.io). The naturalness of the English text has not been checked by a native English speaker.
+- **2026-11-16 addendum (license notices; PG-9)**: The full license notices were added to the landing pages (Japanese and English) in a collapsible section. 4 unit tests were added (184 in total, all passed). They check that all 9 HTML files of the public pages contain the full text of `LICENSE` and `THIRD-PARTY-NOTICES.txt` (for the folder version, in `lib/resources.js`), that the landing page uses no scripts and no external loads, and that the screen language of the samples is fixed. It was confirmed in a browser that the section on the landing page can be opened and does not overflow horizontally even at a width of 390px.
+- All **379 automated tests passed** (175 unit tests, 204 browser-driven tests). The increase from 1.0.1 is 7 unit tests and 13 E2E tests for the folder version. All tests up to 1.0.1 pass on the single-HTML version after the CSS was split into two files.
+- On Gecko and WebKit as well, 2 items were added for opening the folder version via `file://`; on each engine, 17 of 18 items passed and 1 item was not verified (an operation that cannot be automated; the same as 1.0.1).
+- What was verified: display of the designated document; loading the math and diagram libraries from `lib/`; changes to `document.css` being applied to the body text, the screen, diagrams (light and dark) and printing; opening another folder and going back; export (the CSS copied by the update command is used, and changes made before copying are not included); behavior of the update command (it produces the same data as the command-line export, and it does not damage files on error); external images are not loaded; inline scripts are not executed; automated accessibility checks with the default color scheme.
+- 3 problems were found and fixed during implementation (chapter 6, T-25 to T-27).
+- Not verified: real Windows and macOS machines (especially when the files are placed on a shared folder and opened), Edge, and release versions of Firefox / Safari. Contrast when users change the color scheme has not been checked automatically (only the default color scheme is checked).
 
 ### 1.0.1
 
-- 自動テスト **359 件がすべて合格**しました（単体 168 件、ブラウザーを操作するテスト 191 件）。スキップはありません。ただし、最終確認の途中の 1 回の実行で、性能テストの 1 件が不合格になりました（4 章。再実行では合格）。
-- 仕様書の要件 68 項目（FR 51、SEC 10、NFR 7）は、すべていずれかのテストに対応づけてあります（7 章）。
-- Chromium のほかに、Firefox のエンジン（Gecko 160）と Safari 系のエンジン（WebKitGTK 2.52）でも主要機能 16 項目を確認し、それぞれ 15 項目が合格、1 項目が未確認（自動操作できない操作）でした。
-- テストの過程で、製品の問題が **22 件**、配布物（zip）の問題が **1 件**見つかり、すべて修正しました（6 章）。うち 1 件は「外部と通信しない」という要件に反する重要なものでした。1.0.1 で見つかったのは、このうち製品 6 件と配布物 1 件です。
-- 自動テストでは確認できなかったことが残っています（8 章）。製品版の Firefox / Safari、Windows / macOS の実機、**スマートフォンの実機**、**実際のホスティング環境（Claude のアーティファクトなど）**、ブラウザー本来のフォルダ選択画面を通した操作、紙への印刷です。手動確認の一覧を付けました。
-- 1.0.1 で加えた「別のページの中に埋め込んだ表示」は、条件を模したフレームで確認したものです。サンプルのページ 2 つを公開する操作は成功しましたが、**公開されたページを開いて、表示と操作を確かめることはできていません**（確認に使えるブラウザーが、公開先にサインインしていなかったため）。
+- All **359 automated tests passed** (168 unit tests, 191 browser-driven tests). None were skipped. However, during one run in the final check, 1 performance test failed (chapter 4; it passed on re-run).
+- All 68 requirements in the specification (51 FR, 10 SEC, 7 NFR) are mapped to at least one test (chapter 7).
+- Besides Chromium, 16 main features were checked on the Firefox engine (Gecko 160) and a Safari-family engine (WebKitGTK 2.52); on each, 15 items passed and 1 item was not verified (an operation that cannot be automated).
+- During testing, **22 problems** in the product and **1 problem** in the distribution package (zip) were found, and all were fixed (chapter 6). One of them was a serious one that violated the requirement "does not communicate externally". Of these, 6 product problems and the 1 package problem were found in 1.0.1.
+- Some things could not be verified by automated tests (chapter 8): release versions of Firefox / Safari, real Windows / macOS machines, **real smartphones**, **real hosting environments (such as Claude artifacts)**, operation through the browser's own folder picker, and printing on paper. A manual check list is included.
+- The "display embedded inside another page" added in 1.0.1 was checked with frames that imitate those conditions. Publishing the 2 sample pages succeeded, but **opening the published pages and checking display and operation has not been done** (the browser available for checking was not signed in to the publishing site).
 
 ---
 
-## 2. テスト環境
+## 2. Test environment
 
-| 項目 | 内容 |
+| Item | Details |
 |---|---|
-| 機械 | Linux（Ubuntu 24.04）、2 コア（Intel Xeon 2.1GHz）、メモリ 8GB |
+| Machine | Linux (Ubuntu 24.04), 2 cores (Intel Xeon 2.1GHz), 8GB memory |
 | Node.js | 22.23.4 |
-| ブラウザー（全項目） | Chromium 153.0.8010.12（Chrome for Testing、ヘッドレス）、Playwright 1.63.0 |
-| ブラウザー（主要機能） | WebKitGTK 2.52.6（MiniBrowser、WebKitWebDriver）／ Gecko 160.0（Zen Browser 1.24.2b のビルド、geckodriver 0.36.0） |
-| 検査エンジン | axe-core 4.14.0（アクセシビリティ） |
-| 開き方 | 主に `file://`（HTML を直接開く形）。一部は `http://127.0.0.1` |
+| Browser (all items) | Chromium 153.0.8010.12 (Chrome for Testing, headless), Playwright 1.63.0 |
+| Browsers (main features) | WebKitGTK 2.52.6 (MiniBrowser, WebKitWebDriver) / Gecko 160.0 (a build of Zen Browser 1.24.2b, geckodriver 0.36.0) |
+| Checking engine | axe-core 4.14.0 (accessibility) |
+| How opened | Mainly `file://` (opening the HTML directly). Some via `http://127.0.0.1` |
 
-テストの考え方:
+Testing approach:
 
-- ビルドした `dist/mdfolio.html` そのものを、実際のブラウザーで操作して確認しました（部品だけを取り出したテストではありません）。
-- 各テストの最後に、**コンソールのエラー・CSP 違反・想定外の通信がないこと**を確かめています。悪意のある文書を使うテストだけは、CSP が遮断した記録が出ることを許し、それ以外のエラーがないことを確かめています。
-- 「外部と通信していない」ことは、ブラウザー側の記録ではなく、**外部サーバーの代わりに立てたローカルの HTTP サーバーに届いたリクエストの有無**で判定しました。
-- Gecko は、Firefox の配布元にテスト環境から接続できなかったため、同じエンジンを使う別のブラウザーのビルドで確認しました。エンジンは同じですが、Firefox そのものではありません。
-- 埋め込み表示は、2 種類のフレームで確認しました。(1) 公開ページを模したもの: 親ページとは別のオリジンから配信し、`sandbox`（保存・ダイアログ・最上位の移動を禁止）を付け、画像を `data:` / `blob:` に限る CSP をヘッダーで付け、`<head>` の先頭に別のスクリプトを差し込む。(2) `srcdoc` で埋め込むもの: 文書の URL が `about:srcdoc` になり、保存領域を使えなくした場合も含む。条件は、ホスティング側が公開している説明から組み立てたもので、実環境と同じである保証はありません。
+- The built `dist/mdfolio.html` itself was operated in real browsers (these are not tests of isolated components).
+- At the end of each test, it is checked that **there are no console errors, no CSP violations and no unexpected network requests**. Only the tests that use malicious documents allow log entries for things the CSP blocked, and they check that there are no other errors.
+- "No external communication" was judged not from the browser's logs but from **whether any request reached a local HTTP server set up in place of external servers**.
+- For Gecko, the Firefox download site could not be reached from the test environment, so a build of another browser that uses the same engine was used. The engine is the same, but it is not Firefox itself.
+- Embedded display was checked with 2 kinds of frames. (1) One imitating a public page: served from a different origin than the parent page, with `sandbox` (saving, dialogs and top-level navigation forbidden), with a CSP header that limits images to `data:` / `blob:`, and with another script inserted at the start of `<head>`. (2) One embedded with `srcdoc`: the document URL becomes `about:srcdoc`, including the case where storage is made unavailable. These conditions were assembled from the hosting side's public descriptions, and there is no guarantee that they match the real environment.
 
 ---
 
-## 3. 結果
+## 3. Results
 
-| ファイル | 内容 | 件数 | 合格 | 所要 |
+| File | Contents | Tests | Passed | Time |
 |---|---|---:|---:|---:|
-| `tests/unit/core.test.mjs` | パス解決、ルート、スラッグ、文字コード判定、検索、ツリー、style の制限、サイトデータ、HTML の組み立て | 82 | 82 | 0.3 秒 |
-| `tests/unit/md.test.mjs` | Markdown の拡張（数式、タスクリスト、アラート、見出し ID、参照の抽出） | 43 | 43 | 0.5 秒 |
-| `tests/unit/build.test.mjs` | 成果物の構造、CSP のハッシュ、同梱ライブラリの目録とライセンス、ビルドの再現性、文言の対応 | 19 | 19 | 1.1 秒 |
-| `tests/unit/cli.test.mjs` | コマンドライン版の書き出し | 15 | 15 | 4.0 秒 |
-| `tests/unit/package.test.mjs` | zip の作成（日本語のファイル名）、外部のホスティング環境に置くための変換（置換文字の書き換えを含む） | 9 | 9 | 2.0 秒 |
-| `tests/e2e/startup.e2e.mjs` | 起動、CSP、ヘルプ、ライセンス表示、保存領域が使えない場合 | 13 | 13 | 7 秒 |
-| `tests/e2e/open.e2e.mjs` | フォルダ・ファイル・ドロップでの読み込み、除外、文字コード、上限、エラー | 22 | 22 | 14 秒 |
-| `tests/e2e/render.e2e.mjs` | 表示（表、コード、数式、図、脚注、アラート、画像、目次）、コードの色分けの後回し | 19 | 19 | 16 秒 |
-| `tests/e2e/navigate.e2e.mjs` | リンク、戻る／進む、スクロール位置、ツリー、カスタムナビ、添付のダウンロード | 23 | 23 | 13 秒 |
-| `tests/e2e/search.e2e.mjs` | 全文検索、キーボード操作、一致語の強調、索引 | 17 | 17 | 17 秒 |
-| `tests/e2e/settings.e2e.mjs` | テーマ、言語、外部画像、画面幅、指で操作する端末、印刷、横スクロールバー | 16 | 16 | 13 秒 |
-| `tests/e2e/export.e2e.mjs` | 書き出し、サイトモード、未使用ライブラリの除外、コマンドライン版との一致 | 20 | 20 | 13 秒 |
-| `tests/e2e/security.e2e.mjs` | スクリプトの除去、ID の保護、リンク、外部通信、CSP、改ざんの検出 | 14 | 14 | 25 秒 |
-| `tests/e2e/fsa.e2e.mjs` | 再読み込み、自動更新、前回のフォルダ（本物のハンドルを含む） | 11 | 11 | 28 秒 |
-| `tests/e2e/a11y.e2e.mjs` | axe-core による検査、配色、キーボード操作、フォーカス | 17 | 17 | 26 秒 |
-| `tests/e2e/perf.e2e.mjs` | 性能（NFR-2） | 4 | 4 | 45 秒 |
-| `tests/e2e/embed.e2e.mjs` | 保存を使わない設定、外部画像の固定、お試し用の公開ページの表示、別オリジンのサンドボックス化したフレーム・`srcdoc` のフレームの中での動作、変換の前後で表示が変わらないこと | 15 | 15 | 31 秒 |
-| `tests/unit/folder.test.mjs` | フォルダ版のビルドと更新コマンド（1.1.0） | 7 | 7 | 1.5 秒 |
-| `tests/e2e/folder.e2e.mjs` | フォルダ版を `file://` で開いたときの動作（1.1.0） | 13 | 13 | 13 秒 |
-| **合計（1.1.0）** | | **379** | **379** | 約 4.3 分 |
-| （参考）1.0.1 の合計 | | 359 | 359 | |
+| `tests/unit/core.test.mjs` | Path resolution, routes, slugs, encoding detection, search, tree, style restrictions, site data, HTML assembly | 82 | 82 | 0.3 s |
+| `tests/unit/md.test.mjs` | Markdown extensions (math, task lists, alerts, heading IDs, reference extraction) | 43 | 43 | 0.5 s |
+| `tests/unit/build.test.mjs` | Output structure, CSP hashes, inventory and licenses of bundled libraries, build reproducibility, matching UI strings | 19 | 19 | 1.1 s |
+| `tests/unit/cli.test.mjs` | Command-line export | 15 | 15 | 4.0 s |
+| `tests/unit/package.test.mjs` | Zip creation (Japanese file names), conversion for external hosting environments (including rewriting the replacement character) | 9 | 9 | 2.0 s |
+| `tests/e2e/startup.e2e.mjs` | Startup, CSP, help, license display, when storage is unavailable | 13 | 13 | 7 s |
+| `tests/e2e/open.e2e.mjs` | Loading via folder, files and drop; exclusions; encodings; limits; errors | 22 | 22 | 14 s |
+| `tests/e2e/render.e2e.mjs` | Display (tables, code, math, diagrams, footnotes, alerts, images, table of contents), deferred code highlighting | 19 | 19 | 16 s |
+| `tests/e2e/navigate.e2e.mjs` | Links, back/forward, scroll position, tree, custom nav, attachment downloads | 23 | 23 | 13 s |
+| `tests/e2e/search.e2e.mjs` | Full-text search, keyboard operation, match highlighting, index | 17 | 17 | 17 s |
+| `tests/e2e/settings.e2e.mjs` | Theme, language, external images, screen width, touch devices, printing, horizontal scrollbars | 16 | 16 | 13 s |
+| `tests/e2e/export.e2e.mjs` | Export, site mode, excluding unused libraries, match with the command-line version | 20 | 20 | 13 s |
+| `tests/e2e/security.e2e.mjs` | Script removal, ID protection, links, external communication, CSP, tamper detection | 14 | 14 | 25 s |
+| `tests/e2e/fsa.e2e.mjs` | Reload, auto-update, last folder (including real handles) | 11 | 11 | 28 s |
+| `tests/e2e/a11y.e2e.mjs` | Checks with axe-core, color scheme, keyboard operation, focus | 17 | 17 | 26 s |
+| `tests/e2e/perf.e2e.mjs` | Performance (NFR-2) | 4 | 4 | 45 s |
+| `tests/e2e/embed.e2e.mjs` | Settings that do not use saving, locked external images, display of the trial public page, behavior inside a sandboxed cross-origin frame and a `srcdoc` frame, display unchanged before and after conversion | 15 | 15 | 31 s |
+| `tests/unit/folder.test.mjs` | Folder version build and update command (1.1.0) | 7 | 7 | 1.5 s |
+| `tests/e2e/folder.e2e.mjs` | Behavior of the folder version opened via `file://` (1.1.0) | 13 | 13 | 13 s |
+| **Total (1.1.0)** | | **379** | **379** | about 4.3 min |
+| (Reference) 1.0.1 total | | 359 | 359 | |
 
-元データは `test-results/`（`summary.json`、各ファイルの `.tap`）にあります。
+The raw data is in `test-results/` (`summary.json` and a `.tap` file per test file).
 
 ---
 
-## 4. 性能（NFR-2）
+## 4. Performance (NFR-2)
 
-2 コアの機械（仕様が想定する程度）で計測しました。目標値をそのまま合格基準にしています。
+Measured on a 2-core machine (the level the specification assumes). The targets are used directly as pass criteria.
 
-| 項目 | 目標 | 計測値 | 補足 |
+| Item | Target | Measured | Notes |
 |---|---:|---:|---|
-| 起動から開始画面の表示まで | 1,000 ms | 150 ms（最初の描画まで 200 ms） | 7 回の中央値。最大 264 ms |
-| 1MB の文書の表示 | 3,000 ms | 2,230 ms | 5 回の中央値。最大 2,337 ms。見出し・表・コードブロックを各 1,653 個含む、密度の高い文書 |
-| 1,000 文書: ツリー表示 | 2,000 ms | 54 ms | 実ファイルを `<input>` で開いた場合は 424 ms |
-| 1,000 文書: 索引作成 | 10,000 ms | 801 ms | 実ファイルの場合は 1,557 ms |
-| 1,000 文書: 検索応答 | 300 ms | 171 ms | 入力待ち 150 ms を含む。5 種類の検索語の最大値 |
+| Startup to start screen | 1,000 ms | 150 ms (200 ms to first paint) | Median of 7 runs. Max 264 ms |
+| Display of a 1MB document | 3,000 ms | 2,230 ms | Median of 5 runs. Max 2,337 ms. A dense document with 1,653 each of headings, tables and code blocks |
+| 1,000 documents: tree display | 2,000 ms | 54 ms | 424 ms when real files are opened with `<input>` |
+| 1,000 documents: indexing | 10,000 ms | 801 ms | 1,557 ms with real files |
+| 1,000 documents: search response | 300 ms | 171 ms | Includes the 150 ms input delay. Maximum over 5 search terms |
 
-- 1MB の文書は、修正前は 2.9〜3.4 秒で目標ぎりぎりでした（6 章 T-11）。コードの色分けを後回しにする変更で上の値になりました。色分けがすべて終わるのは表示の 4〜7 秒後です（参考値。実行のたびに変わります。操作を妨げない範囲で少しずつ処理します）。
-- 計測値は実行のたびに 1〜2 割ほど変わります。上は 1.0.1 の最終実行の値です。1.0.1 の変更は、表示の処理には手を入れていません。
-- **1MB の文書の表示は、余裕が十分とは言えません。** このテストは 5 回の計測の最大値も目標以内であることを求めています。最終確認のうち 1 回の実行（テスト環境を再開した直後）では、5 回のうち 1 回が 3,092 ms になり、このテストが不合格になりました（そのときの中央値は 2,023 ms）。単独での再実行 2 回（最大 2,375 ms、2,289 ms）と、上の表の全体の再実行では合格しています。負荷のかかった機械や、想定より遅い機械では、3 秒を超えることがあります。
-- 成果物のサイズは 4.12MB で、目標の 6MB 以下です（NFR-3）。
+- Before the fix, the 1MB document took 2.9 to 3.4 seconds, right at the target (chapter 6, T-11). The change to defer code highlighting gave the values above. Highlighting finishes completely 4 to 7 seconds after display (reference value; it varies from run to run. It is processed a little at a time so that it does not block interaction).
+- Measured values vary by about 10 to 20% between runs. The values above are from the final 1.0.1 run. The 1.0.1 changes did not touch display processing.
+- **The display of the 1MB document does not have enough margin.** This test requires that the maximum of the 5 measurements is also within the target. In one run of the final check (right after the test environment was restarted), 1 of the 5 measurements was 3,092 ms and the test failed (the median at that time was 2,023 ms). It passed in 2 standalone re-runs (max 2,375 ms and 2,289 ms) and in the full re-run shown in the table above. On a loaded machine, or one slower than assumed, it can exceed 3 seconds.
+- The output size is 4.12MB, within the 6MB target (NFR-3).
 
 ---
 
-## 5. アクセシビリティ（NFR-4）
+## 5. Accessibility (NFR-4)
 
-| 確認 | 結果 |
+| Check | Result |
 |---|---|
-| axe-core による自動検査 | 開始画面、文書、検索結果、メニュー、3 種類のダイアログ、使い方、エラー表示、カスタムナビ、英語表示など 15 の画面 × ライト／ダーク、および狭い画面で**違反 0 件** |
-| 文字と背景のコントラスト比 | 画面に出る 328 の組み合わせを実際の色から計算し、すべて 4.5:1 以上。最小はライト 4.54:1、ダーク 5.30:1。印刷用の配色も確認 |
-| キーボードだけでの操作 | Tab の順序、メニュー（矢印・Home・End・Esc）、ダイアログ（中だけを巡る・閉じると元へ戻る）、文書一覧、目次、コピー、横に長い表とコードのスクロール、タブの切り替え |
-| フォーカスの見え方 | ページ内の Tab で止まるすべての要素で、フォーカスの枠が出ることを確認 |
-| 動きを減らす設定 | 設定が有効なとき、アニメーションと滑らかなスクロールが 0 件になることを確認 |
-| 読み上げのための情報 | 画面の区分（ヘッダー、文書一覧、本文、目次）、検索欄と結果一覧の役割、件数の通知、チェックボックスの状態 |
+| Automated checks with axe-core | **0 violations** on 15 screens (start screen, document, search results, menu, 3 kinds of dialogs, usage guide, error display, custom nav, English display, etc.) × light/dark, and on a narrow screen |
+| Text/background contrast ratio | 328 combinations shown on screen were calculated from the actual colors, and all are 4.5:1 or higher. The minimum is 4.54:1 in light and 5.30:1 in dark. The print color scheme was also checked |
+| Keyboard-only operation | Tab order, menus (arrow keys, Home, End, Esc), dialogs (focus cycles inside; returns to where it was on close), document list, table of contents, copy, scrolling wide tables and code, tab switching |
+| Focus visibility | Confirmed that a focus outline appears on every element in the page that Tab stops on |
+| Reduced motion setting | Confirmed that animations and smooth scrolling drop to 0 when the setting is on |
+| Information for screen readers | Page regions (header, document list, body, table of contents), roles of the search box and results list, announcement of result counts, checkbox states |
 
-確認していないこと: 実際の読み上げソフト（NVDA、VoiceOver など）での聞こえ方。文書の作者が `style` で指定した色（アプリは調整しません）。
+Not verified: how things sound in real screen readers (NVDA, VoiceOver, etc.). Colors that document authors specify with `style` (the app does not adjust them).
 
 ---
 
-## 6. テストで見つかった問題と対応
+## 6. Problems found in testing and how they were handled
 
-仕様レビュー（[REVIEW.md](REVIEW.md)）では見つけられず、実装後のテストで見つかったものです。すべて修正し、再発を防ぐテストを追加しました（T-17 と T-22 は、テストで再現できていない予防的な修正です）。重要度の高い順に並べています。T-02 は製品ではなくテスト環境の問題でした。T-18 以降は 1.0.1 で見つかったものです。T-24 は、テストではなく、実際に公開する操作で見つかりました。
+These were not found in the specification review ([REVIEW.md](REVIEW.md)) but were found in testing after implementation. All were fixed, and tests were added to prevent them from recurring (T-17 and T-22 are preventive fixes that could not be reproduced in tests). They are listed from highest to lowest severity. T-02 was a problem in the test environment, not the product. T-18 and later were found in 1.0.1. T-24 was found not by testing but by actually publishing.
 
-| # | 重要度 | 見つかった問題 | 見つけた方法 | 対応 |
+| # | Severity | Problem found | How found | Action |
 |---|---|---|---|---|
-| T-08 | **高** | 外部の画像を止めている状態でも、**図（Mermaid）の中の画像指定から外部へ通信が発生した**（画像ノード、ラベル内の `<img>`、`themeCSS` の `url()`）。「既定では外部と通信しない」という要件に反する | 通信の有無を、ローカルに立てたサーバーへの到達で確かめるテスト | 許可していない間は、ブラウザーの CSP でも画像・メディアの読み込みを止めるようにした（SEC-10）。許可へ切り替えるときは確認の上で再読み込みする。Chromium・Gecko・WebKit で、サーバーに 1 件も届かないことを確認 |
-| T-18 | 中 | HTML を `srcdoc` で埋め込んだフレームの中で文書間のリンクを押すと、フレームが別のページ（`about:blank` や親ページ）へ移動し、**表示が消える**。文書の URL とリンクの基準 URL が異なる環境で、リンクの移動をブラウザーに任せていたため（1.0.0 にあった問題） | 埋め込み表示のテスト（1.0.1 で追加）。実験で再現を確認 | アプリ内のリンクをアプリ自身が処理するようにした（FR-211）。Chromium・Gecko・WebKit のフレームで確認 |
-| T-19 | 中 | **配布物の問題**: `mdfolio-1.0.0.zip` の中の日本語のファイル名（`sample-docs` の `基本操作.md` など）に、UTF-8 であることを示す印が付いていなかった。Windows の環境によっては、展開したときにファイル名が文字化けし、サンプルの文書間のリンクが切れる | 配布物の点検（zip の各項目のフラグを機械的に調べた）。**Windows の実機では再現も解消も確かめていない** | zip を作る道具を替え（`tools/dev/make-zip.py`）、作成後に全項目の印を検証する。作り直した zip に差し替えた |
-| T-24 | 中 | 公開ページ用に変換した HTML を、公開先（Claude のアーティファクト）が受け付けなかった。置換文字（U+FFFD）を含むファイルは公開できないためで、同梱ライブラリ（markdown-it）のスクリプトがこの文字そのものを 11 か所で使っている | **実際の公開の操作**（模したフレームでのテストでは分からなかった） | 変換で、同じ意味のエスケープに書き換える（SPEC 6.1）。意味を変えずに書き換えられると言い切れない場所にある場合は、変換をやめる。書き換えの前後で、不正な入力（NUL 文字、文字として読めない `%XX`）の表示結果が同じであることを確認 |
-| T-25 | 中 | （フォルダ版）印刷用の配色の指定が、`document.css` の後ろに利用者が足した配色の指定に負け、ダークの配色を変えると印刷もその色になる | フォルダ版の E2E（印刷） | 印刷用の指定のセレクターを二重にして詳細度を上げた |
-| T-26 | 中 | （フォルダ版）更新コマンドが、CSS に誤りがあって終了する前に `data/site.js` を書き換えていた | 単体テスト | CSS を先に読んで確かめ、誤りがあればどのファイルも書き換えないようにした |
-| T-27 | 低 | （フォルダ版）更新コマンドを `--title` なしで実行すると、前に指定したタイトルが消える | フォルダ版の E2E（書き出しのタイトル） | 指定がなければ前回の指定を引き継ぐ。ホームも、その文書が残っていれば引き継ぐ |
-| T-13 | 中 | アクセシビリティの不備 5 件: タスクリストのチェックボックスに名前がない、横スクロールする表にキーボードで届かない、検索結果の一覧に名前がない、脚注の戻りリンクが色だけで区別されている、ダークテーマで数式のエラー表示が読みにくい（2.54:1） | axe-core | すべて修正。あわせて、メニューとタブの矢印キー操作、ダイアログを閉じたあとのフォーカスの戻り先を追加 |
-| T-15 | 中 | スクロールバーを常に表示する環境（Windows など）で、サイドバーに不要な横スクロールバーが出る | WebKit / Gecko での画面の確認（テスト用の Chromium はスクロールバーを隠すため見えていなかった） | 罫線の描き方を変えて、はみ出しをなくした。はみ出しを数値で検出するテストを追加 |
-| T-11 | 中 | 1MB の密度の高い文書の表示が 2.9〜3.4 秒で、目標（3 秒）を超えることがあった | 性能テスト | コードの色分けをサニタイズの後に移し、一定量を超えた分は表示のあとで処理するようにした（2.3 秒） |
-| T-10 | 中 | 埋め込まれた文書データの形式が想定外（種類が不明など）だと、起動時に例外が出て画面が表示されなかった | セキュリティテスト（壊れたデータを与える） | 検証を厳しくし、読み込まずに通知して開始画面を出すようにした |
-| T-06 | 中 | 検索結果を開いたあと、検索欄からフォーカスが奪われ、Esc で結果を閉じられなかった | 検索のテスト | 入力中の欄からフォーカスを奪わないようにし、Esc の扱いを直した |
-| T-04 | 中 | 目次の「現在位置」がずれる。文書の末尾では最後の見出しが現在位置にならない | 表示のテスト | スクロール位置の補正が二重になっていたのを直し、末尾の扱いを追加 |
-| T-01 | 中 | 金額とコードが混ざった文で、離れた `$` どうしが数式として扱われた | 単体テスト | インライン数式の判定を直した |
-| T-12 | 低 | 検索結果を開いた直後に検索欄へ戻ると、結果のパネルが開かないことがあった（約 3 回に 1 回） | テストの繰り返し実行 | 画面の切り替えを、遅れて届くイベントを待たずに行うようにした |
-| T-14 | 低 | 書き出したサイトの CSP に、取り除いたライブラリのハッシュが残っていた | コマンドライン版のテスト | ハッシュも取り除くようにした |
-| T-16 | 低 | 検索結果に、ナビ用のファイル（`_sidebar.md`）が出る | 画面の確認 | 検索結果から除いた |
-| T-09 | 低 | 見出しの中の表示できない画像の説明文が、目次に混ざる | セキュリティテスト | 目次の文字列から除いた |
-| T-07 | 低 | 書き出しに含める添付の種別が、ブラウザーや OS によって変わりうる | 書き出しのテスト | 拡張子から決めるようにした |
-| T-05 | 低 | サイドバーのナビの見出しに、不要なアンカーリンクが付く | 画面の確認 | 付けないようにした |
-| T-03 | 低 | 見た目の不備 4 件（本文領域のフォーカス枠、開始画面のボタンの位置、ナビの区切りの体裁、図の既定の配色） | 画面の確認 | 修正 |
-| T-20 | 低 | コードのコピーに失敗しても「コピーしました」と表示する（従来の方式でのコピーの結果を確かめていなかった）。また、従来の方式に切り替わると、選択のためにページの末尾へ画面が動くおそれがあった | 埋め込み表示のテストと、コードの見直し（フレームの中では従来の方式が主な経路になるため） | 結果を確かめ、できなかったときは「コピーできませんでした」と表示する。一時的な入力欄を画面に固定する。フレームの中では従来の方式を先に試す（FR-204） |
-| T-21 | 低 | 開始画面と使い方の「このパソコンの中だけで処理され」という説明が、スマートフォンで開いた場合に合わない。また、CSP を外して公開ページに置いた HTML では、「外部には送信されません」を HTML 自身では保証できない | 画面の確認（スマートフォン相当の幅）、仕様の見直し | 「この端末」に変更。指で操作する端末ではドロップの案内を省く。お試し用の公開ページ向けの文言を追加（`hosted`） |
-| T-23 | 低 | 公開ページ用の変換ツール（`make-hosted.mjs`）に mdfolio 以外の HTML を渡すと、理由を表示せず内部エラーで止まる（1.0.1 で追加したツール） | 単体テスト | 理由を表示して終了するよう修正 |
-| T-22 | 低 | スマートフォンでは、ファイルの選択を Markdown に絞り込んでいると、`.md` のファイルを選べない端末がありうる（種類の扱いが端末や保存先のアプリで異なる） | 設計の見直し（**テスト環境では再現できず、実機でも確かめていない**） | 指で操作する端末では絞り込まない（FR-102） |
-| T-17 | 低 | Web サーバーに置いた場合、ブラウザーが `favicon.ico` を取りに行く（HTML 以外の通信になる） | 設計の見直し（テストでは再現していない） | タブのアイコンを HTML の中に持たせた |
-| T-02 | — | 日本語のファイル名を含むフォルダで、テスト用のブラウザーが異常終了した | 読み込みのテスト | テスト環境のロケール設定が原因で、製品の問題ではなかった。テスト側を直した |
+| T-08 | **High** | Even with external images blocked, **image references inside diagrams (Mermaid) caused external communication** (image nodes, `<img>` in labels, `url()` in `themeCSS`). This violates the requirement "does not communicate externally by default" | A test that judges communication by whether requests reach a local server | While not allowed, image and media loading is also stopped by the browser's CSP (SEC-10). Switching to allowed reloads the page after confirmation. Confirmed on Chromium, Gecko and WebKit that not a single request reaches the server |
+| T-18 | Medium | Inside a frame embedding the HTML with `srcdoc`, clicking a link between documents moved the frame to another page (`about:blank` or the parent page) and **the display disappeared**. This was because link navigation was left to the browser in an environment where the document URL differs from the base URL for links (a problem present in 1.0.0) | Embedded display tests (added in 1.0.1). Reproduction confirmed by experiment | The app now handles in-app links itself (FR-211). Confirmed in frames on Chromium, Gecko and WebKit |
+| T-19 | Medium | **Distribution package problem**: Japanese file names in `mdfolio-1.0.0.zip` (such as `基本操作.md` in `sample-docs`) did not have the flag marking them as UTF-8. In some Windows environments, file names become garbled when extracted, breaking links between the sample documents | Inspection of the distribution package (the flags of each zip entry were checked programmatically). **Neither the problem nor the fix has been confirmed on a real Windows machine** | Changed the tool that creates the zip (`tools/dev/make-zip.py`), which verifies the flag on every entry after creation. Replaced the zip with the rebuilt one |
+| T-24 | Medium | The publishing site (Claude artifacts) did not accept the HTML converted for the public page. Files containing the replacement character (U+FFFD) cannot be published, and the script of a bundled library (markdown-it) uses that character literally in 11 places | **Actually publishing** (tests with imitation frames could not reveal this) | The conversion rewrites it to an escape with the same meaning (SPEC 6.1). If it appears in a place where the rewrite cannot be guaranteed to keep the meaning, the conversion stops. Confirmed that the display results for invalid input (NUL characters, `%XX` that cannot be read as characters) are the same before and after the rewrite |
+| T-25 | Medium | (Folder version) The print color settings lost to color settings that users add after `document.css`, so changing the dark color scheme also changed the print colors | Folder version E2E (printing) | Doubled the selectors of the print settings to raise their specificity |
+| T-26 | Medium | (Folder version) The update command rewrote `data/site.js` before exiting due to an error in the CSS | Unit test | It now reads and checks the CSS first, and if there is an error, it rewrites no files |
+| T-27 | Low | (Folder version) Running the update command without `--title` erased the previously specified title | Folder version E2E (export title) | If not specified, the previous value is carried over. The home document is also carried over if that document still exists |
+| T-13 | Medium | 5 accessibility defects: task list checkboxes had no name; horizontally scrolling tables could not be reached by keyboard; the search results list had no name; footnote back-links were distinguished by color only; the math error display was hard to read in the dark theme (2.54:1) | axe-core | All fixed. Arrow key operation for menus and tabs, and where focus returns after a dialog closes, were also added |
+| T-15 | Medium | In environments that always show scrollbars (Windows, etc.), an unnecessary horizontal scrollbar appeared in the sidebar | Screen checks on WebKit / Gecko (the test Chromium hides scrollbars, so it was not visible there) | Changed how borders are drawn to remove the overflow. Added a test that detects overflow numerically |
+| T-11 | Medium | Displaying a dense 1MB document took 2.9 to 3.4 seconds and sometimes exceeded the target (3 seconds) | Performance test | Moved code highlighting after sanitizing, and the portion beyond a certain amount is processed after display (2.3 seconds) |
+| T-10 | Medium | When the embedded document data had an unexpected format (unknown type, etc.), an exception was thrown at startup and the screen was not shown | Security test (feeding broken data) | Made validation stricter; the data is not loaded, a notice is shown, and the start screen appears |
+| T-06 | Medium | After opening a search result, focus was taken away from the search box, and Esc could not close the results | Search test | Focus is no longer taken from a field being typed in, and Esc handling was fixed |
+| T-04 | Medium | The "current position" in the table of contents was off. At the end of a document, the last heading did not become the current position | Display test | Fixed scroll position correction being applied twice, and added handling for the end of the document |
+| T-01 | Medium | In text mixing amounts of money and code, `$` signs far apart were treated as math | Unit test | Fixed inline math detection |
+| T-12 | Low | Returning to the search box right after opening a search result sometimes did not open the results panel (about 1 in 3 times) | Repeated test runs | The screen switch is now done without waiting for an event that arrives late |
+| T-14 | Low | The CSP of an exported site still contained hashes of removed libraries | Command-line version test | The hashes are now removed too |
+| T-16 | Low | Nav files (`_sidebar.md`) appeared in search results | Screen check | Excluded from search results |
+| T-09 | Low | Alt text of images that cannot be shown inside headings got mixed into the table of contents | Security test | Removed from the table of contents text |
+| T-07 | Low | The type of attachments included in exports could vary by browser and OS | Export test | It is now decided from the file extension |
+| T-05 | Low | Unnecessary anchor links were added to nav headings in the sidebar | Screen check | They are no longer added |
+| T-03 | Low | 4 visual defects (focus outline of the body area, button position on the start screen, styling of nav separators, default colors of diagrams) | Screen check | Fixed |
+| T-20 | Low | "Copied" was shown even when copying code failed (the result of copying with the fallback method was not checked). Also, when switching to the fallback method, the screen could jump to the end of the page because of the selection | Embedded display tests and code review (inside frames, the fallback method is the main path) | The result is checked, and "Could not copy" is shown on failure. The temporary input field is fixed on screen. Inside frames, the fallback method is tried first (FR-204) |
+| T-21 | Low | The start screen and usage guide said "processed only on this computer", which does not fit when opened on a smartphone. Also, for HTML placed on a public page with the CSP removed, the HTML itself cannot guarantee "nothing is sent externally" | Screen check (smartphone-equivalent width), specification review | Changed to "this device". On touch devices, the drop hint is omitted. Added wording for the trial public page (`hosted`) |
+| T-23 | Low | When given HTML other than mdfolio, the public page conversion tool (`make-hosted.mjs`) stopped with an internal error without giving a reason (a tool added in 1.0.1) | Unit test | Fixed to show the reason and exit |
+| T-22 | Low | On smartphones, when the file picker is restricted to Markdown, some devices may not allow `.md` files to be selected (handling of file types differs by device and by the app that stores the files) | Design review (**could not be reproduced in the test environment and not confirmed on a real device either**) | No restriction is applied on touch devices (FR-102) |
+| T-17 | Low | When placed on a web server, the browser fetches `favicon.ico` (communication other than the HTML) | Design review (not reproduced in tests) | The tab icon is now contained in the HTML |
+| T-02 | — | The test browser crashed with folders containing Japanese file names | Loading test | Caused by the locale setting of the test environment, not a product problem. Fixed on the test side |
 
-T-08 について補足します。レビューでは Mermaid を「安全な設定（`securityLevel: 'strict'`）で使う」としていましたが、その設定でも画像の読み込みは止まりませんでした。通信の有無を「ブラウザーが送ろうとしたか」ではなく「サーバーに届いたか」で判定するテストにしたことで見つかりました。
+A note on T-08: the review had stated that Mermaid would be "used with a safe setting (`securityLevel: 'strict'`)", but image loading was not stopped even with that setting. It was found because the test judged communication not by "whether the browser tried to send a request" but by "whether a request reached the server".
 
 ---
 
-## 7. 要件との対応
+## 7. Mapping to requirements
 
-「確認したテスト」は `tests/` 以下のファイルです（`cross/smoke` は Gecko / WebKit での確認）。
+"Tests" refers to files under `tests/` (`cross/smoke` is the check on Gecko / WebKit).
 
-| ID | 要件 | 確認したテスト | 補足 |
+| ID | Requirement | Tests | Notes |
 |---|---|---|---|
-| FR-101 | フォルダを開く | e2e/open | ブラウザー本来のフォルダ選択画面は自動操作できない。差し替えたハンドルと `<input>` で確認 |
-| FR-102 | ファイルを開く | e2e/open, e2e/settings, e2e/embed, cross/smoke | 指で操作する端末での絞り込みなしは、タッチ操作を模したブラウザーで確認（実機では未確認） |
-| FR-103 | ドラッグ＆ドロップ | e2e/fsa, e2e/open | ドロップのイベントを合成して確認（ファイル・フォルダ・ハンドルの 3 経路） |
-| FR-104 | 埋め込みデータ（サイトモード） | e2e/export, cross/smoke |  |
-| FR-105 | 対象ファイル | e2e/open, unit/core |  |
-| FR-106 | 除外 | e2e/open, unit/core |  |
-| FR-107 | 文字コード | e2e/open, unit/core, cross/smoke |  |
-| FR-108 | 前回のフォルダを開く | e2e/fsa | 本物のハンドル（OPFS、http://）で保存と復元を確認。file:// で開いた実フォルダでは未確認 |
-| FR-109 | 再読み込み・自動更新 | e2e/fsa | 差し替えたハンドル・本物のハンドル（OPFS）・`<input>` の 3 通り |
-| FR-110 | 上限 | e2e/open |  |
-| FR-111 | 置き換え | e2e/open |  |
-| FR-112 | 単一ファイル時の扱い | e2e/open |  |
+| FR-101 | Open folder | e2e/open | The browser's own folder picker cannot be automated. Checked with substituted handles and `<input>` |
+| FR-102 | Open files | e2e/open, e2e/settings, e2e/embed, cross/smoke | No file type restriction on touch devices was checked in a browser simulating touch operation (not verified on a real device) |
+| FR-103 | Drag and drop | e2e/fsa, e2e/open | Checked by synthesizing drop events (3 paths: files, folders, handles) |
+| FR-104 | Embedded data (site mode) | e2e/export, cross/smoke |  |
+| FR-105 | Target files | e2e/open, unit/core |  |
+| FR-106 | Exclusions | e2e/open, unit/core |  |
+| FR-107 | Character encoding | e2e/open, unit/core, cross/smoke |  |
+| FR-108 | Reopen last folder | e2e/fsa | Saving and restoring checked with real handles (OPFS, http://). Not verified with a real folder opened via file:// |
+| FR-109 | Reload and auto-update | e2e/fsa | 3 ways: substituted handles, real handles (OPFS), `<input>` |
+| FR-110 | Limits | e2e/open |  |
+| FR-111 | Replacement | e2e/open |  |
+| FR-112 | Handling of single files | e2e/open |  |
 | FR-201 | CommonMark / GFM | e2e/render, unit/md |  |
-| FR-202 | 脚注 | e2e/render, unit/md |  |
-| FR-203 | 見出しの ID とアンカー | e2e/render, unit/core, unit/md |  |
-| FR-204 | コードの色分け・コピー | e2e/render, e2e/embed, unit/md, cross/smoke | フレームの中でのコピーは、クリップボードの内容まで確認（Chromium）。Gecko / WebKit では結果の表示を確認 |
-| FR-205 | 数式 | e2e/export, e2e/render, unit/md, cross/smoke |  |
-| FR-206 | 図 | e2e/export, e2e/render, unit/md, cross/smoke |  |
-| FR-207 | アラート | e2e/render, unit/md |  |
-| FR-208 | フロントマター | e2e/render, unit/core |  |
-| FR-209 | 生 HTML（サニタイズして表示） | e2e/render |  |
-| FR-210 | 画像・メディア、外部画像 | e2e/render, e2e/settings | 通信の有無は、サーバー側の記録で判定 |
-| FR-211 | リンク | e2e/navigate, e2e/embed, cross/smoke | `srcdoc` のフレームでの移動、保存を使わない設定での添付の表示を含む |
-| FR-212 | 横スクロール | e2e/render, e2e/a11y |  |
-| FR-213 | 文書タイトル | e2e/render |  |
-| FR-301 | ファイルツリー | e2e/navigate, unit/core |  |
-| FR-302 | カスタムナビ | e2e/navigate |  |
-| FR-303 | ページ内目次 | e2e/render |  |
-| FR-304 | ルーティング | e2e/export, e2e/navigate, e2e/startup, cross/smoke |  |
-| FR-305 | パスと更新日時 | e2e/navigate |  |
-| FR-306 | スクロール位置の復元 | e2e/navigate |  |
-| FR-307 | ホーム文書 | e2e/navigate, unit/core |  |
-| FR-401 | 全文検索 | e2e/search, unit/core, cross/smoke |  |
-| FR-402 | 結果の表示と操作 | e2e/search |  |
-| FR-403 | 一致語の強調 | e2e/search |  |
-| FR-404 | 索引の作成 | e2e/search |  |
-| FR-405 | 検索のショートカット | e2e/search |  |
-| FR-501 | テーマ | e2e/settings, cross/smoke |  |
-| FR-502 | 画面の言語 | e2e/settings, e2e/startup, cross/smoke |  |
-| FR-503 | 画面幅による切り替え | e2e/settings, cross/smoke |  |
-| FR-504 | 印刷 | e2e/settings | 印刷用の表示に切り替えて確認。紙への出力は未確認 |
-| FR-601 | サイトの書き出し | e2e/export, e2e/embed | 保存を使わない設定ではメニューに出ないことを含む |
-| FR-602 | 添付の埋め込み | e2e/export, unit/md |  |
-| FR-603 | 未使用ライブラリの除外 | e2e/export, unit/md |  |
-| FR-604 | コマンドライン版 | e2e/export, unit/cli | アプリ内の書き出しと内容が一致することも確認。追加したオプションは、設定のブロックだけが変わることを確認 |
-| FR-701 | 設定ブロック | e2e/settings, e2e/startup, e2e/embed, unit/core |  |
-| FR-702 | 設定の保存 | e2e/settings, e2e/startup, cross/smoke |  |
-| FR-801 | ヘルプ | e2e/startup, e2e/embed | お試し用の公開ページでの注意書き（日本語・英語）を含む |
-| FR-802 | ライセンス表示 | e2e/export, e2e/startup, unit/build |  |
-| FR-901 | エラーの通知 | e2e/open, e2e/startup |  |
-| FR-902 | 文書がない場合 | e2e/open |  |
-| SEC-1 | サニタイズ | e2e/security, cross/smoke |  |
-| SEC-2 | ID の接頭辞・内部クラスの除去 | e2e/security |  |
-| SEC-3 | style の制限 | e2e/render, e2e/security, unit/build, unit/core |  |
-| SEC-4 | CSP（スクリプトはハッシュのみ） | e2e/security, e2e/startup, cross/smoke |  |
-| SEC-5 | 通信しない | e2e/security, e2e/settings, e2e/startup, cross/smoke | サーバー側の記録で判定 |
-| SEC-6 | 数式・図の安全な設定 | e2e/security |  |
-| SEC-7 | 外部リンクの rel | e2e/navigate |  |
-| SEC-8 | 送信機能を持たない | e2e/security, unit/build | 通信の機能を使っていないことをソースでも確認（unit/build） |
-| SEC-9 | 添付は常にダウンロード | e2e/navigate, e2e/security |  |
-| SEC-10 | 外部画像を CSP でも遮断 | e2e/security, e2e/settings, cross/smoke |  |
-| NFR-1 | 単一ファイル | e2e/startup, unit/build |  |
-| NFR-2 | 性能 | e2e/perf | 計測値は 4 章 |
-| NFR-3 | サイズ | unit/build |  |
-| NFR-4 | アクセシビリティ | e2e/a11y, e2e/navigate | 5 章 |
-| NFR-5 | 国際化 | unit/build, e2e/settings, e2e/open |  |
-| NFR-6 | 保守性 | unit/build |  |
-| NFR-7 | 堅牢性 | e2e/startup, e2e/settings |  |
+| FR-202 | Footnotes | e2e/render, unit/md |  |
+| FR-203 | Heading IDs and anchors | e2e/render, unit/core, unit/md |  |
+| FR-204 | Code highlighting and copy | e2e/render, e2e/embed, unit/md, cross/smoke | Copying inside frames checked down to the clipboard contents (Chromium). On Gecko / WebKit, the result message was checked |
+| FR-205 | Math | e2e/export, e2e/render, unit/md, cross/smoke |  |
+| FR-206 | Diagrams | e2e/export, e2e/render, unit/md, cross/smoke |  |
+| FR-207 | Alerts | e2e/render, unit/md |  |
+| FR-208 | Front matter | e2e/render, unit/core |  |
+| FR-209 | Raw HTML (shown after sanitizing) | e2e/render |  |
+| FR-210 | Images and media, external images | e2e/render, e2e/settings | Communication judged by server-side logs |
+| FR-211 | Links | e2e/navigate, e2e/embed, cross/smoke | Includes navigation in `srcdoc` frames and display of attachments in settings that do not use saving |
+| FR-212 | Horizontal scrolling | e2e/render, e2e/a11y |  |
+| FR-213 | Document title | e2e/render |  |
+| FR-301 | File tree | e2e/navigate, unit/core |  |
+| FR-302 | Custom nav | e2e/navigate |  |
+| FR-303 | In-page table of contents | e2e/render |  |
+| FR-304 | Routing | e2e/export, e2e/navigate, e2e/startup, cross/smoke |  |
+| FR-305 | Path and modification date | e2e/navigate |  |
+| FR-306 | Scroll position restore | e2e/navigate |  |
+| FR-307 | Home document | e2e/navigate, unit/core |  |
+| FR-401 | Full-text search | e2e/search, unit/core, cross/smoke |  |
+| FR-402 | Result display and operation | e2e/search |  |
+| FR-403 | Match highlighting | e2e/search |  |
+| FR-404 | Index creation | e2e/search |  |
+| FR-405 | Search shortcut | e2e/search |  |
+| FR-501 | Theme | e2e/settings, cross/smoke |  |
+| FR-502 | Screen language | e2e/settings, e2e/startup, cross/smoke |  |
+| FR-503 | Switching by screen width | e2e/settings, cross/smoke |  |
+| FR-504 | Printing | e2e/settings | Checked by switching to the print view. Output on paper not verified |
+| FR-601 | Site export | e2e/export, e2e/embed | Includes not appearing in the menu in settings that do not use saving |
+| FR-602 | Embedding attachments | e2e/export, unit/md |  |
+| FR-603 | Excluding unused libraries | e2e/export, unit/md |  |
+| FR-604 | Command-line version | e2e/export, unit/cli | Also confirmed that the content matches the in-app export. For the added options, confirmed that only the settings block changes |
+| FR-701 | Settings block | e2e/settings, e2e/startup, e2e/embed, unit/core |  |
+| FR-702 | Saving settings | e2e/settings, e2e/startup, cross/smoke |  |
+| FR-801 | Help | e2e/startup, e2e/embed | Includes the notice on the trial public page (Japanese and English) |
+| FR-802 | License display | e2e/export, e2e/startup, unit/build |  |
+| FR-901 | Error notification | e2e/open, e2e/startup |  |
+| FR-902 | When there are no documents | e2e/open |  |
+| SEC-1 | Sanitizing | e2e/security, cross/smoke |  |
+| SEC-2 | ID prefix and removal of internal classes | e2e/security |  |
+| SEC-3 | style restrictions | e2e/render, e2e/security, unit/build, unit/core |  |
+| SEC-4 | CSP (scripts by hash only) | e2e/security, e2e/startup, cross/smoke |  |
+| SEC-5 | No communication | e2e/security, e2e/settings, e2e/startup, cross/smoke | Judged by server-side logs |
+| SEC-6 | Safe settings for math and diagrams | e2e/security |  |
+| SEC-7 | rel on external links | e2e/navigate |  |
+| SEC-8 | No sending features | e2e/security, unit/build | Also confirmed in the source that no communication features are used (unit/build) |
+| SEC-9 | Attachments always downloaded | e2e/navigate, e2e/security |  |
+| SEC-10 | External images also blocked by CSP | e2e/security, e2e/settings, cross/smoke |  |
+| NFR-1 | Single file | e2e/startup, unit/build |  |
+| NFR-2 | Performance | e2e/perf | Measured values in chapter 4 |
+| NFR-3 | Size | unit/build |  |
+| NFR-4 | Accessibility | e2e/a11y, e2e/navigate | Chapter 5 |
+| NFR-5 | Internationalization | unit/build, e2e/settings, e2e/open |  |
+| NFR-6 | Maintainability | unit/build |  |
+| NFR-7 | Robustness | e2e/startup, e2e/settings |  |
 
-要件 ID のない記述の確認:
+Checks of statements without requirement IDs:
 
-| 仕様の箇所 | 確認したテスト | 補足 |
+| Specification section | Tests | Notes |
 |---|---|---|
-| 2.1 別のページの中に埋め込んで表示する場合 | e2e/embed, cross/smoke | 別オリジンのサンドボックス化したフレーム、`srcdoc` のフレーム（保存領域が使えない場合を含む）、nonce 方式の CSP。条件を模したもので、実際のサービスの中では確認していない |
-| 6.1 外部のホスティング環境に置く場合（お試し用の変換） | unit/package, e2e/embed, cross/smoke | 変換で変わるのが CSP の行と設定のブロックだけであること、変換後の HTML が上のフレームで動くこと |
-| 8.3 zip の作成 | unit/package | 日本語のファイル名に UTF-8 の印が付くこと。Windows での展開は確認していない |
+| 2.1 Display embedded inside another page | e2e/embed, cross/smoke | Sandboxed cross-origin frames, `srcdoc` frames (including when storage is unavailable), nonce-based CSP. These imitate the conditions; not verified inside the actual service |
+| 6.1 Placing on an external hosting environment (trial conversion) | unit/package, e2e/embed, cross/smoke | Only the CSP line and the settings block change in the conversion, and the converted HTML works in the frames above |
+| 8.3 Zip creation | unit/package | Japanese file names get the UTF-8 flag. Extraction on Windows not verified |
 
 ---
 
-## 8. 自動テストで確認できていないこと
+## 8. What automated tests could not verify
 
-| 項目 | 理由 | 影響の見込み |
+| Item | Reason | Expected impact |
 |---|---|---|
-| 製品版の Firefox / Safari | テスト環境に導入できない | 同じエンジンで主要機能は確認済み。細かな表示の差が残る可能性はある |
-| Windows / macOS の実機 | テスト環境が Linux のみ | ブラウザーのエンジンは共通。フォント、スクロールバー、ファイルのパス（ドライブ文字）まわりは未確認 |
-| ブラウザー本来のフォルダ選択画面（`showDirectoryPicker`）を通した操作 | 自動操作できない | 選択後の処理は、差し替えたハンドルと本物のハンドル（OPFS）で確認済み |
-| `file://` で開いた状態での「前回のフォルダを開く」 | 同上（OPFS は `file://` で使えないため、`http://` で確認した） | 失敗しても、ボタンが出ないだけで閲覧には影響しない設計 |
-| Firefox / Safari でのフォルダ選択（`<input webkitdirectory>`）とドラッグ＆ドロップ | WebDriver では操作できない | ファイルを選ぶ操作は両エンジンで確認済み。Chromium では実フォルダで確認済み |
-| 紙への印刷、PDF への出力 | 印刷用の表示までしか確認していない | — |
-| 読み上げソフトでの操作 | 自動化できない | 機械的に判定できる項目は確認済み |
-| スマートフォン・タブレットの実機（iOS / Android） | テスト環境にない | 幅 390px・タッチ操作を模した Chromium で、レイアウト、ドロワー、ファイルを開く操作を確認した。実機のファイル選択画面、Safari（iOS）での表示、アプリ内ブラウザーでの動作は未確認 |
-| 実際のホスティング環境（Claude のアーティファクト）の中での動作 | 公開先の画面は、テスト用のブラウザーでは開けない。利用者のパソコンのブラウザー（Claude アプリの中のもの）で開くことも試みたが、公開先にサインインしておらず、ページを表示できなかった | サンプルのページ 2 つを公開する操作は成功した（公開先がファイルを受け付けた。T-24）。表示と操作は、公開されている説明（サンドボックス化したフレーム、画像は `data:` / `blob:` のみ、保存・ダイアログは不可、スクリプトの差し込み）を模したフレームで確認しただけである。T-24 のように、説明から読み取れない条件がほかにもある可能性があり、表示や操作に差が出るかもしれない |
-| Windows で展開した zip のファイル名 | テスト環境が Linux のみ | zip の各項目に UTF-8 の印があることは機械的に確認済み（T-19） |
-| 5,000 文書・100MB 級の実データ | 上限の動作（打ち切りと通知）は確認したが、長時間の利用は未確認 | — |
+| Release versions of Firefox / Safari | Cannot be installed in the test environment | Main features were checked on the same engines. Minor display differences may remain |
+| Real Windows / macOS machines | The test environment is Linux only | The browser engines are shared. Fonts, scrollbars and file paths (drive letters) are not verified |
+| Operation through the browser's own folder picker (`showDirectoryPicker`) | Cannot be automated | Processing after selection was checked with substituted handles and real handles (OPFS) |
+| "Reopen last folder" when opened via `file://` | Same as above (OPFS cannot be used with `file://`, so it was checked via `http://`) | Designed so that a failure only means the button does not appear; browsing is not affected |
+| Folder selection (`<input webkitdirectory>`) and drag and drop in Firefox / Safari | Cannot be operated via WebDriver | Selecting files was checked on both engines. Checked with a real folder on Chromium |
+| Printing on paper, output to PDF | Only checked up to the print view | — |
+| Operation with screen readers | Cannot be automated | Items that can be judged mechanically were checked |
+| Real smartphones and tablets (iOS / Android) | Not available in the test environment | Layout, the drawer and opening files were checked in Chromium simulating a 390px width and touch operation. The real devices' file pickers, display in Safari (iOS) and behavior in in-app browsers are not verified |
+| Behavior inside a real hosting environment (Claude artifacts) | The publishing site's pages cannot be opened in the test browser. Opening them in a browser on the user's computer (the one inside the Claude app) was also tried, but it was not signed in to the publishing site and could not display the page | Publishing the 2 sample pages succeeded (the publishing site accepted the files; T-24). Display and operation were only checked in frames imitating the public descriptions (sandboxed frame, images only from `data:` / `blob:`, no saving or dialogs, script insertion). As with T-24, there may be other conditions that cannot be read from the descriptions, and display or operation may differ |
+| File names in a zip extracted on Windows | The test environment is Linux only | It was confirmed programmatically that every zip entry has the UTF-8 flag (T-19) |
+| Real data on the scale of 5,000 documents / 100MB | The behavior at the limits (cut-off and notice) was checked, but long-term use is not verified | — |
 
-### 手動確認の一覧
+### Manual check list
 
-配布の前に、実際に使う環境で次を確認することをお勧めします（各 1〜2 分）。
+Before distribution, we recommend checking the following in the environments where it will actually be used (1 to 2 minutes each).
 
-1. **Windows の Edge または Chrome**: `mdfolio.html` をダブルクリックで開く → 「フォルダを開く」で `sample-docs` を選ぶ → 文書が表示され、左の一覧・検索・目次が使える。
-2. 同じ画面で、サイドバーや目次に余分なスクロールバーが出ていない。日本語のフォントが読みやすい。
-3. ブラウザーを閉じて開き直す → 「前回のフォルダを開く（sample-docs）」が出て、押すと開ける。
-4. エディターで `sample-docs/README.md` を書き換えて保存する → 2〜3 秒で表示が変わる。
-5. メニューの「サイトとして書き出す」→ 保存した HTML を別のパソコン（または別のブラウザー）で開く → そのまま読める。
-6. **Firefox**: `mdfolio.html` を開く → 「フォルダを開く」でフォルダを選ぶ（アップロードの確認が出たら許可する。送信はされない）→ 文書が表示される。フォルダをウィンドウにドロップしても開ける。
-7. **Safari（Mac）**: 6 と同じ。書き出したサイトの HTML も開いて、数式と図が表示されることを確認する。
-8. 印刷のプレビューで、本文だけが白地で出る。
-9. 開発者ツールのネットワークの欄を開いた状態で文書をいくつか表示し、通信が発生していないことを確認する。
-10. **zip の展開（Windows）**: 配布の zip を展開する → `sample-docs/guide/` のファイル名が日本語で読める → `mdfolio.html` で `sample-docs` を開き、「基本操作」などのリンクで移動できる。
-11. **スマートフォン**: 書き出したサイトの HTML（または公開したページ）を開く → 左上の ≡ で文書の一覧が出る → 表・コードが横にはみ出さず、その中で横にスクロールできる → 数式と図が表示される。
-12. **スマートフォン**: ビューアで「ファイルを開く」を押す → `.md` のファイルを選べる → 表示される。
-13. **公開したページ（お試し用に変換した HTML）**: リンクでの移動、検索、テーマの切り替え、コードのコピーができる。メニューに「サイトとして書き出す」「外部の画像を表示する」が出ていない。添付へのリンクを押すと、保存できない旨の説明が出る。
+1. **Edge or Chrome on Windows**: double-click `mdfolio.html` to open it → choose `sample-docs` with "Open folder" → documents are shown, and the list on the left, search and table of contents work.
+2. On the same screen, there are no extra scrollbars in the sidebar or table of contents. Japanese fonts are easy to read.
+3. Close and reopen the browser → "Reopen last folder (sample-docs)" appears, and clicking it opens the folder.
+4. Edit and save `sample-docs/README.md` in an editor → the display changes within 2 to 3 seconds.
+5. "Export as site" in the menu → open the saved HTML on another computer (or in another browser) → it can be read as is.
+6. **Firefox**: open `mdfolio.html` → choose a folder with "Open folder" (if an upload confirmation appears, allow it; nothing is sent) → documents are shown. Dropping a folder onto the window also opens it.
+7. **Safari (Mac)**: same as 6. Also open the exported site's HTML and confirm that math and diagrams are shown.
+8. In the print preview, only the body text is printed, on a white background.
+9. With the Network panel of the developer tools open, view several documents and confirm that no network requests occur.
+10. **Zip extraction (Windows)**: extract the distribution zip → file names in `sample-docs/guide/` are readable in Japanese → open `sample-docs` with `mdfolio.html` and navigate via links such as "基本操作".
+11. **Smartphone**: open the exported site's HTML (or the published page) → the ≡ at the top left shows the document list → tables and code do not overflow horizontally and can be scrolled horizontally within themselves → math and diagrams are shown.
+12. **Smartphone**: tap "Open files" in the viewer → `.md` files can be selected → they are shown.
+13. **Published page (HTML converted for trial use)**: navigation via links, search, theme switching and copying code work. "Export as site" and "Show external images" do not appear in the menu. Clicking a link to an attachment shows an explanation that it cannot be saved.
 
 ---
 
-## 9. テストの再実行
+## 9. Re-running the tests
 
 ```
-npm install                       # Playwright、axe-core など（成果物には含まれない）
+npm install                       # Playwright, axe-core, etc. (not included in the output)
 npx playwright install chromium
-npm test                          # ビルド → 単体テスト → ブラウザーでのテスト
-node tools/dev/test-summary.mjs   # ファイルごとの件数と所要時間を test-results/ に出力
-npm run test:webkit               # WebKitGTK（要 webkit2gtk-driver、xvfb）
-npm run test:gecko                # Firefox 系（要 geckodriver。MDFOLIO_GECKO_BINARY で実行ファイルを指定）
+npm test                          # build → unit tests → browser tests
+node tools/dev/test-summary.mjs   # writes per-file test counts and times to test-results/
+npm run test:webkit               # WebKitGTK (requires webkit2gtk-driver, xvfb)
+npm run test:gecko                # Firefox family (requires geckodriver; set the executable with MDFOLIO_GECKO_BINARY)
 ```
 
-性能テストは機械の速さに左右されます。目標値は 2 コアの機械を想定したものなので、それより遅い環境や、ほかの処理が動いている間は失敗することがあります（4 章）。zip の作成のテスト（`tests/unit/package.test.mjs` の一部）は Python 3 を使います。ない環境では、その 2 件だけスキップします。
+Performance tests depend on machine speed. The targets assume a 2-core machine, so they can fail on slower environments or while other work is running (chapter 4). The zip creation tests (part of `tests/unit/package.test.mjs`) use Python 3. In environments without it, only those 2 tests are skipped.

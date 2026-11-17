@@ -1,5 +1,5 @@
-// セキュリティ（SEC-1〜SEC-9）: 文書の内容を信用しない前提での確認
-// 「外部と通信しない」は、ブラウザー側の記録ではなく、実際に用意したサーバーに届いたかどうかで判定する。
+// Security (SEC-1 to SEC-9): checks that assume document content is untrusted
+// "No external communication" is judged by whether anything actually reached a server we set up, not by the browser's own records.
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -20,7 +20,7 @@ after(async () => { await browser.close(); await sink.close(); });
 const CSP_MESSAGE = /violates the following Content Security Policy directive/;
 const xss = (page) => page.evaluate(() => typeof window.__xss);
 
-/** 設定ブロックだけを書き換えたビューアを作る。 */
+/** Build a viewer with only the config block rewritten. */
 function viewerWith(config) {
   const parts = core.extractParts(fs.readFileSync(VIEWER, 'utf8'));
   core.findBlock(parts, 'mdv-config').text = core.jsonForScript(config);
@@ -36,11 +36,11 @@ async function openXss(page) {
   await page.waitForTimeout(500);
 }
 
-describe('文書の中のスクリプトを実行させない（SEC-1, SEC-2, SEC-6, SEC-9）', () => {
-  test('スクリプト・イベント属性・危険な要素を取り除く', async () => {
+describe('Scripts in documents never run (SEC-1, SEC-2, SEC-6, SEC-9)', () => {
+  test('removes scripts, event attributes and dangerous elements', async () => {
     await withPage(browser, { allowErrors: true }, async ({ page, record }) => {
       await openXss(page);
-      assert.equal(await xss(page), 'undefined', 'どのスクリプトも実行されていない');
+      assert.equal(await xss(page), 'undefined', 'no script has run');
       const r = await page.evaluate(() => {
         const prose = document.querySelector('.mdv-prose');
         const all = Array.from(prose.querySelectorAll('*'));
@@ -56,25 +56,25 @@ describe('文書の中のスクリプトを実行させない（SEC-1, SEC-2, SE
           display: [getComputedStyle(document.body).display, getComputedStyle(document.querySelector('.mdv-header')).display]
         };
       });
-      // 文書に由来する要素は、表示用のものだけ
+      // Elements coming from the document are display-only ones
       assert.deepEqual(r.docTags, ['a', 'code', 'details', 'div', 'h1', 'img', 'p', 'pre', 'span', 'summary', 'table', 'tbody', 'td', 'tr']);
-      assert.equal(r.handlers, 0, 'on* 属性は残っていない');
+      assert.equal(r.handlers, 0, 'no on* attributes remain');
       for (const u of r.urls) {
-        assert.ok(/^(?:#\/|#!|blob:|https:\/\/example\.invalid\/|x$)/.test(u), `想定外の URL: ${u}`);
+        assert.ok(/^(?:#\/|#!|blob:|https:\/\/example\.invalid\/|x$)/.test(u), `unexpected URL: ${u}`);
       }
       assert.ok(!r.urls.some((u) => /^\s*(?:javascript|data|vbscript|file|ftp):/i.test(u)));
-      assert.equal(r.inputs, 0, 'チェックボックス以外の入力欄は残さない');
-      assert.deepEqual(r.code, ['<script>window.__xss = 1</script>', '<script>window.__xss = 1</script>'], 'コードとして書かれたものは文字のまま表示する');
-      assert.equal(r.mathLinks, 0, '数式の中のリンク（\\href）は無効');
-      assert.deepEqual(r.display, ['block', 'flex'], '文書の <style> は効いていない');
-      // 画面に出ているエラーは、CSP が止めたという記録だけ
+      assert.equal(r.inputs, 0, 'no input fields other than checkboxes remain');
+      assert.deepEqual(r.code, ['<script>window.__xss = 1</script>', '<script>window.__xss = 1</script>'], 'anything written as code is shown as text');
+      assert.equal(r.mathLinks, 0, 'links inside math (\\href) are disabled');
+      assert.deepEqual(r.display, ['block', 'flex'], 'the document\'s <style> has no effect');
+      // The only errors logged are records of the CSP blocking things
       assert.ok(record.errors.length > 0);
       for (const e of record.errors) assert.match(e, CSP_MESSAGE);
-      assert.deepEqual(record.requests, [], '通信は発生していない');
+      assert.deepEqual(record.requests, [], 'no network requests were made');
     });
   });
 
-  test('アプリの部品を名乗らせない。ID を乗っ取らせない。画面を覆わせない', async () => {
+  test('documents cannot pose as app components, hijack IDs or cover the screen', async () => {
     await withPage(browser, { allowErrors: true }, async ({ page }) => {
       await openXss(page);
       const r = await page.evaluate(() => {
@@ -97,23 +97,23 @@ describe('文書の中のスクリプトを実行させない（SEC-1, SEC-2, SE
           attrs: Array.from(attrs.attributes).map((a) => a.name)
         };
       });
-      assert.equal(r.rootIsApp, true, 'id="mdv-root" はアプリのもののまま');
+      assert.equal(r.rootIsApp, true, 'id="mdv-root" still belongs to the app');
       assert.equal(r.main, 'MAIN');
-      assert.equal(r.getElementById, 'function', 'name="getElementById" で DOM の機能を上書きできない');
-      assert.deepEqual(r.foreignIds, [], '文書の id にはすべて接頭辞が付く');
+      assert.equal(r.getElementById, 'function', 'name="getElementById" cannot override DOM features');
+      assert.deepEqual(r.foreignIds, [], 'all document ids get a prefix');
       assert.deepEqual(r.names, ['user-content-mdv-main', 'user-content-getElementById']);
-      assert.equal(r.overlayStyle, 'color: green', 'style は安全な指定だけを残す');
+      assert.equal(r.overlayStyle, 'color: green', 'only safe style declarations are kept');
       assert.equal(r.overlayPosition, 'static');
       assert.equal(r.overlayImage, 'none');
       assert.equal(r.fakeCopy, 0);
       assert.equal(r.fakeToast, 0);
-      assert.equal(r.keptClass, 1, 'アプリ用でないクラスは残す');
+      assert.equal(r.keptClass, 1, 'classes not used by the app are kept');
       assert.deepEqual(r.appClasses, []);
-      assert.deepEqual(r.attrs, ['id'], 'contenteditable・tabindex・data-* は取り除く');
+      assert.deepEqual(r.attrs, ['id'], 'contenteditable, tabindex and data-* are removed');
     });
   });
 
-  test('リンクは安全な宛先だけを残す', async () => {
+  test('only links with safe destinations are kept', async () => {
     await withPage(browser, { allowErrors: true }, async ({ page, context }) => {
       await openXss(page);
       const link = (id) => page.evaluate((i) => {
@@ -121,15 +121,15 @@ describe('文書の中のスクリプトを実行させない（SEC-1, SEC-2, SE
         return { href: a.getAttribute('href'), rel: a.getAttribute('rel'), target: a.getAttribute('target'), ping: a.getAttribute('ping'), missing: a.classList.contains('mdv-missing') };
       }, id);
       for (const id of ['js-link', 'data-link', 'file-link', 'ftp-link']) {
-        assert.equal((await link(id)).href, null, `${id} はリンクにしない`);
+        assert.equal((await link(id)).href, null, `${id} is not made a link`);
       }
       assert.equal(await page.locator('.mdv-prose a[href^="javascript" i]').count(), 0);
-      assert.ok((await page.textContent('.mdv-prose')).includes('[markdown js](javascript:window.__xss=1)'), 'Markdown の javascript: リンクは文字のまま');
-      // 外部リンクは新しいタブで、参照元を渡さずに開く
+      assert.ok((await page.textContent('.mdv-prose')).includes('[markdown js](javascript:window.__xss=1)'), 'Markdown javascript: links stay as text');
+      // External links open in a new tab without passing the referrer
       assert.deepEqual(await link('ping-link'), { href: 'https://example.invalid/ping', rel: 'noopener noreferrer', target: '_blank', ping: null, missing: false });
-      // スキームのない //host/… は https にする（file:// 上で共有フォルダーへの接続にさせない）
+      // Scheme-less //host/... becomes https (so that under file:// it cannot connect to a shared folder)
       assert.deepEqual(await link('pr-link'), { href: 'https://example.invalid/protocol-relative', rel: 'noopener noreferrer', target: '_blank', ping: null, missing: false });
-      // \\host\share\… も共有フォルダーとして開かせない（文書セットの中のパスとして扱い、見つからない表示にする）
+      // \\host\share\... cannot open a shared folder either (treated as a path inside the document set and shown as not found)
       const unc = await link('unc-link');
       assert.equal(unc.href, '#/example.invalid/share/file');
       assert.equal(unc.missing, true);
@@ -141,7 +141,7 @@ describe('文書の中のスクリプトを実行させない（SEC-1, SEC-2, SE
     });
   });
 
-  test('ファイル名・フォルダ名・見出し・タイトル・検索語の HTML は、文字として表示する', async () => {
+  test('HTML in file names, folder names, headings, titles and search terms is shown as text', async () => {
     const evil = '<img src=x onerror=window.__xss=1>';
     const root = path.join(tmpDir(), '<i>root<_i>');
     writeTree(root, {
@@ -160,22 +160,22 @@ describe('文書の中のスクリプトを実行させない（SEC-1, SEC-2, SE
       await waitIndexed(page);
       assert.equal(await page.textContent('.mdv-title'), '<i>root<_i>');
       assert.equal(await page.title(), 'ホーム - <i>root<_i>');
-      // サイドバー: ナビ（_sidebar.md）とファイル一覧
+      // Sidebar: navigation (_sidebar.md) and file list
       assert.equal(await page.locator('.mdv-sidenav a[href^="javascript" i]').count(), 0);
       await page.click('.mdv-side-tab[data-tab="files"]');
       const tree = await page.textContent('.mdv-side-tree');
-      assert.ok(tree.includes(evil), 'ファイル名がそのまま文字で表示される');
-      assert.ok(tree.includes('<svg onload=window.__xss=1>'), 'フォルダ名も同じ');
-      // 見出しに HTML を含む文書
+      assert.ok(tree.includes(evil), 'file name is shown as plain text');
+      assert.ok(tree.includes('<svg onload=window.__xss=1>'), 'same for the folder name');
+      // Document with HTML in its headings
       await goTo(page, '#/title.md', '見出し');
       assert.equal(await page.title(), '<script>window.__xss=1</script>前付けのタイトル - <i>root<_i>');
       const toc = await page.evaluate(() => Array.from(document.querySelectorAll('.mdv-toc .mdv-toc-link')).map((a) => a.textContent));
       assert.deepEqual(toc, ['見出し 太字', '小見出し 斜体', 'もう一つ']);
-      // ファイル名に HTML を含む文書
+      // Document with HTML in its file name
       await goTo(page, core.buildRoute(evil + '.md'));
       await page.waitForFunction((name) => document.querySelector('.mdv-doc-path').textContent === name, evil + '.md');
       assert.equal(await page.title(), evil + ' - <i>root<_i>');
-      // 検索結果と、検索語そのもの
+      // Search results, and the search term itself
       await page.fill('.mdv-search-input', 'アルファ');
       await page.waitForFunction(() => document.querySelectorAll('.mdv-search-item').length === 2);
       assert.ok((await page.textContent('#mdv-search-panel')).includes(evil));
@@ -183,17 +183,17 @@ describe('文書の中のスクリプトを実行させない（SEC-1, SEC-2, SE
       await page.waitForSelector('.mdv-search-empty');
       assert.equal(await page.textContent('.mdv-search-empty'), '「<img src=x onerror=window.__xss=1>zzz」に一致する文書はありません');
       await page.keyboard.press('Escape');
-      // 存在しない場所（URL に HTML）
+      // A location that does not exist (HTML in the URL)
       await goTo(page, '#/' + encodeURIComponent('<img src=x onerror=window.__xss=1>') + '/none.md');
       await page.waitForSelector('.mdv-empty');
       assert.ok((await page.textContent('.mdv-empty')).includes('<img src=x onerror=window.__xss=1>/none.md'));
-      // 書き出しダイアログ
+      // Export dialog
       await clickMenu(page, 'menuExport');
       await page.waitForSelector('dialog.mdv-dialog-export[open]');
       assert.equal(await page.inputValue('.mdv-export-title'), '<i>root<_i>');
       const options = await page.evaluate(() => Array.from(document.querySelectorAll('.mdv-export-home option')).map((o) => o.textContent));
       assert.ok(options.includes(evil + '.md'));
-      assert.equal(await page.evaluate(chromeInjected), 0, '画面の部品の中に、文書由来の要素は作られていない');
+      assert.equal(await page.evaluate(chromeInjected), 0, 'no document-derived elements are created inside UI components');
       await page.click('.mdv-export-cancel');
       assert.equal(await xss(page), 'undefined');
       for (const e of record.errors) assert.match(e, CSP_MESSAGE);
@@ -201,22 +201,22 @@ describe('文書の中のスクリプトを実行させない（SEC-1, SEC-2, SE
     });
   });
 
-  test('添付の HTML ファイルは、開かずにダウンロードする', async () => {
+  test('attached HTML files are downloaded, not opened', async () => {
     await withPage(browser, async ({ page, context }) => {
       await loadFolder(page, fixture('site'));
       const dl = await captureDownload(page, () => page.click('.mdv-prose a:has-text("添付 HTML")'));
       assert.equal(dl.name, 'evil.html');
       await page.waitForTimeout(200);
-      assert.equal(context.pages().length, 1, '新しいタブで開いていない');
-      assert.equal(page.frames().length, 1, 'フレームにも読み込んでいない');
+      assert.equal(context.pages().length, 1, 'not opened in a new tab');
+      assert.equal(page.frames().length, 1, 'not loaded into a frame either');
       assert.equal(await xss(page), 'undefined');
       assert.equal(await heading(page), 'テスト用サイト');
     });
   });
 });
 
-describe('外部と通信しない（SEC-5, SEC-8, SEC-10）', () => {
-  /** 外部への読み込みを起こしうる書き方を集めた文書。URL ごとに経路が分かるようにしてある。 */
+describe('No external communication (SEC-5, SEC-8, SEC-10)', () => {
+  /** Documents collecting markup that could trigger external loads. Each URL identifies its route. */
   function vectorDocs() {
     const O = sink.origin;
     const html = `# 通信の確認
@@ -304,25 +304,25 @@ $\\includegraphics[width=1em]{${O}/katex-img.png}$ と $\\href{${O}/katex-href}{
     await waitIndexed(page);
   }
 
-  // 画像・動画・音声として読み込んでよいもの（許可したときだけ）
+  // Things that may be loaded as images, video or audio (only when allowed)
   const MEDIA = ['/md-image.png', '/html-image.png', '/srcset-fallback.png', '/picture-img.png', '/details-img.png', '/video.mp4', '/video-source.mp4', '/audio.mp3'];
-  // 図（Mermaid）の中で指定された画像。許可したときは画像として読み込まれる
+  // Images specified inside (Mermaid) diagrams. When allowed, they are loaded as images
   const DIAGRAM_IMAGES = ['/mermaid-shape.png', '/mermaid-label.png', '/mermaid-themecss.png', '/mermaid-fill.svg', '/mermaid-fm.png'];
 
-  test('既定では、どの書き方からも外部へ通信しない（図の中の画像指定を含む）', async () => {
+  test('by default, no markup causes external communication (including images specified in diagrams)', async () => {
     sink.hits.length = 0;
     const { dir, names } = vectorDocs();
     await withPage(browser, { allowErrors: true }, async ({ page, record, context }) => {
       await loadFolder(page, dir);
       await visitAll(page, names);
-      assert.deepEqual(sink.paths(), [], 'サーバーには 1 件も届いていない');
-      assert.deepEqual(record.requests, [], '送ろうとした通信もない');
-      // 図の中の画像指定は表示処理では取り除けないので、ブラウザーの CSP が止めている
+      assert.deepEqual(sink.paths(), [], 'nothing reached the server');
+      assert.deepEqual(record.requests, [], 'no requests were even attempted');
+      // Images specified in diagrams cannot be removed during rendering, so the browser CSP blocks them
       assert.deepEqual(Array.from(new Set(record.blocked)).map((u) => u.replace(sink.origin, '')).sort(), DIAGRAM_IMAGES.slice().sort());
       for (const e of record.errors) assert.match(e, CSP_MESSAGE);
       assert.equal(context.pages().length, 1);
-      assert.ok(page.url().startsWith('file://'), '別のページへ移動していない');
-      // 書き出しの処理でも通信しない
+      assert.ok(page.url().startsWith('file://'), 'did not navigate to another page');
+      // Exporting makes no requests either
       const before = sink.hits.length;
       await clickMenu(page, 'menuExport');
       await page.waitForSelector('dialog.mdv-dialog-export[open]');
@@ -333,7 +333,7 @@ $\\includegraphics[width=1em]{${O}/katex-img.png}$ と $\\href{${O}/katex-href}{
     });
   });
 
-  test('書き出したサイトでも、既定では通信しない', async () => {
+  test('the exported site also makes no requests by default', async () => {
     sink.hits.length = 0;
     const { dir, names } = vectorDocs();
     const out = path.join(tmpDir(), 'vectors.html');
@@ -346,16 +346,16 @@ $\\includegraphics[width=1em]{${O}/katex-img.png}$ と $\\href{${O}/katex-href}{
     });
   });
 
-  test('外部の画像を許可しても、読み込むのは画像・動画・音声だけ', async () => {
+  test('even with external images allowed, only images, video and audio are loaded', async () => {
     sink.hits.length = 0;
     const { dir, names } = vectorDocs();
     await withPage(browser, { url: viewerWith({ allowExternalImages: true }), allowErrors: true }, async ({ page, record, context }) => {
       await loadFolder(page, dir);
       await visitAll(page, names);
       const got = Array.from(new Set(sink.paths())).sort();
-      assert.deepEqual(got, MEDIA.concat(DIAGRAM_IMAGES).sort(), '画像・メディア以外の経路（スタイル、リンク、フォーム、埋め込み、スクリプトなど）は使われない');
+      assert.deepEqual(got, MEDIA.concat(DIAGRAM_IMAGES).sort(), 'no routes other than images and media (styles, links, forms, embeds, scripts, etc.) are used');
       assert.ok(sink.hits.every((h) => h.method === 'GET'));
-      assert.ok(sink.hits.every((h) => h.referer === undefined && h.cookie === undefined), '参照元も Cookie も送らない');
+      assert.ok(sink.hits.every((h) => h.referer === undefined && h.cookie === undefined), 'sends neither the referrer nor cookies');
       assert.equal(context.pages().length, 1);
       assert.ok(page.url().startsWith('file://'));
       for (const e of record.errors) assert.match(e, CSP_MESSAGE);
@@ -363,8 +363,8 @@ $\\includegraphics[width=1em]{${O}/katex-img.png}$ と $\\href{${O}/katex-href}{
   });
 });
 
-describe('コンテンツセキュリティポリシー（SEC-3, SEC-4）', () => {
-  test('CSP の指定は <head> の中で、すべてのスクリプトより前にある', () => {
+describe('Content Security Policy (SEC-3, SEC-4)', () => {
+  test('the CSP is declared inside <head>, before all scripts', () => {
     const html = fs.readFileSync(VIEWER, 'utf8');
     const csp = html.indexOf('<meta http-equiv="Content-Security-Policy"');
     assert.ok(csp > 0 && csp < html.indexOf('<style') && csp < html.indexOf('<script') && csp < html.indexOf('</head>'));
@@ -372,7 +372,7 @@ describe('コンテンツセキュリティポリシー（SEC-3, SEC-4）', () =
     const directive = (name) => (policy.split(';').map((d) => d.trim()).find((d) => d.split(' ')[0] === name) || '').split(' ').slice(1);
     assert.deepEqual(directive('default-src'), ["'none'"]);
     assert.equal(directive('script-src').length, 4);
-    assert.ok(directive('script-src').every((s) => /^'sha256-[A-Za-z0-9+/]{43}='$/.test(s)), 'スクリプトはハッシュで指定したものだけ');
+    assert.ok(directive('script-src').every((s) => /^'sha256-[A-Za-z0-9+/]{43}='$/.test(s)), 'only scripts specified by hash');
     assert.ok(!/unsafe-eval|unsafe-hashes|strict-dynamic|\*|wasm/.test(policy));
     assert.ok(!directive('script-src').includes("'unsafe-inline'"));
     assert.deepEqual(directive('connect-src'), ["'none'"]);
@@ -383,19 +383,19 @@ describe('コンテンツセキュリティポリシー（SEC-3, SEC-4）', () =
     assert.deepEqual(directive('base-uri'), ["'none'"]);
     assert.deepEqual(directive('font-src'), ['data:']);
     assert.deepEqual(directive('img-src'), ['data:', 'blob:', 'http:', 'https:']);
-    // file: は CSS（隣の mdfolio.css。SPEC 3.10）にだけ認める。画像・メディア・フォントには認めない（ローカルのファイルや共有フォルダーを読ませない）
+    // file: is allowed only for CSS (the neighboring mdfolio.css, SPEC 3.10), not for images, media or fonts (so local files and shared folders cannot be read)
     assert.deepEqual(directive('style-src'), ["'self'", 'file:', "'unsafe-inline'"]);
     for (const name of ['img-src', 'media-src', 'font-src', 'connect-src', 'script-src', 'default-src']) assert.ok(!directive(name).includes('file:'), name);
     assert.ok(html.includes('<meta name="referrer" content="no-referrer">'));
   });
 
-  test('仮に不正な要素やスクリプトが入り込んでも、実行も通信もできない', async () => {
+  test('even if rogue elements or scripts get in, they can neither run nor communicate', async () => {
     sink.hits.length = 0;
     await withPage(browser, { allowErrors: true }, async ({ page, record }) => {
       const r = await page.evaluate(async (origin) => {
         const out = {};
         const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-        // テスト用の呼び出しの中では eval が特別に許可されるため、いったん処理を区切ってから確かめる
+        // eval is specially allowed inside the test harness call, so yield once before checking
         await wait(20);
         try { out.eval = String((0, eval)('1 + 1')); } catch (e) { out.eval = e.name; }
         try { out.fn = String(new Function('return 1')()); } catch (e) { out.fn = e.name; }
@@ -409,7 +409,7 @@ describe('コンテンツセキュリティポリシー（SEC-3, SEC-4）', () =
         out.jsurl = typeof window.__jsurl;
         try { await fetch(origin + '/fetch', { mode: 'no-cors' }); out.fetch = 'sent'; } catch (e) { out.fetch = 'blocked'; }
         out.xhr = await new Promise((resolve) => { const x = new XMLHttpRequest(); x.onload = () => resolve('sent'); x.onerror = () => resolve('blocked'); try { x.open('GET', origin + '/xhr'); x.send(); } catch (e) { resolve('blocked'); } });
-        try { navigator.sendBeacon(origin + '/beacon', 'x'); } catch (e) { /* 届いたかどうかはサーバー側で確かめる */ }
+        try { navigator.sendBeacon(origin + '/beacon', 'x'); } catch (e) { /* whether it arrived is checked on the server side */ }
         out.ws = await new Promise((resolve) => { try { const w = new WebSocket(origin.replace('http', 'ws') + '/ws'); w.onopen = () => resolve('sent'); w.onerror = () => resolve('blocked'); } catch (e) { resolve('blocked'); } });
         try { const es = new EventSource(origin + '/sse'); await wait(150); out.sse = es.readyState === 2 ? 'blocked' : 'sent'; es.close(); } catch (e) { out.sse = 'blocked'; }
         const f = document.createElement('iframe'); f.src = origin + '/iframe.html'; document.body.appendChild(f);
@@ -420,7 +420,7 @@ describe('コンテンツセキュリティポリシー（SEC-3, SEC-4）', () =
         const v = document.createElement('video'); v.src = origin + '/video.mp4'; document.body.appendChild(v);
         try { const w = new Worker(URL.createObjectURL(new Blob(['postMessage(1)'], { type: 'text/javascript' }))); out.worker = await new Promise((resolve) => { w.onmessage = () => resolve('ran'); w.onerror = () => resolve('blocked'); setTimeout(() => resolve('blocked'), 400); }); } catch (e) { out.worker = 'blocked'; }
         const form = document.createElement('form'); form.action = origin + '/form'; form.method = 'post'; form.target = '_self'; document.body.appendChild(form);
-        try { form.submit(); } catch (e) { /* 無視 */ }
+        try { form.submit(); } catch (e) { /* ignore */ }
         const base = document.createElement('base'); base.href = origin + '/base/'; document.head.appendChild(base);
         out.base = document.baseURI.indexOf(origin) === 0 ? 'changed' : 'unchanged';
         await wait(700);
@@ -430,13 +430,13 @@ describe('コンテンツセキュリティポリシー（SEC-3, SEC-4）', () =
         eval: 'EvalError', fn: 'EvalError', inline: 'undefined', handler: 'undefined', jsurl: 'undefined',
         fetch: 'blocked', xhr: 'blocked', ws: 'blocked', sse: 'blocked', worker: 'blocked', base: 'unchanged'
       });
-      assert.deepEqual(sink.paths(), [], 'サーバーには 1 件も届いていない');
-      assert.ok(page.url().startsWith('file://'), 'フォームの送信でページが移動していない');
+      assert.deepEqual(sink.paths(), [], 'nothing reached the server');
+      assert.ok(page.url().startsWith('file://'), 'form submission did not navigate the page');
       assert.ok(record.errors.length >= 10);
     });
   });
 
-  test('埋め込まれたライブラリが書き換えられていたら、実行しない', async () => {
+  test('does not run an embedded library that has been tampered with', async () => {
     const parts = core.extractParts(fs.readFileSync(VIEWER, 'utf8'));
     const katex = core.findBlock(parts, 'mdv-lib-katex');
     katex.text = core.jsonForScript('window.__tampered = 1;' + JSON.parse(katex.text));
@@ -455,7 +455,7 @@ describe('コンテンツセキュリティポリシー（SEC-3, SEC-4）', () =
     });
   });
 
-  test('本体のスクリプトが書き換えられていたら、何も実行しない', async () => {
+  test('runs nothing if the main app script has been tampered with', async () => {
     const parts = core.extractParts(fs.readFileSync(VIEWER, 'utf8'));
     const app = core.findBlock(parts, 'mdv-js-app');
     app.text = 'window.__tampered = 1;' + app.text;
@@ -477,7 +477,7 @@ describe('コンテンツセキュリティポリシー（SEC-3, SEC-4）', () =
     }
   });
 
-  test('埋め込まれた文書データの形式が正しくなければ読み込まない', async () => {
+  test('does not load embedded document data in an invalid format', async () => {
     const cases = [
       { format: 99, name: 'x', files: [{ path: 'a.md', kind: 'doc', text: '# a' }] },
       { format: 1, name: 'x', files: [{ path: 'a.md', kind: 'doc', text: 1 }] },
@@ -494,12 +494,12 @@ describe('コンテンツセキュリティポリシー（SEC-3, SEC-4）', () =
         await page.waitForSelector('.mdv-toast-error');
         assert.equal(await page.textContent('.mdv-toast-error'), '埋め込まれた文書データを読み込めませんでした', JSON.stringify(data).slice(0, 60));
         assert.equal(await page.getAttribute('.mdv-app', 'data-view'), 'welcome');
-        assert.equal(await page.evaluate(() => window.MDV.app.state.mode), 'viewer', '閲覧モードとして使える');
+        assert.equal(await page.evaluate(() => window.MDV.app.state.mode), 'viewer', 'usable in viewer mode');
       });
     }
   });
 
-  test('埋め込まれた文書データのパスは、文書セットの外を指せない', async () => {
+  test('paths in embedded document data cannot point outside the document set', async () => {
     const parts = core.extractParts(fs.readFileSync(VIEWER, 'utf8'));
     core.findBlock(parts, 'mdv-site').text = core.jsonForScript({
       format: 1, name: 'x',
@@ -517,14 +517,14 @@ describe('コンテンツセキュリティポリシー（SEC-3, SEC-4）', () =
     await withPage(browser, { url: pathToFileURL(file).href }, async ({ page }) => {
       await page.waitForSelector('.mdv-prose h1');
       const docs = await page.evaluate(() => window.MDV.app.state.set.docs.slice());
-      // 「..」で外へ出るパスは読み込まない。そのほかは、文書セットの中の名前として扱う（ディスクは読まない）
+      // Paths that escape with ".." are not loaded. Others are treated as names inside the document set (the disk is never read)
       assert.deepEqual(docs, ['abs.md', 'ok.md', 'C:/Windows/win.md', 'file:/etc/passwd.md']);
       for (const p of docs) {
         await goTo(page, core.buildRoute(p));
         await page.waitForFunction((x) => document.querySelector('.mdv-doc-path').textContent === x, p);
       }
       assert.equal(await heading(page), 'スキーム');
-      assert.ok(page.url().startsWith(pathToFileURL(file).href + '#/'), 'ページは移動していない');
+      assert.ok(page.url().startsWith(pathToFileURL(file).href + '#/'), 'the page did not navigate');
     });
   });
 });

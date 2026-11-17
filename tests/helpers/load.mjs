@@ -1,12 +1,12 @@
-// 単体テスト用: ソースと同梱ライブラリを Node.js に読み込む
+// For unit tests: load the source and the bundled libraries into Node.js
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const require = createRequire(import.meta.url);
 
-// コマンド（更新コマンド、コマンドライン版の書き出し）の表示の言語は、テストでは日本語に固定する。
-// 実行する機械の言語設定に左右されないように（SPEC FD-10）。英語の表示は、テストの中で個別に指定して確かめる。
+// In tests, the language of command output (the update command, the command-line export) is pinned to Japanese,
+// so results do not depend on the language setting of the machine running them (SPEC FD-10). English output is checked by specifying it explicitly in individual tests.
 process.env.MDFOLIO_LANG = process.env.MDFOLIO_LANG || 'ja';
 
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');

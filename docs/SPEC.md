@@ -1,330 +1,330 @@
-# mdfolio 仕様書
+# mdfolio Specification
 
-| 項目 | 内容 |
+| Item | Details |
 |---|---|
-| 版 | 1.9（隣の CSS による見た目の上書き。フォルダ版を廃止） |
-| 日付 | 2026-11-13 |
-| 対象 | ローカルの HTML / JavaScript だけで動く Markdown 文書表示サイト |
-| 関連文書 | [REVIEW.md](REVIEW.md)（仕様レビュー記録）、[TEST_REPORT.md](TEST_REPORT.md)（テスト報告書） |
+| Version | 1.9 (appearance override with an adjacent CSS file; folder edition removed) |
+| Date | 2026-11-13 |
+| Subject | A Markdown document site that runs on local HTML / JavaScript only |
+| Related documents | [REVIEW.md](REVIEW.md) (specification review record), [TEST_REPORT.md](TEST_REPORT.md) (test report) |
 
 ---
 
-## 1. 概要
+## 1. Overview
 
-### 1.1 目的
+### 1.1 Purpose
 
-ローカルにある Markdown 文書群を、**サーバー・ビルドツール・インストール・ネット接続なし**に、ブラウザだけで「文書サイト」として閲覧・配布できるようにする。
+Make it possible to browse and distribute a set of local Markdown documents as a "document site" using only a browser, **with no server, no build tools, no installation and no network connection**.
 
-### 1.2 利用シナリオ
+### 1.2 Usage scenarios
 
-| ID | シナリオ | 概要 |
+| ID | Scenario | Summary |
 |---|---|---|
-| S1 | 自分の文書フォルダを閲覧する | `mdfolio.html` をダブルクリックで開き、文書フォルダを選ぶ。ツリー・文書間リンク・全文検索つきで閲覧する（**閲覧モード**） |
-| S2 | 文書をまとめて配布する | 開いている文書一式を、文書を埋め込んだ単一 HTML（以下「サイト HTML」）として書き出す |
-| S3 | 配布されたサイト HTML を読む | 受け取った人は HTML をダブルクリックするだけで読める。操作・導入は不要（**サイトモード**） |
-| S4 | 単一の `.md` をさっと見る | ファイルをウィンドウにドロップして表示する |
+| S1 | Browse your own document folder | Double-click `mdfolio.html` to open it and choose a document folder. Browse with a tree, links between documents and full-text search (**viewer mode**) |
+| S2 | Distribute documents as a bundle | Export the whole set of open documents as a single HTML file with the documents embedded (hereafter "site HTML") |
+| S3 | Read a distributed site HTML | Recipients only need to double-click the HTML to read it. No operation or setup is needed (**site mode**) |
+| S4 | Take a quick look at a single `.md` | Drop the file onto the window to display it |
 
-### 1.3 前提・制約（ブラウザ仕様に由来するもの）
+### 1.3 Assumptions and constraints (arising from browser behavior)
 
-| ID | 制約 | 本仕様での対応 |
+| ID | Constraint | How this specification handles it |
 |---|---|---|
-| C1 | `file://` で開いたページは `fetch` / `XMLHttpRequest` でローカルファイルを読めない | 通信 API を一切使わない。文書は (a) 利用者によるフォルダ／ファイルの選択、(b) HTML 内への埋め込み、のいずれかで取得する |
-| C2 | `file://` では ES Modules（`type="module"`）を読み込めない | クラシックスクリプトのみで構成する |
-| C3 | ページは利用者の操作なしに任意のローカルパスを読めない | フォルダ選択・ドロップ・埋め込みで対応する |
-| C4 | オフライン環境で使う | CDN 等の外部リソースを参照しない。必要なライブラリ・フォントはすべて HTML に内蔵する |
+| C1 | A page opened via `file://` cannot read local files with `fetch` / `XMLHttpRequest` | Do not use any network API at all. Documents are obtained either by (a) the user choosing a folder / files, or (b) embedding them in the HTML |
+| C2 | ES Modules (`type="module"`) cannot be loaded under `file://` | Use classic scripts only |
+| C3 | A page cannot read arbitrary local paths without a user action | Handled by folder selection, drop and embedding |
+| C4 | Used in offline environments | Do not reference external resources such as CDNs. All required libraries and fonts are built into the HTML |
 
-### 1.4 対象外（本バージョンでは実装しない）
+### 1.4 Out of scope (not implemented in this version)
 
-- Markdown の編集機能
-- サーバー上の `.md` を HTTP で逐次取得して表示する方式（docsify 方式）
-- PDF 直接出力（ブラウザの印刷機能で代替）
-- 絵文字ショートコード（`:smile:`）、Wiki リンク（`[[...]]`）、`[TOC]`、定義リスト
-- Mermaid の Mindmap / Architecture 図（同梱する軽量版 Mermaid が非対応のため）
-- 前後の文書への「前へ／次へ」リンク
+- Editing Markdown
+- Fetching `.md` files from a server over HTTP on demand and displaying them (the docsify approach)
+- Direct PDF output (use the browser's print function instead)
+- Emoji shortcodes (`:smile:`), wiki links (`[[...]]`), `[TOC]`, definition lists
+- Mermaid Mindmap / Architecture diagrams (not supported by the bundled lightweight Mermaid)
+- "Previous / Next" links to adjacent documents
 
 ---
 
-## 2. 動作環境
+## 2. Operating environment
 
-| ブラウザ | 位置づけ | 備考 |
+| Browser | Status | Notes |
 |---|---|---|
-| Microsoft Edge / Google Chrome（最新の安定版、PC） | **主対象・テスト済み**（Chromium エンジン） | 全機能 |
-| Firefox / Safari（最新の安定版、PC） | 準対象・**エンジン単位の簡易確認のみ** | 標準 API のみで実装し、機能検出で分岐する。フォルダはファイル選択ダイアログ方式で開く。「前回のフォルダを開く」「自動更新」は非対応（ボタンを表示しない）。Firefox のエンジン（Gecko 160）と Safari 系のエンジン（WebKitGTK 2.52）で主要機能の自動確認を行った（10 章）。製品版の Firefox / Safari そのものでは未確認 |
-| iOS / Android のブラウザ | サイト HTML の閲覧と「ファイルを開く」を想定・**実機では未検証** | 幅 390px・タッチ操作を模した環境での自動テストのみ行った。フォルダを開く操作は保証しない |
-| Internet Explorer | 非対応 | |
+| Microsoft Edge / Google Chrome (latest stable, PC) | **Primary target, tested** (Chromium engine) | All features |
+| Firefox / Safari (latest stable, PC) | Secondary target, **only a simple check per engine** | Implemented with standard APIs only, branching by feature detection. Folders are opened with the file selection dialog. "Reopen last folder" and auto-reload are not supported (their buttons are not shown). Main features were checked automatically with the Firefox engine (Gecko 160) and a Safari-family engine (WebKitGTK 2.52) (chapter 10). Not checked in the released Firefox / Safari products themselves |
+| iOS / Android browsers | Intended for reading site HTML and for "Open files"; **not verified on real devices** | Only automated tests in an environment simulating a 390px width and touch input were run. Opening a folder is not guaranteed |
+| Internet Explorer | Not supported | |
 
-- 起動方法: HTML ファイルをブラウザで直接開く（`file://`）。Web サーバーに置いた場合（`http(s)://`）も同じく動作する。
-- 実行に必要なもの: 上記ブラウザのみ。
-- 主な操作は PC（マウス・キーボード）を想定する。タッチ操作でも基本的な閲覧はできる。
+- How to start: open the HTML file directly in the browser (`file://`). It also works the same when placed on a web server (`http(s)://`).
+- Requirements to run: only one of the browsers above.
+- Main operation is assumed to be on a PC (mouse and keyboard). Basic browsing also works with touch input.
 
-### 2.1 別のページの中に埋め込んで表示する場合
+### 2.1 When displayed embedded inside another page
 
-HTML を `<iframe>` の中に表示する環境（文書管理システムのプレビュー、HTML を配信するホスティングサービスなど）でも、閲覧に必要な機能が動くようにする。
+Make the features needed for reading work even in environments that display the HTML inside an `<iframe>` (previews in document management systems, hosting services that serve HTML, etc.).
 
-| 条件 | 動作 |
+| Condition | Behavior |
 |---|---|
-| 文書の URL とリンクの基準 URL が異なる（`srcdoc` での埋め込みなど） | 文書間のリンクはアプリ自身が処理する（FR-211）。ブラウザーに任せると、フレームが別のページへ移動して表示が消えるため |
-| 保存領域（localStorage / IndexedDB）が使えない | 設定はその場かぎりで切り替わる（FR-702）。「前回のフォルダを開く」は表示しない |
-| フォルダ選択 API が拒否される（別オリジンのフレーム） | `<input>` 方式に切り替わる（FR-101） |
-| クリップボードの API が許可されていない | 従来の方式でコピーし、できなければ「コピーできませんでした」と表示する（FR-204） |
-| ページを nonce 方式の CSP で配信している | あとから読み込むライブラリ（数式・図）にも同じ nonce を引き継ぐ |
-| ファイルの保存・外部の読み込み・ダイアログがフレームの制限で止められる | 設定（5.4 の `allowDownloads` / `lockExternalImages`）で、該当する操作を画面に出さないようにできる |
+| The document URL and the base URL for links differ (embedding with `srcdoc`, etc.) | The app itself handles links between documents (FR-211). If left to the browser, the frame navigates to another page and the display disappears |
+| Storage (localStorage / IndexedDB) is unavailable | Settings change only for the current session (FR-702). "Reopen last folder" is not shown |
+| The folder selection API is refused (cross-origin frame) | Falls back to the `<input>` method (FR-101) |
+| The clipboard API is not permitted | Copy using the legacy method; if that fails, show "Could not copy" (FR-204) |
+| The page is served with a nonce-based CSP | Pass the same nonce on to the libraries loaded later (math and diagrams) |
+| Saving files, external loading or dialogs are blocked by frame restrictions | Settings (`allowDownloads` / `lockExternalImages` in 5.4) can keep the affected operations off the screen |
 
-ページの中へ独自のスクリプトを差し込む種類のホスティング環境では、HTML に書いた CSP（SEC-4）がそのスクリプトを止めてしまう。こうした環境に置く場合は、`tools/dev/make-hosted.mjs` で CSP を取り除いて上記の設定を入れた「お試し用」の HTML に変換する（6.1）。
-
----
-
-## 3. 機能要件
-
-優先度: **必須** = 本バージョンで必ず満たす ／ **推奨** = 本バージョンで実装するが、ブラウザ非対応時は機能を隠す。
-
-### 3.1 文書の読み込み
-
-| ID | 優先度 | 要件 |
-|---|---|---|
-| FR-101 | 必須 | **フォルダを開く**: ボタン操作でフォルダを選択し、配下を再帰的に走査して文書セットを作る。File System Access API（`showDirectoryPicker`）が使えるブラウザではそれを使い、使えない場合・拒否された場合（利用者によるキャンセルを除く）は `<input type="file" webkitdirectory>` に自動で切り替える。走査中は進捗（件数）を表示する |
-| FR-102 | 必須 | **ファイルを開く**: 1 つ以上の Markdown ファイルを選択して開く。PC では選択ダイアログを Markdown の拡張子に絞り込む。指で操作する端末（主な入力がタッチの端末）では絞り込まない（`.md` の種類の扱いが端末や保存先のアプリによって異なり、絞り込むと選べないことがあるため）。Markdown 以外だけを選んだ場合は FR-902 のとおり通知する |
-| FR-103 | 必須 | **ドラッグ＆ドロップ**: ファイルまたはフォルダをウィンドウにドロップして開く。フォルダを 1 つだけドロップした場合はそのフォルダをルートとし、それ以外（複数、またはファイル）はドロップした項目をルート直下に並べる。サイトモードではドロップを受け付けない |
-| FR-104 | 必須 | **埋め込みデータ**: HTML 内にサイトデータ（5.5）があれば、起動時にそれを文書セットとして読み込む（サイトモード） |
-| FR-105 | 必須 | **対象ファイル**: 拡張子 `.md` `.markdown` `.mdown` `.mkd` `.mkdn` `.mdwn` `.mdtxt` `.mdtext`（大文字小文字を区別しない）を「文書」とする。それ以外のファイルは「添付」とし、文書から画像・リンクとして参照されたときに初めて読み込む |
-| FR-106 | 必須 | **除外**: 名前が `.` で始まるフォルダ・ファイル、および `node_modules` フォルダは読み込まない（どの読み込み方法でもアプリ側で除外する） |
-| FR-107 | 必須 | **文字コード**: UTF-8（BOM 有無）、UTF-16（BOM 付き）、Shift_JIS（CP932）を自動判定する。判定順は BOM → UTF-8 厳密デコード → Shift_JIS 厳密デコード → UTF-8（不正バイトは置換文字） |
-| FR-108 | 推奨 | **前回のフォルダを開く**: `showDirectoryPicker` で開いたフォルダのハンドルを保存し、次回は開始画面からワンクリック（＋ブラウザの許可確認）で開ける。保存・復元に失敗した場合は機能を表示しないだけで、エラーにしない |
-| FR-109 | 推奨 | **再読み込み**: メニューからフォルダの再走査と表示中文書の再読込ができる。`showDirectoryPicker`（またはハンドルが得られるドロップ）で開いた場合は、表示中の文書ファイルの更新を約 2 秒間隔で検知し、スクロール位置を保ったまま自動で再表示する。ハンドルがない読み込み方法では、ファイルが選択後に変更されていると再読込できないことがあり、その場合は開き直しを促す |
-| FR-110 | 必須 | **上限**: 文書 5,000 件、走査するファイル・フォルダ 50,000 件まで。超過分は読み込まず、その旨を通知する。10MB を超える文書は Markdown 変換せずプレーンテキストとして表示する |
-| FR-111 | 必須 | **置き換え**: 文書セットを開いている状態で別のフォルダ・ファイルを開いた場合は、確認なしで文書セットを置き換え、ホーム文書を表示する |
-| FR-112 | 必須 | **単一ファイル時の扱い**: フォルダではなくファイルだけを開いた場合、同時に選択していない画像・リンク先は解決できない。画像のプレースホルダに「フォルダとして開くと表示できる」旨を表示する |
-
-### 3.2 表示（レンダリング）
-
-| ID | 優先度 | 要件 |
-|---|---|---|
-| FR-201 | 必須 | CommonMark と GFM 拡張（表・打ち消し線・タスクリスト・URL／メールアドレスの自動リンク）を表示できる。対応記法は 3.2.1 のとおり |
-| FR-202 | 必須 | 脚注（`[^1]`）を表示できる |
-| FR-203 | 必須 | 見出しに ID を付与し、見出し横にアンカーリンクを表示する。ID は GitHub 方式（小文字化・記号除去・空白をハイフン化、日本語は保持、重複は `-1` `-2` を付加） |
-| FR-204 | 必須 | コードブロックを言語指定に応じてシンタックスハイライトする（言語指定がない・未対応の場合はハイライトなし）。各コードブロックに言語名とコピー用ボタンを表示する。コピーできなかった場合は、できたことにせず「コピーできませんでした」と表示する。フレームの中では、押した操作の中で同期的にコピーする方式を先に試す（非同期の API が拒否されるのを待つと、その後のコピーを受け付けないブラウザーがあるため）。色分けはサニタイズの後に行い、色分けの結果もサニタイザーを通してから挿入する。コードの文字が変わる場合は色分けしない。1 文書につき 20,000 文字または 60 ブロックを超える分は、表示のあとで画面に近いものから順に処理する（印刷の前には残りをまとめて処理する） |
-| FR-205 | 必須 | 数式（KaTeX）: インライン `$...$`、ディスプレイ `$$...$$`、および ```` ```math ```` ブロック。構文エラーの箇所はエラー表示にし、文書全体の表示は続ける。ライブラリが使えない場合は数式の原文を表示する |
-| FR-206 | 必須 | 図（Mermaid）: ```` ```mermaid ```` ブロックを図として表示する。構文エラー時はエラーメッセージと元のコードを表示する。ライブラリが使えない場合は元のコードを表示する |
-| FR-207 | 推奨 | GitHub 形式のアラート（`> [!NOTE]` `[!TIP]` `[!IMPORTANT]` `[!WARNING]` `[!CAUTION]`） |
-| FR-208 | 必須 | YAML フロントマター（先頭の `---` 〜 `---`）は本文に表示しない。`title` があれば文書タイトルに使う |
-| FR-209 | 必須 | Markdown 中の生 HTML は、サニタイズ（6 章）した上で表示する |
-| FR-210 | 必須 | **画像・メディア**: 相対パスは文書セット内のファイルに解決して表示する。見つからない場合はプレースホルダを表示する。外部（`http(s)://`）の画像・メディアは既定でブロックしてプレースホルダを表示し、設定で許可できる。ブロックは表示処理に加えて CSP でも行う（SEC-10）。許可へ切り替えるときは、接続先が増えることを確認した上でページを再読み込みする（閲覧モードでは開いているフォルダが閉じる）。ブロックへ戻すときは、その場で反映する |
-| FR-211 | 必須 | **リンク**: 文書セット内の文書へのリンクはアプリ内で遷移する。`#見出し` はページ内移動。アプリ内のリンク（`#` で始まるもの）のクリックはアプリ自身が処理し、ブラウザーの既定の移動に任せない（2.1。修飾キー付きのクリックなど、新しいタブで開く操作はブラウザーに任せる）。外部リンクは新しいタブで開く。文書セット内の添付ファイルへのリンクはダウンロードとして保存する（ブラウザ内では開かない）。添付のパスを URL で直接開いた場合は、ダウンロード用のボタンを表示する。設定で保存を使わないようにしている場合（5.4 の `allowDownloads: false`）は、保存を始めず、保存できない旨を表示する（押しても動かないボタンは出さない）。解決できないリンクは遷移先で「見つかりません」を表示する |
-| FR-212 | 必須 | 横に長い表・コード・数式・図は、その要素内で横スクロールできる。実際にはみ出している要素は、キーボードでフォーカスして矢印キーでスクロールできる（画面の幅が変わったら判定し直す） |
-| FR-213 | 必須 | **文書タイトル**: フロントマターの `title` → 最初の H1 → ファイル名 の順で決定し、ブラウザのタブタイトルにも反映する |
-
-#### 3.2.1 対応記法
-
-| 記法 | 対応 | 備考 |
-|---|---|---|
-| 見出し（`#`、下線式）、段落、強調、打ち消し線（`~~`） | ○ | |
-| リスト（入れ子・番号）、タスクリスト（`- [ ]` `- [x]`） | ○ | チェックボックスは表示のみ（操作不可） |
-| 引用、アラート（`> [!NOTE]` 等） | ○ | |
-| コード（インライン、フェンス、言語指定） | ○ | ハイライト対応言語は highlight.js の標準セット＋追加言語（一覧は README） |
-| 表（列の左・中央・右揃え） | ○ | |
-| リンク（インライン・参照式）、画像 | ○ | |
-| 自動リンク | △ | `http(s)://` で始まる URL とメールアドレスのみ。`www.example.com` や `README.md` のような文字列はリンクにしない |
-| 脚注 | ○ | |
-| 数式 | ○ | インラインは、開き `$` の直後と閉じ `$` の直前が空白でなく、閉じ `$` の直後が数字でない場合のみ数式とみなす（`$5 と $10` のような金額表記は数式にならない）。`\$` で `$` そのもの |
-| Mermaid | ○ | フローチャート、シーケンス、クラス、状態、ER、ガント、円、ジャーニー、Git グラフ、タイムライン、四象限、XY、サンキー、ブロック |
-| 生 HTML | △ | 書式・表・`details`・`img`・`video`/`audio` 等。スクリプト・フォーム等は除去（6 章） |
-| 改行 | ○ | 行末の空白 2 つまたは `\` で改行。単なる改行は改行にならない（CommonMark 準拠） |
-| フロントマター（YAML） | △ | 非表示。`title` のみ利用 |
-
-### 3.3 ナビゲーション
-
-| ID | 優先度 | 要件 |
-|---|---|---|
-| FR-301 | 必須 | **サイドバー（ファイルツリー）**: フォルダ階層をツリー表示し、フォルダは開閉できる。表示中の文書を強調する。並び順は「ファイル → フォルダ」、各階層のファイルは `README` / `index` を先頭、以降は自然順（数字を数値として比較。利用者の環境によらず同じ順になるよう照合規則を固定する）。表示名は拡張子を除いたファイル名 |
-| FR-302 | 推奨 | **カスタムナビ**: 文書セットのルートに `_sidebar.md` または `SUMMARY.md`（大文字小文字を区別しない。両方あれば `_sidebar.md`）があれば、その内容（リンクの入れ子リスト）をサイドバーに表示する。リンクはルート基準で解決する。「ナビ／ファイル」を切り替えられる |
-| FR-303 | 必須 | **ページ内目次**: 表示中の文書の見出し（H1〜H4）を一覧表示し、スクロール位置に応じて現在位置を強調する。文書の末尾までスクロールしたときは、最後の見出しを現在位置とする。見出しが 2 つ未満の文書では表示しない |
-| FR-304 | 必須 | **ルーティング**: 表示中の文書と見出し位置を URL ハッシュに反映する（5.2）。ブラウザの「戻る／進む」で移動できる。サイトモードではハッシュ付き URL を直接開くとその文書・位置が表示される。閲覧モードでハッシュ付き URL を開いた場合は開始画面を表示し、文書セットの読み込み後にその文書へ移動する |
-| FR-305 | 必須 | 文書の上部に、文書セット内でのパスと更新日時（取得できる場合）を表示する |
-| FR-306 | 推奨 | 「戻る／進む」で移動したときは、以前のスクロール位置を復元する |
-| FR-307 | 必須 | **ホーム文書**: 設定の `home` → ルートの `README.md` → ルートの `index.md` → ツリー順で最初の文書 の順で決定する（大文字小文字を区別しない） |
-
-### 3.4 検索
-
-| ID | 優先度 | 要件 |
-|---|---|---|
-| FR-401 | 必須 | 文書セット全体を対象に全文検索できる。対象は各文書のタイトル・見出し・パス・本文（Markdown の記法記号を取り除いたテキスト。コードを含む）。空白区切りの複数語は AND 条件。大文字小文字・全角半角（英数字・カナ）を区別しない。カスタムナビ（FR-302）に使っているファイルは目次であって本文ではないため、検索結果には出さない（ファイル一覧からは開ける） |
-| FR-402 | 必須 | 結果は関連度順（タイトル・見出し・パスでの一致を優先、次に本文の一致数）に最大 50 件、文書タイトル・パス・一致箇所の抜粋（一致語を強調）を表示する。↑↓ で選択、Enter で開く、Esc で閉じる |
-| FR-403 | 必須 | 結果から文書を開いたとき、本文中の一致語をハイライトし、最初の一致位置へスクロールする |
-| FR-404 | 必須 | 検索索引は読み込み後にバックグラウンドで作成する。作成中でも作成済みの範囲で検索でき、進捗を表示する |
-| FR-405 | 必須 | `Ctrl+K`（macOS は `⌘K`）または `/` で検索欄にフォーカスする |
-
-### 3.5 表示設定
-
-| ID | 優先度 | 要件 |
-|---|---|---|
-| FR-501 | 必須 | テーマ: 自動（OS 設定に追従）／ライト／ダーク を切り替えられる。切り替え時は図（Mermaid）も配色を合わせて再描画する |
-| FR-502 | 必須 | UI 言語: 日本語／英語。既定はブラウザの言語設定に従う |
-| FR-503 | 必須 | 画面幅に応じてレイアウトを切り替える（4.1） |
-| FR-504 | 必須 | 印刷時は本文のみを、常にライト配色で出力する（ヘッダー・サイドバー・目次・ボタン類を隠す） |
-
-### 3.6 サイト書き出し
-
-| ID | 優先度 | 要件 |
-|---|---|---|
-| FR-601 | 必須 | 開いている文書セットを、文書を埋め込んだ**単一のサイト HTML** として保存できる（設定で保存を使わないようにしている場合は、メニューに出さない）。書き出しダイアログでサイトタイトルとホーム文書を指定でき、文書数・添付数・概算サイズを確認できる |
-| FR-602 | 必須 | 文書から参照されている添付（画像・リンク先ファイル）のうち文書セット内に存在するものを埋め込む。1 ファイル 20MB を超えるものは埋め込まず、件数をダイアログで通知する。合計が 100MB を超える場合は警告を表示する（続行は可能） |
-| FR-603 | 推奨 | どの文書でも数式／図を使っていない場合、該当ライブラリ（KaTeX／Mermaid）をサイト HTML から除外してサイズを減らす。除外したライブラリのハッシュは CSP からも外す |
-| FR-604 | 推奨 | 同じ書き出しをコマンドラインから実行できるツール（Node.js。開発者・自動化向け。リポジトリにだけ置き、利用者向けの説明とリリースの zip には含めない）を用意する。設定（5.4）のうち `allowExternalImages` / `lockExternalImages` / `allowDownloads` は、オプション（`--allow-external-images` / `--lock-external-images` / `--no-downloads`）で指定できる |
-| FR-605 | 必須 | コマンドライン版の書き出しの表示（結果、注意、エラー、`--help`）は日本語と英語。言語は、環境変数 `MDFOLIO_LANG`（`ja` / `en`）、なければ `LC_ALL`・`LC_MESSAGES`・`LANG`、なければ OS の言語設定の順で決め、`ja` で始まれば日本語、それ以外は英語にする（1.2.0 の FD-10 から移した） |
-
-### 3.7 設定・状態の保存
-
-| ID | 優先度 | 要件 |
-|---|---|---|
-| FR-701 | 必須 | HTML 内の設定ブロック（5.4）で、サイトタイトル・既定テーマ・既定言語・ホーム文書・外部画像の既定許可を指定できる。加えて、表示する環境に合わせるための指定（保存を伴う操作を出さない、外部の画像を常に読み込まない、お試し用の公開ページであることを表示する）ができる |
-| FR-702 | 必須 | 利用者が変更した設定（テーマ・言語・外部画像・サイドバー開閉）はブラウザに保存し、次回に引き継ぐ。保存できない環境でもエラーにせず動作する。ただし外部画像の許可は再読み込みをまたいで設定を引き継ぐ必要があるため、保存できない環境では切り替えられないことを通知する |
-
-### 3.8 ヘルプ・ライセンス表示
-
-| ID | 優先度 | 要件 |
-|---|---|---|
-| FR-801 | 必須 | 使い方（ヘルプ）をアプリ内で表示できる。お試し用の公開ページ（5.4 の `hosted: true`）では、使えない機能があることを先頭に表示する |
-| FR-802 | 必須 | バージョン情報と、本ソフトウェアおよび同梱している第三者ソフトウェアのライセンス表記全文をアプリ内で表示できる |
-
-### 3.9 エラー処理
-
-| ID | 優先度 | 要件 |
-|---|---|---|
-| FR-901 | 必須 | ファイルの読み込み失敗・権限拒否・非対応機能・上限超過・書き出し失敗は、画面上の通知で利用者に知らせる。JavaScript の例外で画面が止まらない |
-| FR-902 | 必須 | 文書セットに Markdown 文書が 1 件もない場合は、その旨を通知し、それまでの表示を維持する |
+In hosting environments that inject their own scripts into the page, the CSP written in the HTML (SEC-4) blocks those scripts. To place the HTML in such an environment, use `tools/dev/make-hosted.mjs` to convert it into a "trial" HTML with the CSP removed and the settings above applied (6.1).
 
 ---
 
-### 3.10 見た目の上書き（仕様 1.9、アプリ 1.3.0）
+## 3. Functional requirements
 
-利用者は、HTML と同じフォルダに `mdfolio.css` を置くことで、本文と画面の見た目を変えられる。プログラムを書き換えたり、コマンドを実行したりする必要はない。
+Priority: **Required** = must be met in this version / **Recommended** = implemented in this version, but the feature is hidden when the browser does not support it.
 
-| ID | 優先度 | 要件 |
+### 3.1 Loading documents
+
+| ID | Priority | Requirement |
 |---|---|---|
-| FR-1001 | 必須 | ビューア（`mdfolio.html`）と書き出したサイトの HTML は、同じフォルダの `mdfolio.css`（相対パス `mdfolio.css`）を読み込み、内蔵の CSS のあとに適用する（同じ指定なら `mdfolio.css` が勝つ）。ファイルがなければ内蔵の CSS だけで表示し、利用者に何も表示しない |
-| FR-1002 | 必須 | 書き出しの画面に「CSS を選ぶ」を置く。選んだ CSS ファイルを、書き出す HTML の中に埋め込む（`<style id="mdv-user-style">`。内蔵の CSS のあと、`mdfolio.css` の前）。選んだものは取り消せる |
-| FR-1003 | 必須 | 書き出しの画面には、埋め込む CSS の状態を示す: 選んだファイル名／今の HTML にすでに埋め込まれている CSS を引き継ぐ／なし。今の HTML に埋め込まれた CSS は、既定で引き継ぐ |
-| FR-1004 | 必須 | ページを `http(s)://` で開いていて、隣の `mdfolio.css` の中身を読める場合（同じサーバー）は、選ばなくてもそれを埋め込みの候補にする。`file://` で開いた場合は中身を読めない（ブラウザーの制約。8.6）ので、隣の CSS が効いていれば「書き出しには入らない。入れるには同じファイルを選ぶ」と表示する |
-| FR-1005 | 必須 | 選べる CSS は 1MB まで。UTF-8（BOM は取り除く）として読む。`</style` を含むものは埋め込めないので、理由を示して受け付けない |
-| FR-1006 | 必須 | コマンドライン版の書き出し（FR-604）に `--css <ファイル>` を加え、同じように埋め込めるようにする |
-| FR-1007 | 必須 | 図（Mermaid）の配色は、`mdfolio.css` と埋め込んだ CSS で変えた配色の変数も反映する（CSS の変数から図の色を取る。1.1.0 で導入） |
+| FR-101 | Required | **Open folder**: choose a folder with a button, scan it recursively and build a document set. Use the File System Access API (`showDirectoryPicker`) in browsers that support it; when it is unavailable or refused (except when the user cancels), automatically fall back to `<input type="file" webkitdirectory>`. Show progress (item count) while scanning |
+| FR-102 | Required | **Open files**: choose and open one or more Markdown files. On a PC, filter the selection dialog to Markdown extensions. On finger-operated devices (devices whose main input is touch), do not filter (how the `.md` type is handled differs by device and by the app storing the file, and filtering can make files impossible to choose). If only non-Markdown files are chosen, notify as in FR-902 |
+| FR-103 | Required | **Drag and drop**: drop files or folders onto the window to open them. If exactly one folder is dropped, that folder becomes the root; otherwise (several items, or files) the dropped items are placed directly under the root. Drops are not accepted in site mode |
+| FR-104 | Required | **Embedded data**: if the HTML contains site data (5.5), load it as the document set at startup (site mode) |
+| FR-105 | Required | **Target files**: files with the extensions `.md` `.markdown` `.mdown` `.mkd` `.mkdn` `.mdwn` `.mdtxt` `.mdtext` (case-insensitive) are "documents". All other files are "attachments" and are read only when a document references them as an image or link |
+| FR-106 | Required | **Exclusions**: folders and files whose names start with `.`, and `node_modules` folders, are not loaded (the app excludes them for every loading method) |
+| FR-107 | Required | **Character encoding**: automatically detect UTF-8 (with or without BOM), UTF-16 (with BOM) and Shift_JIS (CP932). Detection order: BOM → strict UTF-8 decode → strict Shift_JIS decode → UTF-8 (invalid bytes become replacement characters) |
+| FR-108 | Recommended | **Reopen last folder**: save the handle of a folder opened with `showDirectoryPicker`, so that next time it can be opened from the start screen with one click (plus the browser's permission prompt). If saving or restoring fails, simply do not show the feature; do not treat it as an error |
+| FR-109 | Recommended | **Reload**: the menu can rescan the folder and reload the displayed document. When opened with `showDirectoryPicker` (or a drop that provides a handle), detect changes to the displayed document file about every 2 seconds and automatically redisplay it while keeping the scroll position. With loading methods that have no handle, a file changed after it was chosen may not be reloadable; in that case, prompt the user to open it again |
+| FR-110 | Required | **Limits**: up to 5,000 documents and up to 50,000 scanned files and folders. Anything beyond is not loaded, and the user is notified. Documents larger than 10MB are displayed as plain text without Markdown conversion |
+| FR-111 | Required | **Replacement**: if another folder or files are opened while a document set is open, replace the document set without confirmation and show the home document |
+| FR-112 | Required | **Single-file handling**: when only files (not a folder) are opened, images and link targets that were not chosen at the same time cannot be resolved. The image placeholder says that opening the folder will display it |
 
-#### 安全面
+### 3.2 Display (rendering)
 
-- CSP の `style-src` に `'self' file:` を加える（隣の CSS を読むため）。スクリプトの許可（SEC-4）は変えない。CSS はスクリプトを実行できない。
-- 文書（Markdown）の中の `<link>` や `<style>` はサニタイズで取り除くので、文書が別の CSS を読み込ませることはできない。
-- `mdfolio.css` の `url()` に外部のアドレスを書いても、外部の画像を許可していない間は CSP（SEC-10）で読み込まれない。
-- `http(s)://` で開いた場合、隣の `mdfolio.css` を同じサーバーへ取りに行く（1 回）。ページそのものと同じ配信元なので、新たに外部へ知らせる情報はない。ファイルがなければ、ブラウザーの開発者向けの表示に「見つからない」と出るが、動作には影響しない。
+| ID | Priority | Requirement |
+|---|---|---|
+| FR-201 | Required | Display CommonMark and the GFM extensions (tables, strikethrough, task lists, autolinks for URLs / email addresses). Supported syntax is as in 3.2.1 |
+| FR-202 | Required | Display footnotes (`[^1]`) |
+| FR-203 | Required | Give headings IDs and show an anchor link next to each heading. IDs follow the GitHub style (lowercased, symbols removed, spaces turned into hyphens, Japanese kept, duplicates get `-1` `-2` appended) |
+| FR-204 | Required | Syntax-highlight code blocks according to the language specified (no highlighting when no language is specified or it is unsupported). Show the language name and a copy button on each code block. If copying fails, do not pretend it succeeded; show "Could not copy". Inside a frame, first try a method that copies synchronously within the click action (some browsers stop accepting copies after waiting for the asynchronous API to be refused). Highlighting is done after sanitizing, and the highlighted result is also passed through the sanitizer before insertion. Do not highlight if it would change the characters of the code. Per document, the part beyond 20,000 characters or 60 blocks is processed after display, in order of closeness to the visible area (the remainder is processed all at once before printing) |
+| FR-205 | Required | Math (KaTeX): inline `$...$`, display `$$...$$`, and ```` ```math ```` blocks. Syntax errors are shown as errors at that spot, and the rest of the document continues to display. If the library is unavailable, show the original math source |
+| FR-206 | Required | Diagrams (Mermaid): display ```` ```mermaid ```` blocks as diagrams. On a syntax error, show the error message and the original code. If the library is unavailable, show the original code |
+| FR-207 | Recommended | GitHub-style alerts (`> [!NOTE]` `[!TIP]` `[!IMPORTANT]` `[!WARNING]` `[!CAUTION]`) |
+| FR-208 | Required | YAML front matter (from the leading `---` to `---`) is not shown in the body. If it has `title`, use it as the document title |
+| FR-209 | Required | Raw HTML in Markdown is displayed after sanitizing (chapter 6) |
+| FR-210 | Required | **Images and media**: relative paths are resolved to files in the document set and displayed. If not found, show a placeholder. External (`http(s)://`) images and media are blocked by default with a placeholder, and can be allowed in the settings. Blocking is done by CSP as well as by the display processing (SEC-10). When switching to allow, confirm that additional servers will be contacted, then reload the page (in viewer mode, the open folder is closed). When switching back to block, apply it immediately |
+| FR-211 | Required | **Links**: links to documents in the document set navigate within the app. `#heading` moves within the page. Clicks on in-app links (those starting with `#`) are handled by the app itself rather than left to the browser's default navigation (2.1; actions that open a new tab, such as clicks with modifier keys, are left to the browser). External links open in a new tab. Links to attachments in the document set are saved as downloads (not opened in the browser). When an attachment path is opened directly by URL, show a download button. When saving is turned off in the settings (`allowDownloads: false` in 5.4), do not start a save; show that the file cannot be saved (do not show a button that does nothing when pressed). Links that cannot be resolved show "not found" at the destination |
+| FR-212 | Required | Wide tables, code, math and diagrams scroll horizontally within the element. Elements that actually overflow can be focused with the keyboard and scrolled with the arrow keys (re-evaluated when the screen width changes) |
+| FR-213 | Required | **Document title**: determined in the order front matter `title` → first H1 → file name, and also reflected in the browser tab title |
 
-## 4. 画面仕様
+#### 3.2.1 Supported syntax
 
-### 4.1 レイアウト
+| Syntax | Support | Notes |
+|---|---|---|
+| Headings (`#`, underline style), paragraphs, emphasis, strikethrough (`~~`) | ○ | |
+| Lists (nested, numbered), task lists (`- [ ]` `- [x]`) | ○ | Checkboxes are display-only (cannot be operated) |
+| Block quotes, alerts (`> [!NOTE]` etc.) | ○ | |
+| Code (inline, fenced, with language) | ○ | Highlighted languages are the highlight.js standard set plus additional languages (list in the README) |
+| Tables (left / center / right column alignment) | ○ | |
+| Links (inline, reference style), images | ○ | |
+| Autolinks | △ | Only URLs starting with `http(s)://` and email addresses. Strings like `www.example.com` or `README.md` are not turned into links |
+| Footnotes | ○ | |
+| Math | ○ | Inline math is recognized only when the character right after the opening `$` and right before the closing `$` are not spaces, and the character right after the closing `$` is not a digit (amounts such as `$5 と $10` ("$5 and $10") do not become math). `\$` produces a literal `$` |
+| Mermaid | ○ | Flowchart, sequence, class, state, ER, Gantt, pie, journey, Git graph, timeline, quadrant, XY, Sankey, block |
+| Raw HTML | △ | Formatting, tables, `details`, `img`, `video`/`audio`, etc. Scripts, forms, etc. are removed (chapter 6) |
+| Line breaks | ○ | Two trailing spaces or `\` at the end of a line make a line break. A plain newline is not a line break (CommonMark compliant) |
+| Front matter (YAML) | △ | Hidden. Only `title` is used |
+
+### 3.3 Navigation
+
+| ID | Priority | Requirement |
+|---|---|---|
+| FR-301 | Required | **Sidebar (file tree)**: show the folder hierarchy as a tree; folders can be expanded and collapsed. Highlight the displayed document. Order is "files → folders"; among the files at each level, `README` / `index` come first, then the rest in natural order (numbers compared as numbers; the collation rules are fixed so that the order is the same regardless of the user's environment). The display name is the file name without its extension |
+| FR-302 | Recommended | **Custom navigation**: if the root of the document set contains `_sidebar.md` or `SUMMARY.md` (case-insensitive; `_sidebar.md` if both exist), show its contents (a nested list of links) in the sidebar. Links are resolved relative to the root. The user can switch between "Nav / Files" |
+| FR-303 | Required | **In-page table of contents**: list the headings (H1–H4) of the displayed document and highlight the current position according to the scroll position. When scrolled to the end of the document, the last heading is the current position. Not shown for documents with fewer than 2 headings |
+| FR-304 | Required | **Routing**: reflect the displayed document and heading position in the URL hash (5.2). The browser's Back / Forward can be used to move. In site mode, opening a URL with a hash directly shows that document and position. In viewer mode, opening a URL with a hash shows the start screen, and the app moves to that document after the document set is loaded |
+| FR-305 | Required | At the top of a document, show its path within the document set and its last-modified time (when available) |
+| FR-306 | Recommended | When moving with Back / Forward, restore the previous scroll position |
+| FR-307 | Required | **Home document**: determined in the order `home` in the settings → `README.md` at the root → `index.md` at the root → the first document in tree order (case-insensitive) |
+
+### 3.4 Search
+
+| ID | Priority | Requirement |
+|---|---|---|
+| FR-401 | Required | Full-text search over the whole document set. Targets are each document's title, headings, path and body (text with Markdown syntax symbols removed, including code). Multiple space-separated words are combined with AND. Case and full-width / half-width forms (alphanumerics and kana) are not distinguished. Files used for custom navigation (FR-302) are tables of contents, not body text, so they do not appear in search results (they can still be opened from the file list) |
+| FR-402 | Required | Show up to 50 results in order of relevance (matches in the title, headings and path first, then the number of matches in the body), with the document title, path and an excerpt of the matching part (matching words highlighted). ↑↓ to select, Enter to open, Esc to close |
+| FR-403 | Required | When a document is opened from the results, highlight the matching words in the body and scroll to the first match |
+| FR-404 | Required | Build the search index in the background after loading. While it is being built, search works over the part already indexed, and progress is shown |
+| FR-405 | Required | `Ctrl+K` (`⌘K` on macOS) or `/` focuses the search box |
+
+### 3.5 Display settings
+
+| ID | Priority | Requirement |
+|---|---|---|
+| FR-501 | Required | Theme: switchable between auto (follow the OS setting) / light / dark. When switched, diagrams (Mermaid) are also redrawn with matching colors |
+| FR-502 | Required | UI language: Japanese / English. The default follows the browser's language setting |
+| FR-503 | Required | Switch the layout according to the screen width (4.1) |
+| FR-504 | Required | When printing, output only the body, always in light colors (hide the header, sidebar, table of contents and buttons) |
+
+### 3.6 Site export
+
+| ID | Priority | Requirement |
+|---|---|---|
+| FR-601 | Required | The open document set can be saved as a **single site HTML** with the documents embedded (not shown in the menu when saving is turned off in the settings). The export dialog lets the user set the site title and home document and check the number of documents, number of attachments and approximate size |
+| FR-602 | Required | Embed the attachments referenced from documents (images and linked files) that exist in the document set. Files larger than 20MB each are not embedded, and their count is reported in the dialog. If the total exceeds 100MB, show a warning (the user can continue) |
+| FR-603 | Recommended | If no document uses math / diagrams, exclude the corresponding library (KaTeX / Mermaid) from the site HTML to reduce its size. The hashes of excluded libraries are also removed from the CSP |
+| FR-604 | Recommended | Provide a tool that can run the same export from the command line (Node.js; for developers and automation; kept only in the repository and not included in the user-facing instructions or the release zip). Of the settings (5.4), `allowExternalImages` / `lockExternalImages` / `allowDownloads` can be specified with options (`--allow-external-images` / `--lock-external-images` / `--no-downloads`) |
+| FR-605 | Required | The command-line export's messages (results, warnings, errors, `--help`) are in Japanese and English. The language is determined from the environment variable `MDFOLIO_LANG` (`ja` / `en`), otherwise `LC_ALL`, `LC_MESSAGES`, `LANG`, otherwise the OS language setting, in that order; if it starts with `ja`, Japanese is used, otherwise English (moved from FD-10 in 1.2.0) |
+
+### 3.7 Saving settings and state
+
+| ID | Priority | Requirement |
+|---|---|---|
+| FR-701 | Required | The settings block in the HTML (5.4) can specify the site title, default theme, default language, home document and whether external images are allowed by default. In addition, it can specify options for adapting to the display environment (do not show operations that save files, never load external images, show that this is a public trial page) |
+| FR-702 | Required | Settings changed by the user (theme, language, external images, sidebar open/closed) are saved in the browser and carried over to the next session. In environments where they cannot be saved, the app works without errors. However, since allowing external images requires the setting to persist across a reload, in environments where it cannot be saved the user is notified that it cannot be switched |
+
+### 3.8 Help and license display
+
+| ID | Priority | Requirement |
+|---|---|---|
+| FR-801 | Required | Usage instructions (help) can be shown within the app. On a public trial page (`hosted: true` in 5.4), a note at the top says that some features are unavailable |
+| FR-802 | Required | Version information and the full license texts of this software and the bundled third-party software can be shown within the app |
+
+### 3.9 Error handling
+
+| ID | Priority | Requirement |
+|---|---|---|
+| FR-901 | Required | File read failures, permission denials, unsupported features, exceeded limits and export failures are reported to the user with an on-screen notification. JavaScript exceptions do not freeze the screen |
+| FR-902 | Required | If the document set contains no Markdown documents, notify the user and keep the previous display |
+
+---
+
+### 3.10 Appearance override (specification 1.9, app 1.3.0)
+
+Users can change the appearance of the body and the screen by placing `mdfolio.css` in the same folder as the HTML. There is no need to modify the program or run any command.
+
+| ID | Priority | Requirement |
+|---|---|---|
+| FR-1001 | Required | The viewer (`mdfolio.html`) and exported site HTML load `mdfolio.css` from the same folder (relative path `mdfolio.css`) and apply it after the built-in CSS (for equal rules, `mdfolio.css` wins). If the file does not exist, display with the built-in CSS only and show the user nothing |
+| FR-1002 | Required | Put "Choose CSS" on the export screen. Embed the chosen CSS file in the exported HTML (`<style id="mdv-user-style">`; after the built-in CSS, before `mdfolio.css`). The choice can be undone |
+| FR-1003 | Required | The export screen shows the state of the CSS to embed: the chosen file name / carry over the CSS already embedded in the current HTML / none. CSS embedded in the current HTML is carried over by default |
+| FR-1004 | Required | When the page is opened via `http(s)://` and the contents of the adjacent `mdfolio.css` can be read (same server), make it a candidate for embedding even without choosing it. When opened via `file://`, the contents cannot be read (a browser restriction; 8.6), so if the adjacent CSS is in effect, show "it is not included in the export; to include it, choose the same file" |
+| FR-1005 | Required | A chosen CSS file can be up to 1MB. It is read as UTF-8 (a BOM is removed). A file containing `</style` cannot be embedded, so it is rejected with the reason shown |
+| FR-1006 | Required | Add `--css <file>` to the command-line export (FR-604) so that CSS can be embedded in the same way |
+| FR-1007 | Required | Diagram (Mermaid) colors also reflect color variables changed by `mdfolio.css` and embedded CSS (diagram colors are taken from CSS variables; introduced in 1.1.0) |
+
+#### Security
+
+- Add `'self' file:` to the CSP `style-src` (to load the adjacent CSS). Script permissions (SEC-4) are unchanged. CSS cannot execute scripts.
+- `<link>` and `<style>` in documents (Markdown) are removed by sanitizing, so a document cannot make the page load another CSS file.
+- Even if `url()` in `mdfolio.css` contains an external address, it is not loaded by the CSP (SEC-10) while external images are not allowed.
+- When opened via `http(s)://`, the adjacent `mdfolio.css` is requested from the same server (once). It is the same origin as the page itself, so no new information is disclosed externally. If the file does not exist, the browser's developer console shows "not found", but this does not affect operation.
+
+## 4. Screen specification
+
+### 4.1 Layout
 
 ```
-┌────────────────────────────────────────────────────────────────────┐
-│ [≡] サイトタイトル        [ 検索  Ctrl+K ]            [テーマ] [⋯] │ ヘッダー（固定）
-├──────────────┬───────────────────────────────────┬─────────────────┤
-│ サイドバー   │ guide / intro.md   更新 2026-11-12 │ このページの目次│
-│ （ツリー／   │ # タイトル                          │  ・見出し       │
-│   ナビ）     │ 本文（最大幅 約 820px）             │  ・見出し       │
-└──────────────┴───────────────────────────────────┴─────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│ [≡] Site title           [ Search  Ctrl+K ]              [Theme] [⋯] │ Header (fixed)
+├──────────────┬──────────────────────────────────────┬────────────────┤
+│ Sidebar      │ guide / intro.md  Updated 2026-11-12 │ On this page   │
+│ (tree /      │ # Title                              │  - Heading     │
+│   nav)       │ Body (max width ~820px)              │  - Heading     │
+└──────────────┴──────────────────────────────────────┴────────────────┘
 ```
 
-| 画面幅 | レイアウト |
+| Screen width | Layout |
 |---|---|
-| 1200px 以上 | サイドバー ＋ 本文 ＋ 目次 |
-| 800〜1199px | サイドバー ＋ 本文（目次は本文先頭の折りたたみに移動） |
-| 800px 未満 | 本文のみ（目次は本文先頭の折りたたみ）。サイドバーは `≡` で開くドロワー |
+| 1200px or more | Sidebar + body + table of contents |
+| 800–1199px | Sidebar + body (the table of contents moves into a collapsible section at the top of the body) |
+| Less than 800px | Body only (table of contents in a collapsible section at the top of the body). The sidebar is a drawer opened with `≡` |
 
-### 4.2 画面・部品
+### 4.2 Screens and components
 
-| 部品 | 内容 |
+| Component | Contents |
 |---|---|
-| 開始画面 | 閲覧モードで文書セット未読込のときに表示。ドロップ領域、「フォルダを開く」「ファイルを開く」ボタン、（あれば）「前回のフォルダを開く」、使い方へのリンク。説明文は、ファイルが端末の中だけで処理されることを伝える。指で操作する端末ではドロップの案内を省く。お試し用の公開ページ（`hosted: true`）では、「外部には送信されません」とは書かず、動作確認用の公開ページであることと、機密の文書は手元の配布版で開くことを伝える |
-| ヘッダー | サイドバー開閉、サイトタイトル（クリックでホーム）、検索欄、テーマ切替、メニュー |
-| メニュー（⋯） | フォルダを開く／ファイルを開く／再読み込み／サイトとして書き出し／外部画像の許可／言語／使い方／ライセンス・バージョン情報。サイトモードでは「開く」「再読み込み」「書き出し」を表示しない。設定で使わないようにした操作（`allowDownloads: false` の「書き出し」、`lockExternalImages: true` の「外部画像の許可」）も表示しない |
-| サイドバー | ファイルツリー。カスタムナビがある場合は「ナビ／ファイル」タブ。表示中の文書は、本文の紙面と地続きのタブとして示す |
-| 本文 | パス・更新日時、レンダリング結果 |
-| 目次 | H1〜H4。現在位置を強調 |
-| 検索パネル | 検索欄の下に重ねて表示。結果一覧、件数、索引作成の進捗 |
-| 書き出しダイアログ | サイトタイトル、ホーム文書、文書数・添付数・概算サイズ、実行／キャンセル |
-| 外部画像の確認ダイアログ | 外部の画像を表示する側へ切り替えるときに表示。接続先が増えること、再読み込みすること（閲覧モードではフォルダが閉じること）を伝える。実行／キャンセル |
-| ライセンスダイアログ | バージョン、ライセンス表記全文 |
-| 通知 | 画面下部に一時表示（読み上げ対応） |
+| Start screen | Shown in viewer mode when no document set is loaded. A drop area, "Open folder" and "Open files" buttons, "Reopen last folder" (if available) and a link to "How to use". The description says that files are processed only on this device. On finger-operated devices, the drop guidance is omitted. On a public trial page (`hosted: true`), it does not say "never sent anywhere"; instead it says that this is a public page for trying out the viewer and that confidential documents should be opened with a copy saved on one's own device |
+| Header | Sidebar toggle, site title (click to go home), search box, theme switch, menu |
+| Menu (⋯) | Open folder / Open files / Reload / Export as site / Show external images / language / How to use / Licenses and version. In site mode, "Open", "Reload" and "Export" are not shown. Operations turned off in the settings ("Export" with `allowDownloads: false`, "Show external images" with `lockExternalImages: true`) are not shown either |
+| Sidebar | File tree. When there is custom navigation, "Nav / Files" tabs. The displayed document is shown as a tab that continues seamlessly into the body's page |
+| Body | Path and last-modified time, rendered result |
+| Table of contents | H1–H4. Highlights the current position |
+| Search panel | Shown overlaid below the search box. Result list, count, indexing progress |
+| Export dialog | Site title, home document, number of documents, number of attachments, approximate size, run / cancel |
+| External image confirmation dialog | Shown when switching to showing external images. Tells the user that additional servers will be contacted and that the page will reload (in viewer mode, the folder will be closed). Run / cancel |
+| License dialog | Version, full license texts |
+| Notification | Shown temporarily at the bottom of the screen (announced to screen readers) |
 
-### 4.3 キーボード操作
+### 4.3 Keyboard operation
 
-| キー | 動作 |
+| Key | Action |
 |---|---|
-| `Ctrl+K` / `⌘K` / `/` | 検索欄にフォーカス（入力欄にフォーカスがあるときの `/` は通常の文字入力） |
-| `↑` `↓` `Enter` | 検索結果の選択・決定 |
-| `Esc` | 検索パネル・メニュー・ドロワー・ダイアログを閉じる |
-| `Tab` | ページ先頭の最初の移動先は「本文へ移動」。以降はヘッダー → サイドバー → 本文 → 目次の順 |
-| メニュー: `Enter` / `↓` で開く、`↑` `↓` `Home` `End` で項目を移動、`Esc` / `Tab` で閉じる | 閉じたとき・項目を選んだあとは、フォーカスをメニューのボタンへ戻す |
-| サイドバーのタブ: `←` `→` `Home` `End` | 「ナビ／ファイル」を切り替える |
-| 横にはみ出した表・コード: フォーカスして `←` `→` | その要素を横にスクロールする |
+| `Ctrl+K` / `⌘K` / `/` | Focus the search box (`/` is ordinary text input when an input field has focus) |
+| `↑` `↓` `Enter` | Select and confirm search results |
+| `Esc` | Close the search panel, menu, drawer or dialog |
+| `Tab` | The first stop at the top of the page is "Skip to content". After that, the order is header → sidebar → body → table of contents |
+| Menu: open with `Enter` / `↓`, move between items with `↑` `↓` `Home` `End`, close with `Esc` / `Tab` | When it closes or after an item is chosen, focus returns to the menu button |
+| Sidebar tabs: `←` `→` `Home` `End` | Switch between "Nav / Files" |
+| Overflowing tables and code: focus and press `←` `→` | Scroll that element horizontally |
 
 ---
 
-## 5. データ仕様
+## 5. Data specification
 
-### 5.1 パスの正規化
+### 5.1 Path normalization
 
-- 文書セット内のパスは、ルートからの相対パス（区切りは `/`、先頭に `/` なし）で表す。例: `guide/intro.md`
-- 照合用のキーは Unicode 正規化（NFC）する。
-- フォルダを開いた場合、選択したフォルダ自体がルートになる（フォルダ名はサイトタイトルの既定値に使う）。
+- Paths in a document set are relative paths from the root (separator `/`, no leading `/`). Example: `guide/intro.md`
+- Keys used for matching are Unicode-normalized (NFC).
+- When a folder is opened, the chosen folder itself becomes the root (the folder name is used as the default site title).
 
-### 5.2 ルート（URL ハッシュ）
+### 5.2 Routes (URL hash)
 
-| 形式 | 意味 |
+| Format | Meaning |
 |---|---|
-| （空）または `#/` | ホーム文書 |
-| `#/<パス>` | 文書。各パス要素は `encodeURIComponent` でエンコードする。例: `#/guide/%E5%B0%8E%E5%85%A5.md` |
-| `#/<パス>#<見出しID>` | 文書内の見出し位置。見出し ID は `encodeURIComponent` でエンコードする |
-| `#!help` | ヘルプ |
+| (empty) or `#/` | Home document |
+| `#/<path>` | A document. Each path segment is encoded with `encodeURIComponent`. Example: `#/guide/%E5%B0%8E%E5%85%A5.md` |
+| `#/<path>#<heading-id>` | A heading position within a document. The heading ID is encoded with `encodeURIComponent` |
+| `#!help` | Help |
 
-- URL 上の見出し ID には接頭辞を付けない（例: `#/a.md#概要`）。DOM 上の実際の `id` は `user-content-概要` とし（SEC-2）、アプリが対応づける。
-- 見出し ID の照合は、完全一致 → デコード後の一致 → 小文字化して一致 → スラッグ化して一致 の順で行う。
+- Heading IDs in the URL have no prefix (example: `#/a.md#概要`). The actual `id` in the DOM is `user-content-概要` (SEC-2), and the app maps between them.
+- Heading IDs are matched in the order exact match → match after decoding → match after lowercasing → match after slugifying.
 
-### 5.3 リンク・画像パスの解決
+### 5.3 Resolving link and image paths
 
-文書中の `href` / `src` は次の順で解決する。
+`href` / `src` in documents are resolved in the following order.
 
-1. `#` で始まる → 同一文書内の見出し。
-2. スキーム（`http:` `https:` `mailto:` 等）付き、または `//` で始まる → 外部。
-3. それ以外は文書セット内のパスとして解決する。
-   1. `#` 以降（フラグメント）と `?` 以降を分離する。
-   2. パーセントエンコードをデコードし（失敗時は元の文字列のまま）、`\` を `/` に置換する。
-   3. `/` で始まる場合はルート基準、それ以外は現在の文書のフォルダ基準で `.` `..` を解決する。ルートより上に出る場合は「解決不能」。
-   4. 次の順で照合する: 完全一致 → 大文字小文字を無視して一致 → 拡張子がない場合は `.md` を補って一致 → 拡張子が `.html` / `.htm` の場合は `.md` に読み替えて一致 → フォルダを指す場合は配下の `README.md` / `index.md`。
-4. 結果:
-   - 文書に解決できた → `#/<パス>[#フラグメント]` へのリンクにする。
-   - 添付に解決できた → 画像・メディアはその内容を表示、リンクはダウンロード。
-   - 解決できない → 画像はプレースホルダ、リンクは「見つかりません」ページへのリンクにする。
-- `file:` で始まる URL や Windows の絶対パス（`C:\...`）はサニタイズで無効化され、リンクとして機能しない（11 章）。
+1. Starts with `#` → a heading in the same document.
+2. Has a scheme (`http:` `https:` `mailto:` etc.) or starts with `//` → external.
+3. Otherwise, resolve as a path in the document set.
+   1. Separate the part after `#` (fragment) and the part after `?`.
+   2. Decode percent-encoding (keep the original string on failure) and replace `\` with `/`.
+   3. If it starts with `/`, resolve `.` and `..` relative to the root; otherwise relative to the current document's folder. Going above the root means "unresolvable".
+   4. Match in the following order: exact match → case-insensitive match → if there is no extension, match with `.md` added → if the extension is `.html` / `.htm`, match with it read as `.md` → if it points to a folder, `README.md` / `index.md` inside it.
+4. Result:
+   - Resolved to a document → make it a link to `#/<path>[#fragment]`.
+   - Resolved to an attachment → images and media display its content; links download it.
+   - Not resolvable → images get a placeholder; links point to the "not found" page.
+- URLs starting with `file:` and Windows absolute paths (`C:\...`) are disabled by sanitizing and do not work as links (chapter 11).
 
-### 5.4 設定ブロック
+### 5.4 Settings block
 
-HTML 内の `<script type="application/json" id="mdv-config">` に JSON で記述する。手作業で編集してよい（CSP の対象外）。
+Written as JSON in `<script type="application/json" id="mdv-config">` in the HTML. It may be edited by hand (it is not subject to the CSP).
 
-| キー | 型 | 既定 | 意味 |
+| Key | Type | Default | Meaning |
 |---|---|---|---|
-| `title` | string | `""` | サイトタイトル（空ならフォルダ名、なければ `mdfolio`） |
-| `lang` | `"auto"`/`"ja"`/`"en"` | `"auto"` | UI 言語の既定 |
-| `theme` | `"auto"`/`"light"`/`"dark"` | `"auto"` | テーマの既定 |
-| `home` | string | `""` | ホーム文書のパス |
-| `allowExternalImages` | boolean | `false` | 外部画像・メディアの既定許可 |
-| `allowDownloads` | boolean | `true` | `false` にすると、ファイルの保存を伴う操作（サイトとして書き出し、添付の保存）を画面に出さない。添付へのリンクは、保存できない旨の表示になる |
-| `lockExternalImages` | boolean | `false` | `true` にすると、外部の画像・メディアを常に読み込まない。切り替えの項目を出さず、利用者が保存した設定や `allowExternalImages` より優先する |
-| `hosted` | boolean | `false` | `true` にすると、お試し用の公開ページであることを開始画面と使い方に表示する（6.1）。アプリ内の書き出しで作った HTML には引き継がない |
+| `title` | string | `""` | Site title (if empty, the folder name; if none, `mdfolio`) |
+| `lang` | `"auto"`/`"ja"`/`"en"` | `"auto"` | Default UI language |
+| `theme` | `"auto"`/`"light"`/`"dark"` | `"auto"` | Default theme |
+| `home` | string | `""` | Path of the home document |
+| `allowExternalImages` | boolean | `false` | Whether external images and media are allowed by default |
+| `allowDownloads` | boolean | `true` | When `false`, operations that save files (Export as site, saving attachments) are not shown on screen. Links to attachments show that the file cannot be saved |
+| `lockExternalImages` | boolean | `false` | When `true`, external images and media are never loaded. The toggle is not shown, and this takes precedence over settings saved by the user and over `allowExternalImages` |
+| `hosted` | boolean | `false` | When `true`, the start screen and the help show that this is a public trial page (6.1). Not carried over to HTML created by the in-app export |
 
-利用者がブラウザ上で変更した設定（5.6）がある場合はそちらを優先する（`lockExternalImages` を除く）。JSON が壊れている場合は既定値で動作する。`allowDownloads` と `lockExternalImages` は `true` / `false` がはっきり書かれたときだけ既定から変わる。
+If there are settings changed by the user in the browser (5.6), they take precedence (except `lockExternalImages`). If the JSON is broken, the app runs with the defaults. `allowDownloads` and `lockExternalImages` change from their defaults only when `true` / `false` is written explicitly.
 
-`allowDownloads` / `lockExternalImages` は、ファイルの保存や外部の読み込みができない環境（2.1）に置く場合や、配布先でそれらを使わせたくない場合に使う。
+`allowDownloads` / `lockExternalImages` are used when the HTML is placed in an environment where saving files or external loading is not possible (2.1), or when those features should not be available to recipients.
 
-### 5.5 サイトデータ（埋め込み形式）
+### 5.5 Site data (embedded format)
 
-HTML 内の `<script type="application/json" id="mdv-site">` に JSON で格納する。未埋め込み時は `null`。
+Stored as JSON in `<script type="application/json" id="mdv-site">` in the HTML. `null` when nothing is embedded.
 
 ```json
 {
@@ -339,40 +339,40 @@ HTML 内の `<script type="application/json" id="mdv-site">` に JSON で格納�
 }
 ```
 
-- JSON 文字列中の `<` は `\u003c` にエスケープして格納する（HTML パーサーによる誤解釈の防止）。
-- `format` が未対応の値の場合や、`files` の各要素が決まりどおりでない場合（`kind` が `doc` / `asset` 以外、`text` / `base64` / `mime` が文字列でない、`mtime` が数値でない等）は、読み込まずエラーを通知する。
-- `path` は 5.1 の規則で正規化する。`..` でルートより上を指すパスの要素は読み込まない。パスは埋め込みデータの中の名前としてだけ使い、ディスク上のファイルは読まない。
-- サイトタイトル・ホーム文書は設定ブロック（5.4）に格納する。
+- `<` in JSON strings is stored escaped as `\u003c` (to prevent misinterpretation by the HTML parser).
+- If `format` has an unsupported value, or the elements of `files` do not follow the rules (`kind` other than `doc` / `asset`, `text` / `base64` / `mime` not a string, `mtime` not a number, etc.), do not load the data and report an error.
+- `path` is normalized by the rules in 5.1. Path elements that use `..` to point above the root are not loaded. Paths are used only as names within the embedded data; no file on disk is read.
+- The site title and home document are stored in the settings block (5.4).
 
-### 5.6 ブラウザに保存するデータ
+### 5.6 Data stored in the browser
 
-| 保存先 | キー | 内容 |
+| Storage | Key | Contents |
 |---|---|---|
-| localStorage | `mdv:settings:v1` | テーマ・言語・外部画像許可・サイドバー開閉 |
-| IndexedDB（DB 名 `mdv`） | `last:<HTML ファイルのパス>` | 前回開いたフォルダのハンドルと名前 |
+| localStorage | `mdv:settings:v1` | Theme, language, external image permission, sidebar open/closed |
+| IndexedDB (DB name `mdv`) | `last:<path of the HTML file>` | Handle and name of the last opened folder |
 
-文書の内容そのものはブラウザに保存しない。`file://` ではブラウザによって保存領域がローカルの他の HTML と共有されるため、保存するのは上記の表示設定とフォルダハンドルに限る。
+Document contents themselves are not stored in the browser. Under `file://`, some browsers share storage with other local HTML files, so only the display settings and folder handle above are stored.
 
 ---
 
-## 6. セキュリティ・プライバシー
+## 6. Security and privacy
 
-想定する脅威: 第三者が作成した Markdown を開いたときに、文書に仕込まれたスクリプトが実行され、開いているフォルダの内容が外部へ送信されること。
+Threat considered: when a Markdown file written by a third party is opened, a script planted in the document runs and sends the contents of the open folder to an external party.
 
-| ID | 要件 |
+| ID | Requirement |
 |---|---|
-| SEC-1 | レンダリング結果の HTML は DOMPurify でサニタイズしてから DOM に挿入する。`<script>` `<style>` `<iframe>` `<object>` `<embed>` `<form>` と入力部品、インライン SVG / MathML、イベントハンドラ属性、`javascript:` / `data:` / `file:` のリンクを除去する（チェックボックス表示用の `input` のみ、操作不可にして許可する）。コードの色分け結果（FR-204）も同じくサニタイザーを通す |
-| SEC-2 | 利用者 HTML の `id` / `name` には接頭辞 `user-content-` を付け、アプリ自身の要素との衝突（DOM clobbering）を防ぐ。アプリ内部用のクラス名（`mdv-` で始まるもの）と `data-*` 属性は利用者 HTML から除去する |
-| SEC-3 | `style` 属性は、許可するプロパティ（文字色・背景色・文字装飾・揃え・余白・枠線・サイズ等）をホワイトリストで限定する。`url()` 等の外部参照を含む値と、位置指定・重なり・変形に関するプロパティ（`position` `z-index` `transform` 等）は除去する。表の列揃え（`text-align`）はこの範囲で動作する |
-| SEC-4 | Content-Security-Policy を `<meta>` で設定する。`script-src` は内蔵スクリプトの SHA-256 ハッシュのみを許可し（`unsafe-inline` / `unsafe-eval` なし）、`connect-src 'none'` とする。これにより、万一サニタイズをすり抜けても注入スクリプトは実行されない |
-| SEC-5 | アプリは通信 API（`fetch` / `XMLHttpRequest` / `WebSocket` / `sendBeacon`）を使わない。外部へのリクエストが発生し得るのは、利用者が外部画像を許可した場合の画像・メディア取得（図の中で指定された画像を含む）と、利用者が外部リンクをクリックした場合のみ |
-| SEC-6 | 数式は KaTeX の `trust: false`、図は Mermaid の `securityLevel: 'strict'` で描画する |
-| SEC-7 | 外部リンクには `rel="noopener noreferrer"` を付ける |
-| SEC-8 | 解析・テレメトリ等の送信機能を持たない |
-| SEC-9 | 添付ファイルへのリンクは常にダウンロードとして扱い、アプリと同じオリジンで HTML 等として開かない。SVG 画像は `<img>` としてのみ表示する（インライン展開しない） |
-| SEC-10 | 外部の画像・メディアを許可していない間は、起動時（文書を表示する前）に `img-src data: blob:; media-src data: blob:` という CSP を `<meta>` で追加し、ブラウザ自身にも読み込みを止めさせる。表示処理での除去（FR-210）だけでは、図（Mermaid）の画像ノード・ラベル内の `<img>`・`themeCSS` の `url()` のような別経路からの読み込みを防げないため。CSP は厳しくする方向にしか変えられないので、許可へ切り替えるにはページの再読み込みが必要になる |
+| SEC-1 | Sanitize the rendered HTML with DOMPurify before inserting it into the DOM. Remove `<script>` `<style>` `<iframe>` `<object>` `<embed>` `<form>` and input controls, inline SVG / MathML, event handler attributes, and `javascript:` / `data:` / `file:` links (only `input` for displaying checkboxes is allowed, made non-operable). Code highlighting results (FR-204) are also passed through the sanitizer |
+| SEC-2 | Prefix `id` / `name` in user HTML with `user-content-` to prevent collisions with the app's own elements (DOM clobbering). Remove class names for internal app use (those starting with `mdv-`) and `data-*` attributes from user HTML |
+| SEC-3 | Limit the `style` attribute to a whitelist of allowed properties (text color, background color, text decoration, alignment, margins/padding, borders, size, etc.). Remove values containing external references such as `url()`, and properties related to positioning, stacking and transformation (`position` `z-index` `transform` etc.). Table column alignment (`text-align`) works within this scope |
+| SEC-4 | Set a Content-Security-Policy with `<meta>`. `script-src` allows only the SHA-256 hashes of the built-in scripts (no `unsafe-inline` / `unsafe-eval`), and `connect-src 'none'` is set. As a result, even if something slips past sanitizing, injected scripts do not run |
+| SEC-5 | The app does not use network APIs (`fetch` / `XMLHttpRequest` / `WebSocket` / `sendBeacon`). External requests can occur only when fetching images and media after the user allows external images (including images specified inside diagrams), and when the user clicks an external link |
+| SEC-6 | Math is rendered with KaTeX `trust: false`, and diagrams with Mermaid `securityLevel: 'strict'` |
+| SEC-7 | External links get `rel="noopener noreferrer"` |
+| SEC-8 | No analytics, telemetry or other sending features |
+| SEC-9 | Links to attachments are always treated as downloads and are never opened as HTML etc. in the same origin as the app. SVG images are displayed only as `<img>` (not expanded inline) |
+| SEC-10 | While external images and media are not allowed, add a CSP `img-src data: blob:; media-src data: blob:` with `<meta>` at startup (before displaying any document), so the browser itself also blocks loading. Removal by the display processing (FR-210) alone cannot prevent loading via other routes, such as image nodes in diagrams (Mermaid), `<img>` in labels, or `url()` in `themeCSS`. A CSP can only be made stricter, so switching to allow requires reloading the page |
 
-CSP（ハッシュはビルド時に埋め込む）:
+CSP (hashes are embedded at build time):
 
 ```
 default-src 'none'; script-src 'sha256-…' …; style-src 'unsafe-inline';
@@ -381,59 +381,59 @@ connect-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none';
 form-action 'none'; base-uri 'none'
 ```
 
-- `img-src` / `media-src` に `http: https:` を含めるのは「外部画像を許可」設定のため。既定のブロックは、アプリ層（サニタイズ後の `src` 書き換え）と、起動時に追加する CSP（SEC-10）の二重で行う。
-- `file:` はどの指定にも含めない。`file://` で開いた場合でも、文書からローカルの別ファイルや共有フォルダー（UNC パス）を画像として読み込ませることはできない。
-- 悪意のある文書を表示したとき、CSP が読み込みを止めた記録（違反メッセージ）がブラウザーの開発者ツールのコンソールに出ることがある。これは遮断が働いた結果であり、異常ではない。
-- スクリプトのハッシュは HTML 内のスクリプト本文に対応する。スクリプト部分を手作業で書き換えると動作しなくなる（設定ブロックとサイトデータは編集してよい）。
+- `img-src` / `media-src` include `http: https:` for the "allow external images" setting. Default blocking is done in two layers: the app layer (rewriting `src` after sanitizing) and the CSP added at startup (SEC-10).
+- `file:` is not included in any directive. Even when opened via `file://`, a document cannot make the page load other local files or shared folders (UNC paths) as images.
+- When a malicious document is displayed, records of the CSP blocking loads (violation messages) may appear in the browser's developer tools console. This is the result of the blocking working, not a malfunction.
+- Script hashes correspond to the script bodies in the HTML. Editing the script parts by hand stops the app from working (the settings block and site data may be edited).
 
-### 6.1 外部のホスティング環境に置く場合（お試し用の変換）
+### 6.1 Placing the HTML in an external hosting environment (trial conversion)
 
-ページをサンドボックス化したフレームの中で表示し、ページの中へ独自のスクリプトを差し込む種類のホスティング環境では、SEC-4 の CSP がそのスクリプトを止めてしまうため、そのままでは置けない。`tools/dev/make-hosted.mjs` は、次の変換を行った HTML を作る。
+Hosting environments that display the page inside a sandboxed frame and inject their own scripts into the page cannot host it as is, because the CSP in SEC-4 blocks those scripts. `tools/dev/make-hosted.mjs` creates an HTML file with the following conversions.
 
-1. HTML に書いてある CSP（SEC-4）を取り除く。
-2. 設定を `allowDownloads: false`、`lockExternalImages: true`、`hosted: true` にする。
-3. 置換文字（U+FFFD）を、同じ意味のエスケープ（スクリプトでは `\uFFFD`、JSON では `\ufffd`）に書き換える。この文字は「文字コードの変換に失敗した印」でもあり、含まれているだけでファイルを受け付けないホスティング環境があるため。同梱ライブラリ（markdown-it）は、不正な入力をこの文字に置き換える処理の中でこの文字そのものを使っており、文書のデータに含まれることもある。スクリプトでは「置換文字だけでできた文字列」に限って書き換え、それ以外の場所にある場合は変換をやめる（意味を変えない書き換えだと言い切れないため）。
+1. Remove the CSP written in the HTML (SEC-4).
+2. Set the settings to `allowDownloads: false`, `lockExternalImages: true`, `hosted: true`.
+3. Rewrite the replacement character (U+FFFD) as an equivalent escape (`\uFFFD` in scripts, `\ufffd` in JSON). This character is also a "sign that a character encoding conversion failed", and some hosting environments reject a file merely for containing it. A bundled library (markdown-it) uses this character itself in the code that replaces invalid input with it, and it can also appear in document data. In scripts, rewrite only "strings consisting solely of replacement characters"; if it appears anywhere else, abort the conversion (because it cannot be asserted that the rewrite does not change the meaning).
 
-変換後の HTML は、この仕様の安全上の保証の一部を持たない。
+The converted HTML lacks some of the security guarantees of this specification.
 
-- SEC-4（スクリプトをハッシュで限定する）と `connect-src 'none'` は、HTML 自身では強制されない。外部との通信の遮断は、ホスティング側の CSP に依存する。
-- SEC-1〜3（サニタイズ）、SEC-6、SEC-7、SEC-9、SEC-10（外部の画像を読み込ませない CSP の追加）は変わらず働く。
-- ホスティング側がページに差し込むスクリプトの動作は、このソフトウェアからは制御できない。このため開始画面では「外部には送信されません」と表示せず、機密の文書は手元の配布版で開くよう案内する（4.2）。
+- SEC-4 (limiting scripts by hash) and `connect-src 'none'` are not enforced by the HTML itself. Blocking external communication depends on the hosting side's CSP.
+- SEC-1 to SEC-3 (sanitizing), SEC-6, SEC-7, SEC-9 and SEC-10 (adding a CSP that prevents loading external images) continue to work.
+- The behavior of scripts injected into the page by the hosting side cannot be controlled by this software. For this reason, the start screen does not say "never sent anywhere" and instead advises opening confidential documents with a copy saved on one's own device (4.2).
 
-変換後の HTML は、動作確認やサンプルの公開のためのものとし、手元で開く・組織内で配布する用途には変換前の HTML を使う。
+The converted HTML is intended for trying out the app and publishing samples; for opening locally or distributing within an organization, use the unconverted HTML.
 
 ---
 
-## 7. 非機能要件
+## 7. Non-functional requirements
 
-| ID | 区分 | 要件 |
+| ID | Category | Requirement |
 |---|---|---|
-| NFR-1 | 配布性 | 成果物は単一の HTML ファイル。外部ファイルへの依存なし |
-| NFR-2 | 性能 | 起動から開始画面表示まで 1 秒以内。1MB の文書を 3 秒以内に表示（コードの色分けのうち FR-204 で後回しにする分は含めない）。1,000 文書のフォルダで、ツリー表示 2 秒以内・索引作成 10 秒以内・検索応答 0.3 秒以内（参考: 2 コア程度の PC） |
-| NFR-3 | サイズ | ビューア本体 6MB 以下 |
-| NFR-4 | アクセシビリティ | 主要操作をキーボードのみで行える（4.3）。ボタン・入力欄・チェックボックス・検索結果の一覧に名前を付ける。画面上の文字と背景のコントラスト比 4.5:1 以上（ライト・ダーク・印刷）。フォーカスの位置が見える。`prefers-reduced-motion` を尊重する。文書を切り替えたときは本文領域にフォーカスを移す。ダイアログを閉じたときは、開く前の位置へフォーカスを戻す。文書の作者が `style` で指定した色は調整しない |
-| NFR-5 | 国際化 | UI は日本語・英語。文書・ファイル名は日本語を含む Unicode を扱える |
-| NFR-6 | 保守性 | ビルドは Node.js 標準機能のみで実行できる（npm パッケージ不要）。同梱ライブラリは `vendor/` に配布物そのままの形で置き、名称・版・ライセンス・SHA-256 を一覧化する。ライブラリ更新時は、許可ライセンス一覧にないライセンスを検出したら処理を止める |
-| NFR-7 | 堅牢性 | 保存領域（localStorage / IndexedDB）が使えない環境でも閲覧機能は動作する |
+| NFR-1 | Distributability | The deliverable is a single HTML file. No dependency on external files |
+| NFR-2 | Performance | From startup to the start screen within 1 second. Display a 1MB document within 3 seconds (excluding the part of code highlighting deferred by FR-204). For a folder of 1,000 documents: tree display within 2 seconds, indexing within 10 seconds, search response within 0.3 seconds (reference: a PC with about 2 cores) |
+| NFR-3 | Size | Viewer itself 6MB or less |
+| NFR-4 | Accessibility | Main operations can be performed with the keyboard alone (4.3). Buttons, input fields, checkboxes and the search result list have names. Contrast ratio of on-screen text to background of 4.5:1 or higher (light, dark, print). The focus position is visible. `prefers-reduced-motion` is respected. When switching documents, focus moves to the body area. When a dialog closes, focus returns to where it was before the dialog opened. Colors specified by the document author with `style` are not adjusted |
+| NFR-5 | Internationalization | The UI is in Japanese and English. Documents and file names can use Unicode, including Japanese |
+| NFR-6 | Maintainability | The build runs with Node.js built-in features only (no npm packages needed). Bundled libraries are placed in `vendor/` exactly as distributed, with a list of their names, versions, licenses and SHA-256 hashes. When updating libraries, stop if a license not on the list of allowed licenses is detected |
+| NFR-7 | Robustness | Reading works even in environments where storage (localStorage / IndexedDB) is unavailable |
 
 ---
 
-## 8. 構成
+## 8. Structure
 
-### 8.1 成果物
+### 8.1 Deliverables
 
-| ファイル | 内容 |
+| File | Contents |
 |---|---|
-| `dist/mdfolio.html` | ビューア本体（単一 HTML）。これだけを配布すれば動く |
-| `sample-docs/` | 動作確認用のサンプル文書（フォルダ） |
-| `sample-docs-en/` | 同じ内容の英語のサンプル文書（8.7） |
-| `sample.md` `sample.en.md` | 動作確認用のサンプル文書（1 ファイルで完結するもの。日本語と英語） |
-| `CHANGELOG.md` | 変更履歴（英語） |
-| `src/` `vendor/` `tools/` `tests/` | ソース、同梱ライブラリ、ビルド・書き出しツール、テスト |
-| `docs/` | 仕様書・レビュー記録・テスト報告書 |
-| `README.md`（英語）`README.ja.md`（日本語）`LICENSE` `THIRD-PARTY-NOTICES.txt` | 使い方、ライセンス |
+| `dist/mdfolio.html` | The viewer itself (single HTML). Distributing this alone is enough for it to work |
+| `sample-docs/` | Sample documents for trying out the app (folder) |
+| `sample-docs-en/` | English sample documents with the same content (8.7) |
+| `sample.md` `sample.en.md` | Sample documents for trying out the app (self-contained in one file; Japanese and English) |
+| `CHANGELOG.md` | Change history (English) |
+| `src/` `vendor/` `tools/` `tests/` | Source, bundled libraries, build and export tools, tests |
+| `docs/` | Specification, review record, test report |
+| `README.md` (English) `README.ja.md` (Japanese) `LICENSE` `THIRD-PARTY-NOTICES.txt` | Usage, licenses |
 
-### 8.2 HTML の内部構造
+### 8.2 Internal structure of the HTML
 
 ```html
 <!DOCTYPE html>
@@ -445,215 +445,215 @@ form-action 'none'; base-uri 'none'
   <meta name="referrer" content="no-referrer">
   <meta name="color-scheme" content="light dark">
   <meta name="generator" content="mdfolio 1.0.1">
-  <link rel="icon" href="data:image/svg+xml,…">                          <!-- タブのアイコン（HTML の中に持つ） -->
+  <link rel="icon" href="data:image/svg+xml,…">                          <!-- Tab icon (kept inside the HTML) -->
   <title>…</title>
-  <style id="mdv-style">/* アプリの CSS */</style>
+  <style id="mdv-style">/* App CSS */</style>
 </head>
 <body>
   <noscript>…</noscript>
   <div id="mdv-root"></div>
   <script type="application/json" id="mdv-config">{…}</script>
   <script type="application/json" id="mdv-site">null</script>
-  <script type="application/json" id="mdv-res-help-ja">"…"</script>      <!-- ヘルプ（Markdown） -->
+  <script type="application/json" id="mdv-res-help-ja">"…"</script>      <!-- Help (Markdown) -->
   <script type="application/json" id="mdv-res-help-en">"…"</script>
-  <script type="application/json" id="mdv-res-licenses">"…"</script>     <!-- ライセンス表記全文 -->
-  <script type="application/json" id="mdv-res-katex-css">"…"</script>    <!-- KaTeX の CSS（フォント内蔵） -->
-  <script type="application/json" id="mdv-lib-katex">"…"</script>        <!-- 遅延読込ライブラリ（文字列として格納） -->
+  <script type="application/json" id="mdv-res-licenses">"…"</script>     <!-- Full license texts -->
+  <script type="application/json" id="mdv-res-katex-css">"…"</script>    <!-- KaTeX CSS (fonts included) -->
+  <script type="application/json" id="mdv-lib-katex">"…"</script>        <!-- Lazily loaded library (stored as a string) -->
   <script type="application/json" id="mdv-lib-mermaid">"…"</script>
   <script id="mdv-js-vendor">/* markdown-it, markdown-it-footnote, DOMPurify, highlight.js */</script>
-  <script id="mdv-js-app">/* アプリ本体（core, md, i18n, app） */</script>
+  <script id="mdv-js-app">/* App itself (core, md, i18n, app) */</script>
 </body>
 </html>
 ```
 
-- **常時読み込むライブラリ**（markdown-it、DOMPurify、highlight.js、アプリ本体）は通常のインラインスクリプトとして格納する（CSP ハッシュの最も標準的な使い方であり、ブラウザ間の差が出にくい）。
-- **遅延読み込みするライブラリ**（KaTeX、Mermaid）は JSON 文字列として格納し、数式／図を含む文書を初めて表示するときに `<script>` 要素を生成して実行する（起動を軽くするため）。この動的スクリプトも CSP のハッシュ照合を受け、ハッシュは `vendor/` の配布ファイルそのものの SHA-256 と一致する。実行できなかった場合は FR-205 / FR-206 の代替表示になる。
-- タブのアイコンを `data:` URL で HTML の中に持つ。http(s) で配信した場合に、ブラウザーが `favicon.ico` を取りに行かないようにするため（HTML 以外の通信を発生させない）。
-- CSP の `script-src` には、ハッシュを「常時読み込む 2 つ → KaTeX → Mermaid」の順に並べる。サイト書き出しでライブラリを除外するとき、この並びを手がかりに対応するハッシュを外す（FR-603）。
-- 外部の画像を許可していない間は、起動時にスクリプトが `<meta http-equiv="Content-Security-Policy">` をもう 1 つ追加する（SEC-10）。書き出しには含めない。
-- 画面の DOM はすべてスクリプトが `#mdv-root` 配下に生成する。
-- `id` が `mdv-` で始まるブロックの本文は、起動後に書き換えない（書き出し時にそのまま再利用するため）。
+- **Always-loaded libraries** (markdown-it, DOMPurify, highlight.js, the app itself) are stored as normal inline scripts (the most standard use of CSP hashes, and the least likely to differ between browsers).
+- **Lazily loaded libraries** (KaTeX, Mermaid) are stored as JSON strings, and a `<script>` element is created and run the first time a document containing math / diagrams is displayed (to keep startup light). These dynamic scripts are also checked against CSP hashes, and the hashes match the SHA-256 of the distributed files in `vendor/` exactly. If they cannot run, the fallback display of FR-205 / FR-206 is used.
+- The tab icon is kept inside the HTML as a `data:` URL, so that when served over http(s) the browser does not request `favicon.ico` (no requests other than the HTML itself).
+- In the CSP `script-src`, hashes are listed in the order "the two always-loaded scripts → KaTeX → Mermaid". When the site export excludes a library, this order is used to find and remove the corresponding hash (FR-603).
+- While external images are not allowed, the script adds one more `<meta http-equiv="Content-Security-Policy">` at startup (SEC-10). It is not included in exports.
+- All screen DOM is generated by scripts under `#mdv-root`.
+- The contents of blocks whose `id` starts with `mdv-` are not modified after startup (they are reused as is when exporting).
 
-### 8.3 ソース構成
+### 8.3 Source layout
 
-| パス | 役割 |
+| Path | Role |
 |---|---|
-| `src/core.js` | DOM に依存しない処理（パス解決、ルート、スラッグ、検索、フロントマター、文字コード判定、ツリー構築、サイトデータ、HTML 組み立て） |
-| `src/md.js` | markdown-it の設定と拡張（タスクリスト、アラート、数式、Mermaid、見出し ID、参照抽出） |
-| `src/i18n.js` | UI 文言（日本語・英語） |
-| `src/app.js` | 画面・操作（読み込み、描画、ナビ、検索 UI、書き出し） |
-| `src/app.css` | スタイル |
-| `src/help.ja.md` `src/help.en.md` | ヘルプ文書 |
-| `tools/build.mjs` | ビルド（`dist/mdfolio.html` を生成） |
-| `tools/build-site.mjs` | サイト HTML 書き出し CLI |
-| `tools/vendor.mjs` | 同梱ライブラリの更新とライセンス表記の生成（保守者向け。これだけは npm を使う） |
-| `tools/dev/make-hosted.mjs` | 外部のホスティング環境に置くための変換（6.1） |
-| `tools/dev/make-pages.mjs` | GitHub Pages に置く一式（案内のページ、ビューア、書き出しの見本、見た目の見本、説明書。日本語と英語）を作る（8.7） |
-| `tools/dev/make-release.mjs` | 配布用の zip とリリースの説明を作る（8.8） |
-| `.github/workflows/` | 公開ページの更新とリリースの自動実行（8.8） |
-| `tools/dev/make-zip.py` | 配布用の zip を作る。日本語のファイル名に UTF-8 の印を付ける（付けないと、Windows で展開したときにファイル名が文字化けし、文書間のリンクが切れる） |
+| `src/core.js` | DOM-independent processing (path resolution, routes, slugs, search, front matter, encoding detection, tree building, site data, HTML assembly) |
+| `src/md.js` | markdown-it configuration and extensions (task lists, alerts, math, Mermaid, heading IDs, reference extraction) |
+| `src/i18n.js` | UI text (Japanese and English) |
+| `src/app.js` | Screen and interaction (loading, rendering, navigation, search UI, export) |
+| `src/app.css` | Styles |
+| `src/help.ja.md` `src/help.en.md` | Help documents |
+| `tools/build.mjs` | Build (generates `dist/mdfolio.html`) |
+| `tools/build-site.mjs` | Site HTML export CLI |
+| `tools/vendor.mjs` | Updating bundled libraries and generating license notices (for maintainers; the only part that uses npm) |
+| `tools/dev/make-hosted.mjs` | Conversion for placing the HTML in an external hosting environment (6.1) |
+| `tools/dev/make-pages.mjs` | Builds the set of files published on GitHub Pages (landing page, viewer, export sample, appearance sample, documentation; Japanese and English) (8.7) |
+| `tools/dev/make-release.mjs` | Builds the distribution zip and the release notes (8.8) |
+| `.github/workflows/` | Automated runs for updating the public pages and creating releases (8.8) |
+| `tools/dev/make-zip.py` | Builds the distribution zip. Marks Japanese file names as UTF-8 (without this mark, file names are garbled when extracted on Windows, and links between documents break) |
 
-`core.js` と `md.js` はブラウザと Node.js の両方で読み込める形にし、単体テストと CLI から同じコードを使う。
+`core.js` and `md.js` are written so they can be loaded in both the browser and Node.js, and the unit tests and the CLI use the same code.
 
-### 8.4 同梱ライブラリ
+### 8.4 Bundled libraries
 
-| ライブラリ | 用途 | ライセンス |
+| Library | Purpose | License |
 |---|---|---|
-| markdown-it | Markdown パーサー | MIT |
-| markdown-it-footnote | 脚注 | MIT |
-| DOMPurify | HTML サニタイズ | Apache-2.0（MPL-2.0 とのデュアル。Apache-2.0 を選択） |
-| highlight.js | シンタックスハイライト | BSD-3-Clause |
-| KaTeX（フォント含む） | 数式 | MIT |
-| Mermaid（軽量版 `@mermaid-js/tiny`） | 図 | MIT |
+| markdown-it | Markdown parser | MIT |
+| markdown-it-footnote | Footnotes | MIT |
+| DOMPurify | HTML sanitizing | Apache-2.0 (dual-licensed with MPL-2.0; Apache-2.0 chosen) |
+| highlight.js | Syntax highlighting | BSD-3-Clause |
+| KaTeX (including fonts) | Math | MIT |
+| Mermaid (lightweight edition `@mermaid-js/tiny`) | Diagrams | MIT |
 
-- 版は実装時点の npm 最新安定版を採用し、`vendor/manifest.json` に記録する。
-- Mermaid は完全版ではなく軽量版を採用する。完全版には `elkjs`（EPL-2.0 または GPL-3.0-or-later）が同梱されており再配布時の義務が増えること、および軽量版のほうがサイズが約半分であることによる（レビュー RV-06 で実物を確認）。
-- 各ライブラリが内部に取り込んでいる依存ライブラリのライセンス表記も、ライセンス表記全文に含める。
-- テストでだけ使うもの（Playwright、axe-core）は成果物に含めない。
+- Versions are the latest stable npm versions at the time of implementation, recorded in `vendor/manifest.json`.
+- The lightweight edition of Mermaid is used instead of the full edition, because the full edition bundles `elkjs` (EPL-2.0 or GPL-3.0-or-later), which adds obligations when redistributing, and because the lightweight edition is about half the size (verified with the actual files in review item RV-06).
+- The license notices of dependencies that each library includes internally are also included in the full license texts.
+- Tools used only for testing (Playwright, axe-core) are not included in the deliverables.
 
-### 8.5 ビルド
+### 8.5 Build
 
-`node tools/build.mjs` で `src/` と `vendor/` から `dist/mdfolio.html` を生成する。ビルドは次を行う。
+`node tools/build.mjs` generates `dist/mdfolio.html` from `src/` and `vendor/`. The build does the following.
 
-1. CSS・スクリプト・リソースを 8.2 の構造に組み立てる。
-2. 通常のインラインスクリプトについて、末尾の `sourceMappingURL` コメントを除去し、本文に含まれる `<!--` `<script` `</script` の `<` を、意味を変えないエスケープ（`\x3c`）に置換する。
-3. 各スクリプトの SHA-256 を計算し、CSP に埋め込む。
-4. 出力を検証する（置換後スクリプトの構文チェック、改行コードが LF のみであること、各ブロック本文に `</script` が現れないこと、サイズ）。
-5. `dist/mdfolio.manifest.json` に、成果物のサイズ・SHA-256・CSP・各ブロックのサイズとハッシュを記録する。
+1. Assemble the CSS, scripts and resources into the structure in 8.2.
+2. For normal inline scripts, remove the trailing `sourceMappingURL` comment and replace the `<` of `<!--` `<script` `</script` in the body with an escape that does not change the meaning (`\x3c`).
+3. Compute the SHA-256 of each script and embed it in the CSP.
+4. Verify the output (syntax check of the scripts after replacement, line endings are LF only, `</script` does not appear in any block body, size).
+5. Record the size, SHA-256 and CSP of the deliverable, and the size and hash of each block, in `dist/mdfolio.manifest.json`.
 
-`--without mermaid,katex` を付けると、数式・図のライブラリを含めない軽量版を作れる（約 0.6MB）。同じ入力からは常に同じ出力になる。
+With `--without mermaid,katex`, a lightweight edition without the math and diagram libraries can be built (about 0.6MB). The same input always produces the same output.
 
 ---
 
-### 8.6 フォルダ版（アプリ 1.1.0 で追加、1.3.0 で廃止）
+### 8.6 Folder edition (added in app 1.1.0, removed in 1.3.0)
 
-1.1.0〜1.2.0 にあった「フォルダ版」（`index.html` と `style/`・`docs/`・`lib/`・`data/` のフォルダ、更新コマンド `tools/update.mjs`）は、1.3.0 で廃止した。見た目を変える目的は、単一 HTML の隣に置く `mdfolio.css`（3.10）で置き換える。
+The "folder edition" that existed in 1.1.0–1.2.0 (`index.html` plus the `style/`, `docs/`, `lib/` and `data/` folders, and the update command `tools/update.mjs`) was removed in 1.3.0. Its purpose of changing the appearance is replaced by `mdfolio.css` placed next to the single HTML (3.10).
 
-廃止の理由（依頼者と合意）:
+Reasons for removal (agreed with the project owner):
 
-- 文書や CSS を変えるたびに更新コマンドが必要で、管理する人のパソコンに Node.js が要った。
-- 単一 HTML と 2 つの形を保つと、説明・テスト・公開の手間が倍になる。
+- An update command was needed every time documents or CSS changed, and the managing person's computer needed Node.js.
+- Maintaining two forms alongside the single HTML doubles the work for documentation, testing and publishing.
 
-残る制約（ブラウザーの決まり）: `file://` で開いたページは、隣のファイルを使う（CSS を効かせる、画像を表示する）ことはできるが、中身を文字として読み取れない。このため隣の `mdfolio.css` は画面に効くが、書き出しには自動では入らない（FR-1004）。フォルダ版では、更新コマンドが CSS の写しを JavaScript のファイルに作ることで、この制約を避けていた。
+Remaining constraint (a browser rule): a page opened via `file://` can use adjacent files (apply CSS, display images) but cannot read their contents as text. For this reason, the adjacent `mdfolio.css` takes effect on screen but is not automatically included in exports (FR-1004). The folder edition avoided this constraint by having the update command write a copy of the CSS into a JavaScript file.
 
-### 8.7 公開ページと英語の文書（仕様 1.5 で追加、1.12 で英語を先に）
+### 8.7 Public pages and English documents (added in specification 1.5; English first since 1.12)
 
-mdfolio は日本語の利用者に限らず広く使ってもらうものとし（依頼者の方針。仕様 1.12）、外から見えるもの（README、公開ページ、変更履歴、リリースの説明）は英語を先にする。仕様書・レビュー記録・テスト報告書とソースコードのコメントも英語で書く。依頼者とのやり取りと引き継ぎメモ（CLAUDE.md）は日本語。
+mdfolio is meant to be widely used, not only by Japanese-speaking users (the project owner's policy; specification 1.12), and things visible from outside (README, public pages, change history, release notes) put English first. The specification, review record, test report and source code comments are also written in English. Communication with the project owner and the handover notes (CLAUDE.md) are in Japanese.
 
-#### 構成
+#### Structure
 
 ```
-（公開ページ）
-  index.html              案内（英語）
-  sample-site.html        書き出しの見本（sample-docs-en/。画面は英語）
-  style/                  見た目の見本（英語）
-  mdfolio-docs.html       説明書（README.md と、仕様書・レビュー記録・テスト報告書）
-  mdfolio.html            ビューア（1 つだけ。画面の言語はブラウザーに合わせる）
+(public pages)
+  index.html              Landing page (English)
+  sample-site.html        Export sample (sample-docs-en/; English UI)
+  style/                  Appearance sample (English)
+  mdfolio-docs.html       Documentation (README.md, plus the specification, review record and test report)
+  mdfolio.html            Viewer (only one; UI language follows the browser)
   ja/
-    index.html            案内（日本語）
-    sample-site.html      書き出しの見本（sample-docs/。画面は日本語）
-    style/                見た目の見本（日本語）
-    mdfolio-docs.html     説明書（README.ja.md）
-  en/index.html           1.2.0〜1.3.0 の英語の案内の場所。トップへ移動する（古いリンクのため。スクリプトなし）
+    index.html            Landing page (Japanese)
+    sample-site.html      Export sample (sample-docs/; Japanese UI)
+    style/                Appearance sample (Japanese)
+    mdfolio-docs.html     Documentation (README.ja.md)
+  en/index.html           Location of the English landing page in 1.2.0–1.3.0. Redirects to the top (for old links; no script)
 ```
 
-リポジトリには、英語の README `README.md`、日本語の README `README.ja.md`、英語の見本文書 `sample-docs-en/`、日本語の見本文書 `sample-docs/` を置く。
+The repository contains the English README `README.md`, the Japanese README `README.ja.md`, the English sample documents `sample-docs-en/` and the Japanese sample documents `sample-docs/`.
 
-#### 要件
+#### Requirements
 
-| ID | 優先度 | 内容 |
+| ID | Priority | Details |
 |---|---|---|
-| PG-1 | 必須 | 公開ページの案内・書き出しの見本・見た目の見本・説明書を、英語と日本語の両方で用意する。英語はトップ（ルート）、日本語は `ja/` の下に置く。`en/` には、トップへ移動するページを置く。ビューアは 1 つで、両方の案内から同じものを開く |
-| PG-2 | 必須 | 案内のページの上部に、もう一方の言語の案内へのリンクを置く。両方の案内に、互いを指す `hreflang` の指定を書く。言語による自動の振り分け（スクリプトでの転送）はしない |
-| PG-3 | 必須 | 公開ページの見本（書き出し・見た目）と説明書は、画面の言語を文書の言語に合わせて固定する（設定 `lang` を `ja` / `en`）。利用者がメニューで切り替えた場合はそれに従う（5.6）。リポジトリの `dist/` にある見本（`sample-site.html`）は `auto` のまま変えない。説明書（`dist/mdfolio-docs.html`）は公開ページと同じものなので `ja` に固定する |
-| PG-4 | 必須 | `sample-docs-en/` は、`sample-docs/` と同じ構成（文書の数、サイドバー、画像、添付）と、同じ機能の見本（リンク、検索、表、アラート、コード、数式、図、脚注、折りたたみ、フロントマター）を持つ。ファイル名とフォルダ名は英語にする。日本語に固有の見本（全角の検索語など）は、英語で意味のある見本に置き換える |
-| PG-5 | 必須 | 英語の文書で画面の部品の名前を書くときは、アプリの英語の表示（`src/i18n.js` の `en`）と同じ言葉を使う |
-| PG-6 | 必須 | `README.md`（英語）と `README.ja.md`（日本語）の先頭に、互いへのリンクを置く。日本語の説明書には、仕様書・レビュー記録・テスト報告書が英語であることを書く |
-| PG-7 | 必須 | 案内のページはスクリプトを使わず、外部と通信しない（CSP で `default-src 'none'`）。ほかのページは、配布物と同じ安全の仕組みのままにする |
-| PG-8 | 必須 | 見本文書（日本語・英語）の中の相対リンクと画像は、すべて実在するファイルを指す。単体テストで確かめる |
-| PG-9 | 必須 | 公開ページのすべての HTML は、`LICENSE` と `THIRD-PARTY-NOTICES.txt` の全文を含む。アプリの HTML は従来どおり埋め込み（FR-802）、案内のページは折りたたみの欄に全文を載せる（スクリプトなしで読める）。単体テストで確かめる |
+| PG-1 | Required | Provide the public pages' landing page, export sample, appearance sample and documentation in both English and Japanese. English goes at the top (root), Japanese under `ja/`. `en/` contains a page that redirects to the top. There is one viewer, opened from both landing pages |
+| PG-2 | Required | At the top of each landing page, put a link to the landing page in the other language. Both landing pages have `hreflang` declarations pointing to each other. No automatic language-based routing (redirection by script) |
+| PG-3 | Required | The public pages' samples (export and appearance) and documentation fix the UI language to the language of the documents (setting `lang` to `ja` / `en`). If the user switches it in the menu, that choice is followed (5.6). The sample in the repository's `dist/` (`sample-site.html`) stays `auto`. The documentation (`dist/mdfolio-docs.html`) is the same as on the public pages, so it is fixed to `ja` |
+| PG-4 | Required | `sample-docs-en/` has the same structure as `sample-docs/` (number of documents, sidebar, images, attachments) and samples of the same features (links, search, tables, alerts, code, math, diagrams, footnotes, collapsible sections, front matter). File and folder names are in English. Samples specific to Japanese (such as full-width search terms) are replaced with samples that are meaningful in English |
+| PG-5 | Required | When English documents name screen components, use the same words as the app's English UI (`en` in `src/i18n.js`) |
+| PG-6 | Required | Put links to each other at the top of `README.md` (English) and `README.ja.md` (Japanese). The Japanese documentation states that the specification, review record and test report are in English |
+| PG-7 | Required | Landing pages use no scripts and do not communicate externally (CSP `default-src 'none'`). Other pages keep the same security mechanisms as the distributed files |
+| PG-8 | Required | All relative links and images in the sample documents (Japanese and English) point to existing files. Checked by unit tests |
+| PG-9 | Required | Every HTML file on the public pages contains the full texts of `LICENSE` and `THIRD-PARTY-NOTICES.txt`. App HTML embeds them as before (FR-802); landing pages show the full texts in a collapsible section (readable without scripts). Checked by unit tests |
 
-### 8.8 公開ページとリリースの自動化（仕様 1.7 で追加）
+### 8.8 Automating public pages and releases (added in specification 1.7)
 
-GitHub の自動実行の仕組み（GitHub Actions）で、公開ページの更新とリリースの作成を行う。設定ファイルは `.github/workflows/` に置く。
+GitHub's automation (GitHub Actions) updates the public pages and creates releases. The configuration files are placed in `.github/workflows/`.
 
-| ID | 優先度 | 内容 |
+| ID | Priority | Details |
 |---|---|---|
-| AU-1 | 必須 | `main` が更新されたら、単体テスト → ビルド → 公開用の一式の組み立て（`make-pages.mjs`）を行い、`gh-pages` ブランチを置き換える。どれかが失敗したら公開ページは変えない |
-| AU-2 | 必須 | `v` で始まるタグ（例: `v1.2.0`）が付いたとき、または GitHub の Actions の画面から手で始めたとき（`main` の最新に `v<package.json の版>` のタグを作る。同じ版のリリースがすでにあれば止める）、タグの版が `package.json` の版と一致することを確かめ、単体テストとビルドのあと、GitHub のリリースを作る。リリースの説明には変更履歴（`CHANGELOG.md`。英語）のその版の部分を使う |
-| AU-3 | 必須 | リリースに添付するファイルは、`mdfolio.html`（単一 HTML 版。これ 1 つで動く）と、配布用の zip `mdfolio-<版>.zip` の 2 つ。zip の中身は、単一 HTML 版、見た目の見本の CSS（`examples/mdfolio.css`）、見本（`sample-docs/`、`sample-docs-en/`、`sample.md`、`sample.en.md`）、`README.md`、`README.en.md`、`CHANGELOG.md`、`LICENSE`、`THIRD-PARTY-NOTICES.txt`。日本語のファイル名に UTF-8 の印を付ける（`make-zip.py`） |
-| AU-4 | 必須 | 自動実行で使う権限は、`gh-pages` ブランチへの書き込みとリリースの作成に必要な範囲（`contents: write`）だけにする。外部のサービスの部品（第三者のアクション）は、GitHub 公式のもの（`actions/checkout`、`actions/setup-node`）だけを使う |
-| AU-5 | 必須 | 配布用の zip と、リリースの説明の組み立ては `tools/dev/make-release.mjs` で行い、手元でも同じものを作れるようにする |
+| AU-1 | Required | When `main` is updated, run unit tests → build → assembly of the files to publish (`make-pages.mjs`), and replace the `gh-pages` branch. If any step fails, the public pages are not changed |
+| AU-2 | Required | When a tag starting with `v` (e.g. `v1.2.0`) is pushed, or when started manually from the GitHub Actions screen (creates the tag `v<package.json version>` on the latest `main`; stops if a release for the same version already exists), verify that the tag's version matches the version in `package.json`, and after unit tests and the build, create a GitHub release. The release notes use that version's section of the change history (`CHANGELOG.md`; English) |
+| AU-3 | Required | Two files are attached to the release: `mdfolio.html` (the single HTML edition; works on its own) and the distribution zip `mdfolio-<version>.zip`. The zip contains the single HTML edition, the appearance sample CSS (`examples/mdfolio.css`), the samples (`sample-docs/`, `sample-docs-en/`, `sample.md`, `sample.en.md`), `README.md`, `README.ja.md`, `CHANGELOG.md`, `LICENSE` and `THIRD-PARTY-NOTICES.txt`. Japanese file names are marked as UTF-8 (`make-zip.py`) |
+| AU-4 | Required | Permissions used by the automation are limited to what is needed to write to the `gh-pages` branch and create releases (`contents: write`). The only external service components (third-party actions) used are official GitHub ones (`actions/checkout`, `actions/setup-node`) |
+| AU-5 | Required | The distribution zip and release notes are assembled by `tools/dev/make-release.mjs`, so the same output can be produced locally |
 
-## 9. ライセンス方針
+## 9. License policy
 
-- 自作部分は MIT License とする（著作権者名は利用者が記入する）。
-- 同梱する第三者ソフトウェアは、再配布が許諾されている寛容型ライセンス（MIT / ISC / BSD / Apache-2.0 / Unlicense / OFL 等）のものに限る。GPL・EPL 等のコピーレフト系ライセンスのコードは同梱しない。
-- 本ソフトウェアと第三者ソフトウェアのライセンス表記全文を **HTML 内に内蔵**する（FR-802）。これにより、単一 HTML を再配布するだけで著作権表示・許諾表示の同梱義務を満たせる。
-- 書き出したサイト HTML にも同じ表記が含まれる（FR-603 でライブラリを除外した場合も表記は残す）。
+- The original parts are under the MIT License (the copyright holder name is filled in by the user).
+- Bundled third-party software is limited to software under permissive licenses that allow redistribution (MIT / ISC / BSD / Apache-2.0 / Unlicense / OFL, etc.). Code under copyleft licenses such as GPL or EPL is not bundled.
+- The full license texts of this software and the third-party software are **built into the HTML** (FR-802). As a result, redistributing the single HTML alone satisfies the obligation to include copyright and permission notices.
+- Exported site HTML also contains the same notices (the notices remain even when libraries are excluded by FR-603).
 
 ---
 
-## 10. テスト方針
+## 10. Test policy
 
-| レベル | 対象 | 方法 |
+| Level | Target | Method |
 |---|---|---|
-| 単体テスト | `core.js` `md.js` の各関数、ビルド成果物の検証、CLI | Node.js 標準のテストランナー（`node --test`） |
-| 結合・E2E テスト | ビルドした `dist/mdfolio.html` の全機能 | Playwright で実ブラウザ（Chromium）を自動操作。主に `file://` で実行する |
-| セキュリティテスト | XSS 文書、CSP、外部通信の有無 | E2E 内で検証。「通信していない」ことは、外部サーバーの代わりに用意したローカルの HTTP サーバーに届いたリクエストの有無で判定する（ブラウザー側の記録だけに頼らない） |
-| アクセシビリティテスト | NFR-4 の各項目 | 独立した検査エンジン（axe-core）による自動検査と、キーボード操作・フォーカス・配色の個別確認 |
-| 別エンジンでの確認 | Gecko（Firefox のエンジン）、WebKit（Safari 系のエンジン） | WebDriver で実ブラウザーを操作し、主要機能を確認する（`tests/cross/`）。通常の `npm test` には含めない |
-| 埋め込み表示のテスト | 2.1 の各条件、6.1 の変換後の HTML | E2E 内で、別オリジンのサンドボックス化したフレーム（ホスティング環境を模したもの）と `srcdoc` のフレームに入れて検証する。Gecko / WebKit でも同じ 2 種類のフレームで確認する |
-| 性能テスト | NFR-2 の各項目 | E2E 内で計測 |
-| 目視確認 | 画面デザイン（ライト／ダーク、広幅／狭幅） | スクリーンショットを確認 |
+| Unit tests | Each function in `core.js` `md.js`, verification of the build output, CLI | Node.js built-in test runner (`node --test`) |
+| Integration / E2E tests | All features of the built `dist/mdfolio.html` | Drive a real browser (Chromium) automatically with Playwright. Mainly run via `file://` |
+| Security tests | XSS documents, CSP, presence of external communication | Verified within E2E. "No communication" is judged by whether requests reached a local HTTP server set up in place of external servers (not relying only on the browser's records) |
+| Accessibility tests | Each item of NFR-4 | Automated checks by an independent checking engine (axe-core), plus individual checks of keyboard operation, focus and colors |
+| Checks on other engines | Gecko (Firefox's engine), WebKit (Safari-family engine) | Drive real browsers with WebDriver and check the main features (`tests/cross/`). Not included in the normal `npm test` |
+| Embedded display tests | Each condition in 2.1, the converted HTML of 6.1 | Verified within E2E by placing the page in a cross-origin sandboxed frame (simulating a hosting environment) and in a `srcdoc` frame. Also checked with the same two kinds of frames on Gecko / WebKit |
+| Performance tests | Each item of NFR-2 | Measured within E2E |
+| Visual checks | Screen design (light / dark, wide / narrow) | Review screenshots |
 
-テスト環境と代替手段:
+Test environment and alternatives:
 
-- ブラウザのネイティブなフォルダ選択ダイアログは自動操作できない。`showDirectoryPicker` 経路は、`file://` ではテスト用の差し替えハンドルで、`http://127.0.0.1` では OPFS（ブラウザ内蔵の仮想ファイルシステム）の実ハンドルで検証する。`<input>` 経路とドロップ経路は実ファイルで検証する。
-- 全項目の自動テスト（Playwright）の対象は Chromium とする。Firefox / Safari については、同じエンジンを使うブラウザー（Gecko 系のビルド、WebKitGTK）を WebDriver で操作して主要機能を確認する。製品版の Firefox / Safari そのものはテスト環境に導入できないため、手動確認チェックリストに残す。
-- 自動化できない項目（ネイティブダイアログ、Windows 実機、Firefox / Safari）は手動確認チェックリストとしてテスト報告書に記載する。
+- The browser's native folder selection dialog cannot be automated. The `showDirectoryPicker` route is verified with a substitute test handle under `file://`, and with real handles from OPFS (the browser's built-in virtual file system) under `http://127.0.0.1`. The `<input>` route and the drop route are verified with real files.
+- Full automated testing (Playwright) targets Chromium. For Firefox / Safari, browsers that use the same engines (a Gecko-based build, WebKitGTK) are driven with WebDriver to check the main features. The released Firefox / Safari products themselves cannot be installed in the test environment, so they remain on the manual check list.
+- Items that cannot be automated (native dialogs, real Windows machines, Firefox / Safari) are listed in the test report as a manual check list.
 
-合格基準: 自動テストが全件成功し、E2E 実行中にコンソールエラー・CSP 違反・想定外の外部リクエストが発生しないこと（悪意のある文書を使うセキュリティテストでは、CSP が遮断した記録だけが出ること）。全要件 ID がいずれかのテストまたは手動確認項目に対応づけられていること。
+Pass criteria: all automated tests pass, and no console errors, CSP violations or unexpected external requests occur during E2E runs (in security tests that use malicious documents, only records of the CSP blocking appear). Every requirement ID is mapped to at least one test or manual check item.
 
 ---
 
-## 11. 既知の制約
+## 11. Known limitations
 
-- `<input webkitdirectory>` 方式でフォルダを開く場合、ブラウザが「ファイルをアップロードしますか」という確認を表示することがある（実際には外部へ送信されない）。この方式ではブラウザがフォルダ内の全ファイルを列挙するため、巨大なフォルダでは時間がかかる。
-- 文字コードの自動判定は UTF-8 / UTF-16(BOM) / Shift_JIS のみ。EUC-JP 等は非対応。
-- 「前回のフォルダを開く」「自動更新」は File System Access API 対応ブラウザ（Edge / Chrome）のみ。
-- `file:` URL や `C:\...` 形式の絶対パスによるリンク・画像は機能しない（文書セット内の相対パスで記述する）。
-- サイト HTML は文書と添付を内蔵するため、文書量に比例して大きくなる。
-- HTML をメールやチャットで送ると、経路上のシステムが内容を書き換えて動かなくなることがある。zip に入れての配布を推奨する。
-- 外部の画像を表示する側へ切り替えるには、ページの再読み込みが必要（SEC-10）。閲覧モードでは開いているフォルダが閉じるので、開き直す。
-- 外部の画像を許可していない間は、図（Mermaid）の中で外部の画像を指定している図は表示できない（エラー表示になる）。
-- コードブロックが非常に多い文書では、表示の直後は一部のコードが色分けされておらず、数秒かけて順に色分けされる（FR-204）。
-- ブラウザーのフォルダ選択 API がない環境（Firefox / Safari）で、フォルダを選ぶ操作（`<input webkitdirectory>`）とドラッグ＆ドロップは、自動テストでは確認できていない（ファイルを選ぶ操作は確認済み）。
-- スマートフォン・タブレットの実機では確認していない。確認したのは、幅 390px・タッチ操作を模したブラウザーでの表示と操作だけである。フォルダを選ぶ操作は、端末やブラウザーによって使えない。
-- 埋め込み表示（2.1）は、条件を模したフレームで確認したもので、個々のホスティングサービスの実環境では確認していない。
-- 埋め込み表示では、表示中の文書の位置（`#/…`）が外側のページの URL に反映されるとは限らない（外側のページの作りによる）。その場合、再読み込みや URL の共有ではホーム文書に戻る。
-- お試し用に変換した HTML（6.1）では、サイトとしての書き出し・添付の保存・外部の画像の表示は使えない。
-- Mermaid は軽量版を同梱しているため、Mindmap と Architecture の図は表示できない（エラーとして表示する）。使い方（ヘルプ）と見本の「制限事項」にも記す。
-- `file://` で開いた場合、隣の `mdfolio.css` は画面には効くが、書き出しには自動では入らない（3.10 FR-1004）。書き出しに入れるには、書き出しの画面で同じファイルを選ぶ。
-- 隣の `mdfolio.css` の読み込みは Chromium でだけ確かめた。Firefox / Safari が `file://` の HTML の隣の CSS を読み込むかは未確認。
+- When a folder is opened with the `<input webkitdirectory>` method, the browser may show a confirmation such as "Upload files?" (nothing is actually sent externally). With this method, the browser enumerates all files in the folder, so very large folders take time.
+- Automatic encoding detection covers only UTF-8 / UTF-16 (BOM) / Shift_JIS. EUC-JP etc. are not supported.
+- "Reopen last folder" and auto-reload are available only in browsers that support the File System Access API (Edge / Chrome).
+- Links and images using `file:` URLs or absolute paths in the form `C:\...` do not work (write them as relative paths within the document set).
+- Site HTML contains the documents and attachments, so it grows in proportion to the amount of documents.
+- When HTML is sent by email or chat, systems along the way may rewrite its content so that it no longer works. Distributing it inside a zip is recommended.
+- Switching to showing external images requires reloading the page (SEC-10). In viewer mode, the open folder is closed, so open it again.
+- While external images are not allowed, diagrams (Mermaid) that specify external images cannot be displayed (an error is shown).
+- In documents with a very large number of code blocks, some code is not highlighted immediately after display and is highlighted in turn over a few seconds (FR-204).
+- In environments without the browser's folder selection API (Firefox / Safari), choosing a folder (`<input webkitdirectory>`) and drag and drop have not been verified by automated tests (choosing files has been verified).
+- Not checked on real smartphones or tablets. Only display and operation in a browser simulating a 390px width and touch input were checked. Choosing a folder is not available on some devices and browsers.
+- Embedded display (2.1) was checked with frames simulating the conditions, not in the real environments of individual hosting services.
+- In embedded display, the position of the displayed document (`#/…`) is not necessarily reflected in the outer page's URL (it depends on how the outer page is built). In that case, reloading or sharing the URL returns to the home document.
+- In HTML converted for trial use (6.1), Export as site, saving attachments and showing external images are not available.
+- Because the lightweight edition of Mermaid is bundled, Mindmap and Architecture diagrams cannot be displayed (shown as errors). This is also noted in the help ("How to use") and in the "Limitations" page of the samples.
+- When opened via `file://`, the adjacent `mdfolio.css` takes effect on screen but is not automatically included in exports (3.10 FR-1004). To include it in an export, choose the same file on the export screen.
+- Loading of the adjacent `mdfolio.css` has been checked only on Chromium. Whether Firefox / Safari load CSS next to an HTML file opened via `file://` has not been checked.
 
 ---
 
-## 12. 改訂履歴
+## 12. Revision history
 
-| 版 | 日付 | 内容 |
+| Version | Date | Changes |
 |---|---|---|
-| 0.9 | 2026-11-12 | 初版（レビュー前ドラフト） |
-| 1.0 | 2026-11-13 | 仕様レビュー（REVIEW.md）の指摘 41 件を反映 |
-| 1.1 | 2026-11-13 | 実装・テストで判明した点を反映（詳細は TEST_REPORT.md の「テストで見つかった問題」）。主な変更: 外部画像の遮断を CSP でも行う（SEC-10 を追加、FR-210・FR-702・4.2・11 章）。コードの色分けをサニタイズ後・一部後回しに変更（FR-204、NFR-2）。キーボード操作と読み上げ用の情報を追加（4.3、NFR-4、FR-212）。ツリーの並び順を「ファイル → フォルダ」に変更（FR-301）。カスタムナビのファイルを検索結果から除外（FR-401）。埋め込みデータの検証を厳格化（5.5）。除外したライブラリのハッシュを CSP から外す（FR-603）。HTML の内部構造を実装に合わせて更新（8.2: スクリプトを 2 ブロックに分割、タブのアイコンを内蔵、ほか）。ビルドの目録のファイル名を訂正（8.5）。Gecko / WebKit での確認を追加（2 章、10 章） |
-| 1.2 | 2026-11-13 | 埋め込み表示への対応（アプリ 1.0.1）。公開ページ用の変換で、置換文字（U+FFFD）をエスケープに書き換える（6.1。公開先がこの文字を含むファイルを受け付けなかったため）。別のページの中に表示する場合の動作を追加（2.1）。アプリ内のリンクをアプリ自身が処理するよう変更（FR-211。`srcdoc` で埋め込むとリンクで表示が消える問題への対処）。設定に `allowDownloads` / `lockExternalImages` / `hosted` を追加（FR-701、5.4、FR-211、FR-601、FR-604、FR-801、4.2）。外部のホスティング環境に置くための変換と、その場合に保証できない点を明記（6.1）。指で操作する端末ではファイル選択を絞り込まない（FR-102）。コピーできなかったときに、できたと表示していた点を修正（FR-204）。開始画面の「このパソコン」を「この端末」に変更（4.2）。成果物に `sample.md` と zip 作成ツールを追加（8.1、8.3）。既知の制約に、実機・実環境で未確認の範囲を追記（11 章） |
-| 1.3 | 2026-11-15 | フォルダ版を追加（8.6、アプリ 1.1.0）。CSS を本文・配色用と画面用に分け、図の配色を CSS の変数から取るようにした |
-| 1.4 | 2026-11-16 | GitHub Pages での公開に使う組み立てツールを追加（8.3）。アプリの動作は変えていない |
-| 1.5 | 2026-11-16 | 公開ページと文書の英語版を追加（8.7、8.1、8.3）。アプリの動作は変えていない |
-| 1.6 | 2026-11-16 | 公開ページの案内にもライセンス表記の全文を載せる（PG-9） |
-| 1.7 | 2026-11-16 | アプリ 1.2.0。名前を「mdfolio」に確定（「仮称」を外す）。フォルダ版の英語対応（FD-9、FD-10）。英語の 1 ファイルの見本 `sample.en.md` と変更履歴を追加（8.1）。公開ページとリリースの自動化（8.8）。1.0.1 のお試し用の写し（`dist/hosted/`）を削除。既知の制約に Mermaid の図の種類と書き出しの CSS を追記（11 章）。英語の文章の見直しと、画面の英語の単数・複数の出し分け（`i18n.js` の `{0:item|items}`）。検討していた「更新コマンドの Node.js 以外の版」「書き出す CSS の指定」「配色のコントラストの検査」は、依頼者と相談のうえ行わない |
-| 1.8 | 2026-11-16 | 変更履歴を日本語の `CHANGELOG.md` 1 つにする（英語版をなくす。依頼者の指示。管理の手間を減らすため）（8.1、8.8） |
-| 1.9 | 2026-11-17 | アプリ 1.3.0。単一 HTML の隣の `mdfolio.css` で見た目を変えられるようにし、書き出しでは選んだ CSS を埋め込めるようにした（3.10）。CSP の `style-src` に `'self' file:` を加えた。フォルダ版を廃止（8.6。依頼者と合意）。1.7 で見送った「書き出す CSS の指定」は、フォルダ版の廃止にあわせて、選んで埋め込む形で取り入れた。コマンドライン版の書き出しの言語の要件を FR-605 に移した |
-| 1.10 | 2026-11-17 | 利用者は Node.js を使わないことを明確にした。コマンドライン版の書き出しは開発者・自動化向けとし、利用者向けの説明（README、見本、公開ページ）とリリースの zip から外した（FR-604、AU-3） |
-| 1.11 | 2026-11-17 | README を、英語を `README.md`、日本語を `README.ja.md` に入れ替えた（8.1、8.7）。アプリの画面の言語の既定（`auto`）は変えない |
-| 1.12 | 2026-11-17 | 広く使ってもらうため、英語を先にした（依頼者の方針）。公開ページは英語をトップ、日本語を `ja/` に、`en/` は移動のページに（8.7）。変更履歴とリリースの説明を英語に（8.1、8.8）。仕様書・レビュー記録・テスト報告書とソースコードのコメントを英語にする |
+| 0.9 | 2026-11-12 | First edition (draft before review) |
+| 1.0 | 2026-11-13 | Reflected the 41 findings of the specification review (REVIEW.md) |
+| 1.1 | 2026-11-13 | Reflected points found during implementation and testing (details in "Problems found in testing" in TEST_REPORT.md). Main changes: external images are also blocked by CSP (added SEC-10; FR-210, FR-702, 4.2, chapter 11). Code highlighting changed to run after sanitizing, with part of it deferred (FR-204, NFR-2). Added keyboard operation and information for screen readers (4.3, NFR-4, FR-212). Changed the tree order to "files → folders" (FR-301). Excluded custom navigation files from search results (FR-401). Stricter validation of embedded data (5.5). Hashes of excluded libraries are removed from the CSP (FR-603). Updated the internal HTML structure to match the implementation (8.2: scripts split into 2 blocks, tab icon built in, etc.). Corrected the file name of the build manifest (8.5). Added checks on Gecko / WebKit (chapter 2, chapter 10) |
+| 1.2 | 2026-11-13 | Support for embedded display (app 1.0.1). In the conversion for public pages, the replacement character (U+FFFD) is rewritten as an escape (6.1; because the hosting destination rejected files containing this character). Added behavior when displayed inside another page (2.1). Changed in-app links to be handled by the app itself (FR-211; a fix for the display disappearing on link clicks when embedded with `srcdoc`). Added `allowDownloads` / `lockExternalImages` / `hosted` to the settings (FR-701, 5.4, FR-211, FR-601, FR-604, FR-801, 4.2). Documented the conversion for external hosting environments and what cannot be guaranteed in that case (6.1). File selection is not filtered on finger-operated devices (FR-102). Fixed showing that copying succeeded when it had failed (FR-204). Changed "this computer" to "this device" on the start screen (4.2). Added `sample.md` and the zip creation tool to the deliverables (8.1, 8.3). Added the scope not checked on real devices and real environments to the known limitations (chapter 11) |
+| 1.3 | 2026-11-15 | Added the folder edition (8.6, app 1.1.0). Split the CSS into body/colors and screen components, and diagram colors are now taken from CSS variables |
+| 1.4 | 2026-11-16 | Added the assembly tool used for publishing on GitHub Pages (8.3). No change to app behavior |
+| 1.5 | 2026-11-16 | Added English versions of the public pages and documents (8.7, 8.1, 8.3). No change to app behavior |
+| 1.6 | 2026-11-16 | Full license texts are also shown on the public landing pages (PG-9) |
+| 1.7 | 2026-11-16 | App 1.2.0. Finalized the name "mdfolio" (removed "tentative name"). English support for the folder edition (FD-9, FD-10). Added the English one-file sample `sample.en.md` and the change history (8.1). Automated the public pages and releases (8.8). Removed the 1.0.1 trial copy (`dist/hosted/`). Added Mermaid diagram types and export CSS to the known limitations (chapter 11). Reviewed the English text, and added singular/plural selection for English UI text (`{0:item|items}` in `i18n.js`). The items under consideration — "a non-Node.js version of the update command", "specifying the CSS to export" and "a color contrast check" — will not be done, after discussion with the project owner |
+| 1.8 | 2026-11-16 | The change history is consolidated into a single Japanese `CHANGELOG.md` (the English version was dropped; at the project owner's instruction, to reduce maintenance work) (8.1, 8.8) |
+| 1.9 | 2026-11-17 | App 1.3.0. The appearance can be changed with `mdfolio.css` next to the single HTML, and the export can embed a chosen CSS file (3.10). Added `'self' file:` to the CSP `style-src`. Removed the folder edition (8.6; agreed with the project owner). "Specifying the CSS to export", postponed in 1.7, was adopted in the form of choosing and embedding a file, together with the removal of the folder edition. Moved the language requirement for the command-line export to FR-605 |
+| 1.10 | 2026-11-17 | Made it clear that users do not use Node.js. The command-line export is for developers and automation, and was removed from the user-facing instructions (README, samples, public pages) and the release zip (FR-604, AU-3) |
+| 1.11 | 2026-11-17 | Swapped the READMEs so that English is `README.md` and Japanese is `README.ja.md` (8.1, 8.7). The default app UI language (`auto`) is unchanged |
+| 1.12 | 2026-11-17 | Put English first so that the app can be widely used (the project owner's policy). Public pages: English at the top, Japanese under `ja/`, and `en/` as a redirect page (8.7). Change history and release notes in English (8.1, 8.8). The specification, review record, test report and source code comments are to be written in English |

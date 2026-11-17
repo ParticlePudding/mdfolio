@@ -1,4 +1,4 @@
-// 見た目の上書き（隣の mdfolio.css と、書き出しへの埋め込み。SPEC 3.10 FR-1001〜1005、FR-1007）
+// Overriding the look (an mdfolio.css next to the viewer, and embedding it in exports. SPEC 3.10 FR-1001 to 1005, FR-1007)
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -19,7 +19,7 @@ const USER_CSS = ':root { --accent: #8A1C14; }\n.mdv-prose h2 { color: rgb(11, 1
 const ACCENT = 'rgb(138, 28, 20)';
 const H2 = 'rgb(11, 110, 128)';
 
-/** ビューアの写しを一時フォルダに置く（css を渡すと、隣に mdfolio.css も置く）。 */
+/** Put a copy of the viewer in a temporary folder (if css is given, also put an mdfolio.css next to it). */
 function viewerIn(css, viewerHtml) {
   const dir = tmpDir();
   fs.writeFileSync(path.join(dir, 'mdfolio.html'), viewerHtml || fs.readFileSync(VIEWER));
@@ -49,30 +49,30 @@ async function pickCss(page, file) {
   await chooser.setFiles(file);
 }
 
-describe('隣の mdfolio.css（FR-1001）', () => {
-  test('ないときは内蔵の見た目で表示し、エラーを出さない', async () => {
+describe('mdfolio.css next to the viewer (FR-1001)', () => {
+  test('when absent, shows the built-in look and reports no error', async () => {
     const v = viewerIn();
     await withPage(browser, { url: v.url }, async ({ page, record }) => {
       await loadFolder(page, SAMPLE);
       const r = await looks(page);
       assert.notEqual(r.h2, H2);
       assert.notEqual(r.link, ACCENT);
-      assert.ok(record.userCss.length >= 1 && record.userCss.length <= 2, '隣の mdfolio.css を読みに行くのは、表示用と確認用の 2 回まで');
+      assert.ok(record.userCss.length >= 1 && record.userCss.length <= 2, 'the neighboring mdfolio.css is fetched at most twice (once for display, once for the check)');
     });
   });
 
-  test('あれば、本文・リンク・図の色に反映する（図の色は CSS の変数から取る。FR-1007）', async () => {
+  test('when present, applies to the text, link and diagram colors (diagram colors come from CSS variables; FR-1007)', async () => {
     const v = viewerIn(USER_CSS);
     await withPage(browser, { url: v.url }, async ({ page }) => {
       await loadFolder(page, SAMPLE);
       assert.deepEqual(await looks(page), { h2: H2, link: ACCENT });
       await goTo(page, '#/guide/' + encodeURIComponent('Markdown記法') + '.md', 'Markdown 記法');
       await page.waitForFunction(() => document.querySelectorAll('.mdv-mermaid svg').length === 2);
-      assert.ok(/#8A1C14|rgb\(138, ?28, ?20\)/i.test(await page.innerHTML('.mdv-mermaid')), '図の線が上書きした色');
+      assert.ok(/#8A1C14|rgb\(138, ?28, ?20\)/i.test(await page.innerHTML('.mdv-mermaid')), 'diagram lines use the overridden color');
     });
   });
 
-  test('文書の中の <link> や <style> では、別の CSS を読み込ませられない', async () => {
+  test('a <link> or <style> inside a document cannot load other CSS', async () => {
     const docs = tmpDir();
     fs.writeFileSync(path.join(docs, 'README.md'), '# x\n\n## y\n\n<link rel="stylesheet" href="evil.css">\n<style>.mdv-prose h2 { color: rgb(1, 2, 3); }</style>\n');
     fs.writeFileSync(path.join(docs, 'evil.css'), '.mdv-prose h2 { color: rgb(4, 5, 6); }');
@@ -86,8 +86,8 @@ describe('隣の mdfolio.css（FR-1001）', () => {
   });
 });
 
-describe('書き出しへの埋め込み（FR-1002〜1005）', () => {
-  test('file:// で隣の CSS が効いていると、書き出しに入らないことを知らせる。選ぶと埋め込み、書き出したサイトは CSS がなくてもその見た目', async () => {
+describe('Embedding in exports (FR-1002 to 1005)', () => {
+  test('over file://, when a neighboring CSS is in effect, says it will not be included in the export; picking it embeds it, and the exported site keeps that look without the CSS file', async () => {
     const v = viewerIn(USER_CSS);
     const pick = path.join(tmpDir(), 'look.css');
     fs.writeFileSync(pick, USER_CSS);
@@ -104,14 +104,14 @@ describe('書き出しへの埋め込み（FR-1002〜1005）', () => {
       const dl = await captureDownload(page, () => page.click('.mdv-export-run'), out);
       const parts = core.extractParts(fs.readFileSync(dl.file, 'utf8'));
       assert.equal(parts.userCss, USER_CSS);
-      // 書き出したサイトを、隣に CSS のない場所で開く
+      // Open the exported site somewhere with no CSS next to it
       await page.goto(pathToFileURL(dl.file).href);
       await waitHeading(page, 'mdfolio サンプル文書');
       assert.deepEqual(await looks(page), { h2: H2, link: ACCENT });
     });
   });
 
-  test('「埋め込まない」で取り消せる。</style を含む CSS と大きすぎる CSS は受け付けない', async () => {
+  test('"Don\'t embed" clears the choice; CSS containing </style and CSS that is too large are rejected', async () => {
     const v = viewerIn();
     const dir = tmpDir();
     const ok = path.join(dir, 'ok.css'); fs.writeFileSync(ok, 'h1 { color: red; }');
@@ -138,7 +138,7 @@ describe('書き出しへの埋め込み（FR-1002〜1005）', () => {
     });
   });
 
-  test('今の HTML に埋め込まれた CSS は、既定で引き継ぐ（FR-1003）', async () => {
+  test('CSS embedded in the current HTML is carried over by default (FR-1003)', async () => {
     const parts = core.extractParts(fs.readFileSync(VIEWER, 'utf8'));
     const v = viewerIn(undefined, core.composeHtml({ ...parts, userCss: USER_CSS }));
     await withPage(browser, { url: v.url }, async ({ page }) => {
@@ -151,7 +151,7 @@ describe('書き出しへの埋め込み（FR-1002〜1005）', () => {
     });
   });
 
-  test('http(s) で開き、隣の CSS を読めるときは、選ばなくても埋め込みの候補にする（FR-1004）', async () => {
+  test('when opened over http(s) and the neighboring CSS is readable, it is offered for embedding without picking it (FR-1004)', async () => {
     const files = { '/mdfolio.html': ['text/html; charset=utf-8', fs.readFileSync(VIEWER)], '/mdfolio.css': ['text/css', USER_CSS] };
     const server = http.createServer((req, res) => {
       const f = files[req.url.split('?')[0]];

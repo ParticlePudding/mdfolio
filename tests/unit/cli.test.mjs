@@ -1,4 +1,4 @@
-// コマンドライン版の書き出し（FR-604）: ブラウザーを使わずに、出力の中身を検証する
+// Command-line export (FR-604): checks the output without a browser
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -38,15 +38,15 @@ function readSite(file) {
   };
 }
 
-describe('使い方と引数', () => {
-  test('--help で使い方を表示する', () => {
+describe('Usage and arguments', () => {
+  test('--help shows the usage', () => {
     const r = run(['--help']);
     assert.equal(r.code, 0);
     for (const opt of ['--out', '--title', '--home', '--viewer', '--lang', '--theme', '--allow-external-images', '--lock-external-images', '--no-downloads']) assert.ok(r.out.includes(opt), opt);
     assert.equal(run(['-h']).code, 0);
   });
 
-  test('誤った指定は、理由を示して終了コード 1 で終わる', () => {
+  test('Invalid arguments exit with code 1 and show the reason', () => {
     const cases = [
       [[], '文書フォルダを指定してください'],
       [[path.join(FIXTURES, 'site'), path.join(FIXTURES, 'nav')], '文書フォルダは 1 つだけ'],
@@ -69,17 +69,17 @@ describe('使い方と引数', () => {
       assert.equal(r.code, 1, args.join(' '));
       assert.ok(r.err.includes(message), `${args.join(' ')} → ${r.err}`);
     }
-    assert.deepEqual(fs.readdirSync(dir), [], '失敗したときは何も書き出さない');
+    assert.deepEqual(fs.readdirSync(dir), [], 'nothing is written on failure');
   });
 });
 
-describe('出力の内容', () => {
+describe('Output content', () => {
   const dir = tmp();
   const out = path.join(dir, 'site.html');
   const r = run([path.join(FIXTURES, 'site'), '--out', out]);
   const site = r.code === 0 ? readSite(out) : null;
 
-  test('ビューアと同じ構造・同じ CSP で、設定と文書データだけが入る', () => {
+  test('Same structure and CSP as the viewer; only the settings and document data are added', () => {
     assert.equal(r.code, 0, r.err);
     assert.ok(r.out.includes('文書 11 件、添付 4 件'));
     assert.ok(r.out.includes('ホーム: README.md'));
@@ -98,7 +98,7 @@ describe('出力の内容', () => {
     assert.equal(site.parts.title, 'site');
   });
 
-  test('表示環境に合わせる指定（--no-downloads / --lock-external-images / --allow-external-images）は、設定にだけ反映される', () => {
+  test('Options for the hosting environment (--no-downloads / --lock-external-images / --allow-external-images) affect only the settings', () => {
     const base = fs.readFileSync(out, 'utf8');
     const variants = [
       [['--no-downloads'], { allowExternalImages: false, allowDownloads: false, lockExternalImages: false, hosted: false }],
@@ -112,7 +112,7 @@ describe('出力の内容', () => {
       assert.equal(rr.code, 0, rr.err);
       const v = readSite(file);
       assert.deepEqual(v.config, Object.assign({ title: 'site', lang: 'auto', theme: 'auto', home: 'README.md' }, expected), options.join(' '));
-      // 設定のブロック以外は、指定なしの出力と同じ（CSP・スクリプト・文書データは変わらない）
+      // Everything except the settings block is the same as the output without options (CSP, scripts and document data do not change)
       assert.equal(v.parts.csp, site.parts.csp);
       for (const b of site.parts.blocks) {
         if (b.id === 'mdv-config') continue;
@@ -124,7 +124,7 @@ describe('出力の内容', () => {
     }
   });
 
-  test('読み込まないもの（隠しファイル・node_modules・参照されていない添付）は入らない', () => {
+  test('Ignored items (hidden files, node_modules, unreferenced attachments) are not included', () => {
     const paths = site.site.files.map((f) => f.path);
     assert.deepEqual(paths, [
       'README.md', 'bom.md', 'sjis.md', 'syntax.md', 'utf16.md', 'xss.md',
@@ -136,15 +136,15 @@ describe('出力の内容', () => {
     assert.equal(site.site.generator, 'mdfolio ' + core.VERSION);
   });
 
-  test('文字コードを判定して、文字列として埋め込む（Shift_JIS・UTF-16・BOM 付き UTF-8）', () => {
+  test('Detects the character encoding and embeds the text as strings (Shift_JIS, UTF-16, UTF-8 with BOM)', () => {
     const text = (p) => site.site.files.find((f) => f.path === p).text;
     assert.ok(text('sjis.md').startsWith('# シフトJISの文書'));
     assert.ok(text('utf16.md').startsWith('# UTF-16 の文書'));
-    assert.ok(text('bom.md').startsWith('# BOM 付き UTF-8'), 'BOM は取り除く');
+    assert.ok(text('bom.md').startsWith('# BOM 付き UTF-8'), 'the BOM is removed');
     assert.equal(text('README.md'), fs.readFileSync(path.join(FIXTURES, 'site/README.md'), 'utf8'));
   });
 
-  test('添付は内容をそのまま（Base64）埋め込み、種類は拡張子から決める', () => {
+  test('Attachments are embedded as is (Base64), with the type taken from the extension', () => {
     for (const f of site.site.files.filter((x) => x.kind === 'asset')) {
       const original = fs.readFileSync(path.join(FIXTURES, 'site', f.path));
       assert.ok(Buffer.from(f.base64, 'base64').equals(original), f.path);
@@ -153,7 +153,7 @@ describe('出力の内容', () => {
     }
   });
 
-  test('2 回実行しても、作成日時のほかは同じ出力になる', () => {
+  test('Running twice gives the same output except for the creation time', () => {
     const again = path.join(dir, 'again.html');
     assert.equal(run([path.join(FIXTURES, 'site'), '--out', again]).code, 0);
     const b = readSite(again);
@@ -162,8 +162,8 @@ describe('出力の内容', () => {
   });
 });
 
-describe('さまざまな入力', () => {
-  test('出力先の既定は「フォルダ名.html」。タイトルの既定はフォルダ名', () => {
+describe('Various inputs', () => {
+  test('The default output is "<folder name>.html" and the default title is the folder name', () => {
     const cwd = tmp();
     const docs = tree(path.join(tmp(), '手順書 2026'), { 'README.md': '# 手順\n' });
     const r = run([docs], { cwd });
@@ -175,7 +175,7 @@ describe('さまざまな入力', () => {
     assert.ok(site.html.includes('<title>手順書 2026</title>'));
   });
 
-  test('タイトルに HTML の記号が含まれていても、正しく埋め込まれる', () => {
+  test('A title containing HTML special characters is embedded correctly', () => {
     const dir = tmp();
     const docs = tree(path.join(dir, 'docs'), { 'README.md': '# x\n' });
     const out = path.join(dir, 'o.html');
@@ -184,11 +184,11 @@ describe('さまざまな入力', () => {
     const site = readSite(out);
     assert.equal(site.config.title, title);
     assert.equal(site.parts.title, title);
-    assert.equal((site.html.match(/<script/g) || []).length, site.ids.length, 'スクリプトの数は変わらない');
+    assert.equal((site.html.match(/<script/g) || []).length, site.ids.length, 'the number of scripts does not change');
     assert.ok(site.html.includes('<title>&lt;/title&gt;&lt;script&gt;alert(1)&lt;/script&gt; &amp; &quot;quoted&quot; &lt;!-- x</title>'));
   });
 
-  test('ホーム文書: README.md → index.md → 先頭の文書。--home で指定もできる', () => {
+  test('Home document: README.md -> index.md -> the first document; --home can also set it', () => {
     const dir = tmp();
     const home = (files, extra = []) => {
       const docs = tree(fs.mkdtempSync(path.join(dir, 'd-')), files);
@@ -201,10 +201,10 @@ describe('さまざまな入力', () => {
     assert.equal(home({ 'b.md': '# b\n', 'index.md': '# i\n', 'a/README.md': '# sub\n' }), 'index.md');
     assert.equal(home({ 'b.md': '# b\n', 'a.md': '# a\n' }), 'a.md');
     assert.equal(home({ 'README.md': '# r\n', 'guide/start.md': '# s\n' }, ['--home', 'guide/start.md']), 'guide/start.md');
-    assert.equal(home({ 'README.md': '# r\n', 'guide/start.md': '# s\n' }, ['--home', 'guide/start']), 'guide/start.md', '拡張子は省略できる');
+    assert.equal(home({ 'README.md': '# r\n', 'guide/start.md': '# s\n' }, ['--home', 'guide/start']), 'guide/start.md', 'the extension can be omitted');
   });
 
-  test('数式・図を使っていなければライブラリを省き、HTML で書かれた参照も添付として集める', () => {
+  test('Leaves out the libraries when no math or diagrams are used, and collects references written in HTML as attachments', () => {
     const dir = tmp();
     const out = path.join(dir, 'plain.html');
     const r = run([path.join(FIXTURES, 'plain'), '--out', out]);
@@ -214,11 +214,11 @@ describe('さまざまな入力', () => {
     assert.deepEqual(site.ids, ['mdv-config', 'mdv-site', 'mdv-res-help-ja', 'mdv-res-help-en', 'mdv-res-licenses', 'mdv-js-vendor', 'mdv-js-app']);
     assert.deepEqual(site.site.files.map((f) => f.path), ['README.md', 'b.md', 'c.md', 'files/data.txt', 'img/p.png', 'img/q.png']);
     assert.ok(fs.statSync(out).size < 1024 * 1024);
-    // CSP から、使わないライブラリのハッシュも外れている
+    // The hashes of unused libraries are also removed from the CSP
     assert.equal((site.parts.csp.match(/'sha256-/g) || []).length, 2);
   });
 
-  test('20MB を超える添付は含めず、その旨を表示する。10MB を超える文書は変換の対象にしない', () => {
+  test('Attachments over 20 MB are left out with a message; documents over 10 MB are not rendered', () => {
     const dir = tmp();
     const docs = tree(path.join(dir, 'docs'), {
       'README.md': '# 大きな添付\n\n[大](big.bin) [小](small.bin) [文書](huge.md)\n',
@@ -232,10 +232,10 @@ describe('さまざまな入力', () => {
     assert.ok(/20MB を超える.*1 件/.test(r.out), r.out);
     const site = readSite(out);
     assert.deepEqual(site.site.files.map((f) => f.path), ['README.md', 'huge.md', 'small.bin']);
-    assert.ok(!site.ids.includes('mdv-lib-katex'), '10MB を超える文書の中の数式は数えない（ビューアでもテキスト表示になる）');
+    assert.ok(!site.ids.includes('mdv-lib-katex'), 'math in documents over 10 MB is not counted (the viewer shows them as plain text too)');
   });
 
-  test('軽量版のビューアをもとにすることもできる', () => {
+  test('A lite build of the viewer can also be used as the base', () => {
     const dir = tmp();
     const lite = path.join(dir, 'lite.html');
     const build = spawnSync(process.execPath, [path.join(ROOT, 'tools/build.mjs'), '--out', lite, '--without', 'mermaid,katex'], { cwd: ROOT, encoding: 'utf8' });
@@ -249,7 +249,7 @@ describe('さまざまな入力', () => {
     assert.ok(fs.statSync(out).size < 1024 * 1024);
   });
 
-  test('文書の中の </script> や <!-- は、そのまま読める形で安全に埋め込まれる', () => {
+  test('</script> and <!-- in documents are embedded safely and read back unchanged', () => {
     const dir = tmp();
     const nasty = '# x\n\n</script><script>alert(1)</script> <!-- ' + String.fromCharCode(0x2028) + ' \\ "q"\n';
     const docs = tree(path.join(dir, 'docs'), { 'README.md': nasty });
@@ -262,8 +262,8 @@ describe('さまざまな入力', () => {
   });
 });
 
-describe('コマンドライン版の書き出しの英語の表示（FD-10）', () => {
-  test('結果、エラー、--help を英語で表示する', () => {
+describe('English messages of the command-line export (FD-10)', () => {
+  test('Shows the result, errors and --help in English', () => {
     const out = path.join(tmp(), 'site.html');
     let r = run([path.join(ROOT, 'sample-docs-en'), '--out', out], { lang: 'en' });
     assert.equal(r.code, 0, r.err);
@@ -282,10 +282,10 @@ describe('コマンドライン版の書き出しの英語の表示（FD-10）',
   });
 });
 
-describe('見た目の CSS を埋め込む（--css、SPEC FR-1006）', () => {
+describe('Embedding CSS for the look (--css, SPEC FR-1006)', () => {
   const docs = () => tree(tmp(), { 'README.md': '# home\n' });
 
-  test('指定した CSS を埋め込み、BOM は取り除く。書き出したものをもとにすると引き継ぐ', () => {
+  test('Embeds the given CSS without the BOM; an export used as the base keeps it', () => {
     const dir = tmp();
     const css = path.join(dir, 'look.css');
     fs.writeFileSync(css, '\uFEFFh1 { color: rgb(1, 2, 3); }\n');
@@ -294,19 +294,19 @@ describe('見た目の CSS を埋め込む（--css、SPEC FR-1006）', () => {
     assert.equal(r.code, 0, r.err);
     let site = readSite(out);
     assert.equal(site.parts.userCss, 'h1 { color: rgb(1, 2, 3); }\n');
-    // 書き出した HTML をビューアにして、指定せずに書き出すと引き継ぐ
+    // Exporting with the exported HTML as the viewer and no --css keeps the CSS
     const again = path.join(dir, 'again.html');
     r = run([docs(), '--out', again, '--viewer', out]);
     assert.equal(r.code, 0, r.err);
     assert.equal(readSite(again).parts.userCss, 'h1 { color: rgb(1, 2, 3); }\n');
-    // 指定しなければ埋め込まない（配布物のビューアには埋め込みがない）
+    // Without --css nothing is embedded (the distributed viewer has no embedded CSS)
     r = run([docs(), '--out', path.join(dir, 'plain.html')]);
     site = readSite(path.join(dir, 'plain.html'));
     assert.equal(site.parts.userCss, '');
     assert.ok(!site.html.slice(0, site.html.indexOf('</head>')).includes('<style id="mdv-user-style">'));
   });
 
-  test('</style を含む CSS、大きすぎる CSS、ないファイルは、理由を示して止まり、何も書き出さない', () => {
+  test('CSS containing </style, CSS that is too large, or a missing file stops with a reason and writes nothing', () => {
     const dir = tmp();
     const bad = path.join(dir, 'bad.css');
     fs.writeFileSync(bad, 'a { } </STYLE><script>x</script>');

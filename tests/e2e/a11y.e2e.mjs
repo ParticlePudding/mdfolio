@@ -1,5 +1,5 @@
-// アクセシビリティ（NFR-4）
-// 機械的に判定できる項目は axe-core（独立した検査エンジン）で確認し、キーボード操作・フォーカス・配色は個別に確認する。
+// Accessibility (NFR-4)
+// Items that can be judged mechanically are checked with axe-core (an independent checking engine); keyboard operation, focus and colors are checked individually.
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -15,14 +15,14 @@ after(async () => { await browser.close(); });
 const axeSource = fs.readFileSync(path.join(ROOT, 'node_modules/axe-core/axe.min.js'), 'utf8');
 
 /**
- * axe-core で検査して、違反を「規則: 対象」の一覧で返す。
- * 文書の作者が style で指定した色（#user-content-styled）は、アプリの配色ではないので対象から外す。
+ * Run axe-core and return violations as a list of "rule: targets".
+ * Colors set by the document author via style (#user-content-styled) are not app colors, so they are excluded.
  */
 async function audit(page) {
   await page.evaluate(axeSource);
   const result = await page.evaluate(async () => {
-    // preload: false … axe-core が検査のためにスタイルシートを取りに行くのを止める（隣の mdfolio.css を読もうとして CSP の connect-src に止められ、
-    // それがエラーとして記録されるため。アプリの動作ではない）
+    // preload: false stops axe-core from fetching stylesheets for the check (it would try to read the neighboring mdfolio.css, be blocked by the CSP connect-src,
+    // and that would be recorded as an error. It is not app behavior)
     const r = await window.axe.run({ exclude: [['.mdv-prose [style*="color"]']] }, { resultTypes: ['violations'], preload: false });
     return { violations: r.violations.map((v) => v.id + ': ' + v.nodes.map((n) => n.target.join(' ')).join(' | ')), passes: r.passes.length };
   });
@@ -43,70 +43,70 @@ const active = (page) => page.evaluate(() => {
   return el.getAttribute('data-action') || el.id || (el.className && String(el.className).split(' ').filter((c) => c.indexOf('mdv-') === 0).pop()) || el.nodeName;
 });
 
-describe('自動検査（axe-core）', () => {
+describe('Automated checks (axe-core)', () => {
   for (const scheme of ['light', 'dark']) {
-    test(`主要な画面で違反がない（${scheme === 'light' ? 'ライト' : 'ダーク'}）`, async () => {
+    test(`no violations on the main screens (${scheme === 'light' ? 'light' : 'dark'})`, async () => {
       const { page, context } = await openPage(browser, { colorScheme: scheme });
       try {
         const checked = [];
         const check = async (label) => {
           const r = await audit(page);
-          assert.deepEqual(r.violations, [], `${label} で違反がある`);
-          assert.ok(r.passes > 15, `${label}: 検査が実行されている`);
+          assert.deepEqual(r.violations, [], `violations in ${label}`);
+          assert.ok(r.passes > 15, `${label}: the check ran`);
           checked.push(label);
         };
-        await check('開始画面');
+        await check('start screen');
         await loadFolder(page, fixture('site'));
         await waitIndexed(page);
-        await check('文書（リンク・画像）');
+        await check('document (links, images)');
         await goTo(page, '#/syntax.md', '記法');
         await page.waitForSelector('.mdv-mermaid svg');
         await page.waitForSelector('.mdv-mermaid-error');
-        await check('文書（表・コード・数式・図・タスクリスト・脚注・アラート）');
+        await check('document (tables, code, math, diagrams, task lists, footnotes, alerts)');
         await page.fill('.mdv-search-input', '固有語');
         await page.waitForSelector('.mdv-search-item');
-        await check('検索結果');
+        await check('search results');
         await page.fill('.mdv-search-input', 'どこにもない語zzz');
         await page.waitForSelector('.mdv-search-empty');
-        await check('検索結果なし');
+        await check('no search results');
         await page.keyboard.press('Escape');
         await page.keyboard.press('Escape');
         await openMenu(page);
-        await check('メニュー');
+        await check('menu');
         await page.keyboard.press('Escape');
         await clickMenu(page, 'menuExport');
         await page.waitForSelector('dialog.mdv-dialog-export[open]');
         await page.waitForFunction(() => !document.querySelector('.mdv-export-run').disabled);
-        await check('書き出しダイアログ');
+        await check('export dialog');
         await page.click('.mdv-export-cancel');
         await clickMenu(page, 'menuExternalImages');
         await page.waitForSelector('dialog.mdv-dialog-external[open]');
-        await check('外部画像の確認ダイアログ');
+        await check('external image confirmation dialog');
         await page.click('.mdv-external-cancel');
         await clickMenu(page, 'menuAbout');
         await page.waitForSelector('dialog.mdv-dialog-about[open]');
-        await check('ライセンスのダイアログ');
+        await check('license dialog');
         await page.click('.mdv-about-close');
         await clickMenu(page, 'menuHelp');
         await page.waitForFunction(() => window.MDV.app.state.view === 'help');
-        await check('使い方');
+        await check('help');
         await goTo(page, '#/nothing.md');
         await page.waitForSelector('.mdv-empty');
-        await check('見つからない文書');
+        await check('document not found');
         await goTo(page, '#/assets/data.csv');
         await page.waitForSelector('.mdv-download');
-        await check('添付ファイル');
-        // すべての表示部品を含む文書（表示できない画像の代わりの表示を含む）
+        await check('attachment');
+        // A document containing every display component (including the placeholder for images that cannot be shown)
         await loadFolder(page, fixture('a11y'));
         await page.waitForFunction(() => document.querySelectorAll('.mdv-mermaid svg').length === 2);
-        await check('すべての表示部品');
-        // カスタムナビ（タブ）と英語表示
+        await check('all display components');
+        // Custom navigation (tabs) and English UI
         await loadFolder(page, fixture('nav'));
         await page.waitForSelector('.mdv-sidenav a');
-        await check('カスタムナビ');
+        await check('custom navigation');
         await clickMenu(page, 'menuLanguage');
         await page.waitForFunction(() => document.documentElement.lang === 'en');
-        await check('英語表示');
+        await check('English UI');
         assert.equal(checked.length, 15);
       } finally {
         await context.close();
@@ -114,7 +114,7 @@ describe('自動検査（axe-core）', () => {
     });
   }
 
-  test('狭い画面（ドロワー・折りたたみ目次）でも違反がない', async () => {
+  test('no violations on a narrow screen (drawer, collapsible table of contents)', async () => {
     await withPage(browser, { viewport: { width: 390, height: 800 } }, async ({ page }) => {
       await loadFolder(page, fixture('site'));
       assert.deepEqual((await audit(page)).violations, []);
@@ -129,8 +129,8 @@ describe('自動検査（axe-core）', () => {
   });
 });
 
-describe('配色のコントラスト（4.5:1 以上）', () => {
-  // 画面に出ている要素の、実際の文字色と背景色から計算する。axe が判定を保留する数式・図・重なった要素も含める。
+describe('Color contrast (4.5:1 or higher)', () => {
+  // Computed from the actual text and background colors of visible elements. Includes math, diagrams and overlapping elements that axe leaves undecided.
   const measure = () => {
     const parse = (c) => { const m = /rgba?\(([^)]+)\)/.exec(c); if (!m) return null; const p = m[1].split(',').map((x) => parseFloat(x)); return { r: p[0], g: p[1], b: p[2], a: p.length > 3 ? p[3] : 1 }; };
     const over = (top, bottom) => ({ r: top.r * top.a + bottom.r * (1 - top.a), g: top.g * top.a + bottom.g * (1 - top.a), b: top.b * top.a + bottom.b * (1 - top.a), a: 1 });
@@ -169,28 +169,28 @@ describe('配色のコントラスト（4.5:1 以上）', () => {
       if (!el) { missing.push(sel); return; }
       add(sel, parse(getComputedStyle(el).color), background(el));
     });
-    // コードの色分け: 使われている色をすべて確かめる
+    // Code highlighting: check every color in use
     const seen = new Set();
     document.querySelectorAll('.mdv-code pre span').forEach((span) => {
       const color = getComputedStyle(span).color;
       const key = span.className + ' ' + color;
       if (seen.has(key)) return;
       seen.add(key);
-      add('コード ' + span.className, parse(color), background(span));
+      add('code ' + span.className, parse(color), background(span));
     });
-    // 検索欄の入力例（プレースホルダー）
+    // Search box placeholder
     const input = document.querySelector('.mdv-search-input');
-    if (input && input.getClientRects().length) add('検索欄の入力例', parse(getComputedStyle(input, '::placeholder').color), background(input));
-    // 図: 文字の色と、その下にある図形の色
+    if (input && input.getClientRects().length) add('search placeholder', parse(getComputedStyle(input, '::placeholder').color), background(input));
+    // Diagrams: text color and the color of the shape beneath it
     document.querySelectorAll('.mdv-mermaid .nodeLabel').forEach((label, i) => {
       const node = label.closest('.node');
       const shape = node && node.querySelector('rect, polygon, circle, path');
       if (!shape) return;
       const fill = parse(getComputedStyle(shape).fill);
-      if (fill) add('図のノード ' + i, parse(getComputedStyle(label).color), over(fill, background(label)));
+      if (fill) add('diagram node ' + i, parse(getComputedStyle(label).color), over(fill, background(label)));
     });
     document.querySelectorAll('.mdv-mermaid .edgeLabel p, .mdv-mermaid .edgeLabel span').forEach((label, i) => {
-      if (label.textContent.trim()) add('図の線のラベル ' + i, parse(getComputedStyle(label).color), background(label));
+      if (label.textContent.trim()) add('diagram edge label ' + i, parse(getComputedStyle(label).color), background(label));
     });
     return { list: out, missing: missing };
   };
@@ -207,67 +207,67 @@ describe('配色のコントラスト（4.5:1 以上）', () => {
     const track = (list, miss) => { list.forEach((s) => { if (!miss.includes(s)) found.add(s); }); };
     const states = [];
     const step = async (name) => { const miss = await merge(name); states.push(miss); };
-    await step('開始画面');
+    await step('start screen');
     await loadFolder(page, fixture('site'));
     await waitIndexed(page);
-    await step('文書');
+    await step('document');
     await goTo(page, '#/syntax.md', '記法');
     await page.waitForSelector('.mdv-mermaid svg');
     await page.waitForSelector('.mdv-mermaid-error');
     await page.evaluate(() => document.fonts.ready);
-    await step('記法');
+    await step('syntax');
     await page.fill('.mdv-search-input', '固有語');
     await page.waitForSelector('.mdv-search-item');
-    await step('検索');
+    await step('search');
     await page.click('.mdv-search-item');
     await page.waitForSelector('mark.mdv-hit');
-    await step('検索語の強調');
+    await step('search term highlight');
     await openMenu(page);
-    await step('メニュー');
+    await step('menu');
     await page.keyboard.press('Escape');
     await clickMenu(page, 'menuExport');
     await page.waitForSelector('dialog.mdv-dialog-export[open]');
     await page.waitForFunction(() => !document.querySelector('.mdv-export-run').disabled);
-    await step('書き出し');
+    await step('export');
     await page.click('.mdv-export-run');
     await page.waitForSelector('.mdv-toast');
-    await step('通知');
+    await step('notification');
     await goTo(page, '#/nothing.md');
     await page.waitForSelector('.mdv-empty');
-    await step('見つからない');
+    await step('not found');
     await loadFolder(page, fixture('a11y'));
     await page.waitForFunction(() => document.querySelectorAll('.mdv-mermaid svg').length === 2);
     await page.waitForFunction(() => window.MDV.app.state.pendingCode === null);
-    await step('すべての表示部品');
+    await step('all display components');
     await loadFolder(page, fixture('nav'));
     await page.waitForSelector('.mdv-sidenav a');
-    await step('カスタムナビ');
-    // 大きすぎる文書の表示（変換せずにテキストで表示し、その旨を知らせる）
+    await step('custom navigation');
+    // Display of a document that is too large (shown as plain text without conversion, with a notice saying so)
     await page.evaluate(() => { window.MDV.core.LIMITS.maxDocBytes = 10; });
     await loadFolder(page, fixture('single'));
     await page.waitForSelector('.mdv-notice:not([hidden])');
-    await step('大きすぎる文書');
-    // どの状態でも見つからなかった対象は、確認漏れとして扱う
+    await step('document too large');
+    // Targets not found in any state are treated as missed checks
     const never = states.reduce((acc, miss) => acc.filter((s) => miss.includes(s)), states[0] || []);
     track([], []);
     return { all, never, missing, found };
   }
 
   for (const scheme of ['light', 'dark']) {
-    test(`文字と背景のコントラスト比が 4.5:1 以上（${scheme === 'light' ? 'ライト' : 'ダーク'}）`, async (t) => {
+    test(`text-to-background contrast ratio is 4.5:1 or higher (${scheme === 'light' ? 'light' : 'dark'})`, async (t) => {
       const { page, context } = await openPage(browser, { colorScheme: scheme, viewport: { width: 1440, height: 900 } });
       try {
         const r = await collect(page);
-        // 目次の折りたたみ（狭い画面用）は別に確認する
-        assert.deepEqual(r.never.filter((s) => s !== '.mdv-toc-inline summary'), [], '確認の対象がすべて画面に現れている');
+        // The collapsible table of contents (for narrow screens) is checked separately
+        assert.deepEqual(r.never.filter((s) => s !== '.mdv-toc-inline summary'), [], 'every check target appeared on screen');
         const low = r.all.filter((x) => x[1] < 4.5);
-        assert.deepEqual(low, [], 'コントラスト比が 4.5:1 未満の組み合わせ');
+        assert.deepEqual(low, [], 'combinations with a contrast ratio below 4.5:1');
         const min = r.all.reduce((a, b) => (b[1] < a[1] ? b : a));
-        t.diagnostic(`${r.all.length} 件を確認。最小は ${min[1]}:1（${min[0]}）`);
+        t.diagnostic(`Checked ${r.all.length} items. Minimum ${min[1]}:1 (${min[0]})`);
         assert.ok(r.all.length > 120);
-        // 自動検査（axe）が判定を保留する数式・図・コードの色も、確認の対象に入っている
-        for (const key of ['図のノード', '図の線のラベル', 'コード hljs-keyword', 'コード hljs-comment', 'コード hljs-string', '.katex', '検索欄の入力例']) {
-          assert.ok(r.all.some((x) => x[0].includes(key)), `${key} を確認している`);
+        // Math, diagram and code colors that the automated check (axe) leaves undecided are also covered
+        for (const key of ['diagram node', 'diagram edge label', 'code hljs-keyword', 'code hljs-comment', 'code hljs-string', '.katex', 'search placeholder']) {
+          assert.ok(r.all.some((x) => x[0].includes(key)), `${key} is checked`);
         }
       } finally {
         await context.close();
@@ -275,49 +275,49 @@ describe('配色のコントラスト（4.5:1 以上）', () => {
     });
   }
 
-  test('狭い画面の折りたたみ目次と、印刷時の配色', async () => {
+  test('collapsible table of contents on a narrow screen, and print colors', async () => {
     await withPage(browser, { viewport: { width: 900, height: 800 }, colorScheme: 'dark' }, async ({ page }) => {
       await loadFolder(page, fixture('site'));
       const r = await page.evaluate(measure);
       const toc = r.list.find((x) => x[0] === '.mdv-toc-inline summary');
-      assert.ok(toc && toc[1] >= 4.5, `折りたたみ目次: ${toc && toc[1]}`);
+      assert.ok(toc && toc[1] >= 4.5, `collapsible table of contents: ${toc && toc[1]}`);
       await page.emulateMedia({ media: 'print' });
       const printed = await page.evaluate(measure);
       const low = printed.list.filter((x) => x[1] < 4.5);
-      assert.deepEqual(low, [], '印刷時（常にライト配色）');
+      assert.deepEqual(low, [], 'when printing (always light colors)');
     });
   });
 });
 
-describe('キーボードだけで操作できる', () => {
-  test('Tab の順序: 本文へ移動 → ヘッダー → サイドバー → 本文', async () => {
-    // ページを開いた直後の最初の Tab は「本文へ移動」
+describe('Fully operable with the keyboard alone', () => {
+  test('Tab order: skip link -> header -> sidebar -> body', async () => {
+    // The first Tab right after opening the page reaches the skip-to-content link
     await withPage(browser, async ({ page }) => {
       await page.keyboard.press('Tab');
       assert.equal(await active(page), 'mdv-skip');
-      assert.ok(await page.isVisible('.mdv-skip'), 'フォーカスすると見える');
+      assert.ok(await page.isVisible('.mdv-skip'), 'visible when focused');
       assert.equal(await page.textContent('.mdv-skip'), '本文へ移動');
       await page.keyboard.press('Enter');
       assert.equal(await active(page), 'mdv-main');
       await page.keyboard.press('Tab');
-      assert.equal(await active(page), 'mdv-open-folder', '開始画面では、次が「フォルダを開く」');
+      assert.equal(await active(page), 'mdv-open-folder', 'on the start screen, the next stop is "Open folder"');
       await page.keyboard.press('Tab');
       assert.equal(await active(page), 'mdv-open-files');
     });
     await withPage(browser, async ({ page }) => {
       await loadFolder(page, fixture('site'));
-      // 文書の表示後は本文にフォーカスがあるので、先頭の「本文へ移動」から順に確かめる
+      // After a document is shown, focus is on the body, so check in order starting from the skip link at the top
       const first = await page.evaluate(() => {
         const el = document.querySelector('a[href], button, input:not([tabindex="-1"]), [tabindex="0"]');
         return el.className;
       });
-      assert.equal(first, 'mdv-skip', '文書の中で最初にフォーカスできるのは「本文へ移動」');
+      assert.equal(first, 'mdv-skip', 'the first focusable element in the document is the skip link');
       await page.focus('.mdv-skip');
       const order = [];
       for (let i = 0; i < 6; i++) { await page.keyboard.press('Tab'); order.push(await active(page)); }
       assert.deepEqual(order.slice(0, 5), ['mdv-btn-sidebar', 'mdv-title', 'mdv-search-input', 'mdv-btn-theme', 'mdv-btn-menu']);
-      assert.equal(await page.evaluate(() => !!document.activeElement.closest('.mdv-sidebar')), true, 'ヘッダーの次はサイドバーの文書一覧');
-      // 「本文へ移動」を使うと、サイドバーを飛ばして本文へ移る
+      assert.equal(await page.evaluate(() => !!document.activeElement.closest('.mdv-sidebar')), true, 'after the header comes the sidebar document list');
+      // Using the skip link jumps past the sidebar to the body
       await page.focus('.mdv-skip');
       await page.keyboard.press('Enter');
       assert.equal(await active(page), 'mdv-main');
@@ -326,7 +326,7 @@ describe('キーボードだけで操作できる', () => {
     });
   });
 
-  test('メニュー: Enter・↓ で開き、矢印・Home・End で移動、Esc・Tab で閉じる', async () => {
+  test('menu: opens with Enter or Down, moves with arrows/Home/End, closes with Esc or Tab', async () => {
     await withPage(browser, async ({ page }) => {
       await loadFolder(page, fixture('site'));
       await page.focus('.mdv-btn-menu');
@@ -339,22 +339,22 @@ describe('キーボードだけで操作できる', () => {
       await page.keyboard.press('End');
       assert.equal(await active(page), 'menuAbout');
       await page.keyboard.press('ArrowDown');
-      assert.equal(await active(page), 'menuOpenFolder', '最後の次は最初へ戻る');
+      assert.equal(await active(page), 'menuOpenFolder', 'wraps from last to first');
       await page.keyboard.press('ArrowUp');
       assert.equal(await active(page), 'menuAbout');
       await page.keyboard.press('Home');
       assert.equal(await active(page), 'menuOpenFolder');
       await page.keyboard.press('Escape');
       assert.ok(await page.isHidden('.mdv-menu'));
-      assert.equal(await active(page), 'mdv-btn-menu', '閉じるとボタンへ戻る');
+      assert.equal(await active(page), 'mdv-btn-menu', 'closing returns focus to the button');
       assert.equal(await page.getAttribute('.mdv-btn-menu', 'aria-expanded'), 'false');
-      // ↓ でも開く。Tab で外へ出ると閉じる
+      // Down also opens it. Tabbing out closes it
       await page.keyboard.press('ArrowDown');
       await page.waitForSelector('.mdv-menu:not([hidden])');
       await page.keyboard.press('Tab');
       assert.ok(await page.isHidden('.mdv-menu'));
       assert.notEqual(await active(page), 'body');
-      // 項目を選ぶ（チェック項目の状態が伝わる）
+      // Choose an item (the state of checkable items is exposed)
       await page.focus('.mdv-btn-menu');
       await page.keyboard.press('Enter');
       assert.equal(await page.getAttribute('.mdv-menu-item[data-action="menuExternalImages"]', 'role'), 'menuitemcheckbox');
@@ -363,12 +363,12 @@ describe('キーボードだけで操作できる', () => {
       assert.equal(await active(page), 'menuLanguage');
       await page.keyboard.press('Enter');
       await page.waitForFunction(() => document.documentElement.lang === 'en');
-      assert.equal(await active(page), 'mdv-btn-menu', '選んだあともフォーカスを失わない');
+      assert.equal(await active(page), 'mdv-btn-menu', 'focus is not lost after choosing');
       assert.equal(await page.getAttribute('.mdv-btn-menu', 'aria-label'), 'Menu');
     });
   });
 
-  test('ダイアログ: 開くと中へ、Tab は中だけを巡り、Esc で閉じて元のボタンへ戻る', async () => {
+  test('dialogs: focus moves inside on open, Tab cycles within, Esc closes and returns to the original button', async () => {
     await withPage(browser, async ({ page }) => {
       await loadFolder(page, fixture('site'));
       await page.focus('.mdv-btn-menu');
@@ -382,12 +382,12 @@ describe('キーボードだけで操作できる', () => {
       for (let i = 0; i < 6; i++) {
         await page.keyboard.press('Tab');
         const where = await page.evaluate(() => (document.activeElement === document.body || document.activeElement.closest('dialog') ? 'dialog' : 'page'));
-        assert.equal(where, 'dialog', 'フォーカスがダイアログの外へ出ない');
+        assert.equal(where, 'dialog', 'focus does not leave the dialog');
       }
       await page.keyboard.press('Escape');
       await page.waitForSelector('dialog.mdv-dialog-about', { state: 'detached' });
       assert.equal(await active(page), 'mdv-btn-menu');
-      // 書き出しダイアログ: 入力欄から始まり、Enter で実行、キャンセルも選べる
+      // Export dialog: starts at the input field, Enter runs it, Cancel is also available
       await page.keyboard.press('Enter');
       for (let i = 0; i < 3; i++) await page.keyboard.press('ArrowDown');
       assert.equal(await active(page), 'menuExport');
@@ -400,13 +400,13 @@ describe('キーボードだけで操作できる', () => {
     });
   });
 
-  test('文書一覧: Enter で開くと本文へフォーカスが移る。フォルダは Enter で開閉する', async () => {
+  test('document list: opening with Enter moves focus to the body; folders toggle with Enter', async () => {
     await withPage(browser, async ({ page }) => {
       await loadFolder(page, fixture('site'));
       await page.focus('.mdv-side-tree a:has-text("syntax")');
       await page.keyboard.press('Enter');
       await waitHeading(page, '記法');
-      assert.equal(await active(page), 'mdv-main', '文書を切り替えたら本文へ');
+      assert.equal(await active(page), 'mdv-main', 'switching documents moves focus to the body');
       const summary = page.locator('.mdv-side-tree details[data-path="guide"] > summary');
       await summary.focus();
       const before = await page.evaluate(() => document.querySelector('.mdv-side-tree details[data-path="guide"]').open);
@@ -414,7 +414,7 @@ describe('キーボードだけで操作できる', () => {
       assert.equal(await page.evaluate(() => document.querySelector('.mdv-side-tree details[data-path="guide"]').open), !before);
       await page.keyboard.press('Enter');
       assert.equal(await page.evaluate(() => document.querySelector('.mdv-side-tree details[data-path="guide"]').open), before);
-      // 目次のリンクも Enter で移動できる
+      // Table of contents links also navigate with Enter
       await page.focus('.mdv-toc .mdv-toc-link >> nth=2');
       const target = await page.evaluate(() => document.activeElement.getAttribute('href'));
       await page.keyboard.press('Enter');
@@ -422,15 +422,15 @@ describe('キーボードだけで操作できる', () => {
     });
   });
 
-  test('本文: コピーのボタン・横に長い表・折りたたみを操作できる', async () => {
+  test('body: copy buttons, wide tables and collapsibles are operable', async () => {
     await withPage(browser, async ({ page }) => {
       await openSyntax(page);
       await page.focus('.mdv-copy');
       await page.keyboard.press('Enter');
       await page.waitForFunction(() => document.querySelector('.mdv-copy').textContent === 'コピーしました');
-      // 横にはみ出す表は、フォーカスして矢印キーでスクロールできる
+      // Tables that overflow horizontally can be focused and scrolled with arrow keys
       const wide = page.locator('.mdv-table-wrap[tabindex="0"]');
-      assert.equal(await wide.count(), 1, 'はみ出している表だけがフォーカスの対象になる');
+      assert.equal(await wide.count(), 1, 'only overflowing tables are focusable');
       assert.equal(await wide.getAttribute('role'), 'group');
       assert.equal(await wide.getAttribute('aria-label'), '表（横にスクロールできます）');
       assert.ok((await page.locator('.mdv-table-wrap').count()) > 1);
@@ -438,24 +438,24 @@ describe('キーボードだけで操作できる', () => {
       await page.keyboard.press('ArrowRight');
       await page.keyboard.press('ArrowRight');
       await page.waitForFunction(() => document.querySelector('.mdv-table-wrap[tabindex="0"]').scrollLeft > 0);
-      // 文書中の <details> も Enter で開閉できる
+      // <details> in documents also toggle with Enter
       const det = page.locator('.mdv-prose details > summary').first();
       await det.focus();
       const open = () => page.evaluate(() => document.querySelector('.mdv-prose details').open);
       const was = await open();
       await page.keyboard.press('Enter');
       assert.equal(await open(), !was);
-      // タスクリストのチェックボックスは操作できない表示専用で、状態が名前で伝わる
+      // Task list checkboxes are display-only and their state is conveyed by their name
       const boxes = await page.evaluate(() => Array.from(document.querySelectorAll('.mdv-prose input[type="checkbox"]')).map((b) => [b.disabled, b.checked, b.getAttribute('aria-label')]));
       assert.deepEqual(boxes, [[true, false, '未完了の項目'], [true, true, '完了した項目']]);
     });
   });
 
-  test('画面の幅が変わったら、はみ出しているかどうかを判定し直す', async () => {
+  test('re-evaluates overflow when the screen width changes', async () => {
     await withPage(browser, { viewport: { width: 390, height: 800 } }, async ({ page }) => {
       await loadFolder(page, fixture('a11y'));
       const focusable = () => page.evaluate(() => Array.from(document.querySelectorAll('.mdv-table-wrap')).map((w) => w.getAttribute('tabindex')));
-      assert.deepEqual(await focusable(), [null, '0'], '狭い画面では、中くらいの表がはみ出す');
+      assert.deepEqual(await focusable(), [null, '0'], 'on a narrow screen, the medium-sized table overflows');
       await page.setViewportSize({ width: 1440, height: 900 });
       await page.waitForFunction(() => document.querySelectorAll('.mdv-table-wrap[tabindex]').length === 0);
       assert.deepEqual(await page.evaluate(() => Array.from(document.querySelectorAll('.mdv-table-wrap')).map((w) => [w.getAttribute('role'), w.getAttribute('aria-label')])), [[null, null], [null, null]]);
@@ -464,7 +464,7 @@ describe('キーボードだけで操作できる', () => {
     });
   });
 
-  test('横に長いコードも、フォーカスしてスクロールできる', async () => {
+  test('wide code can also be focused and scrolled', async () => {
     await withPage(browser, async ({ page }) => {
       await page.evaluate(() => {
         const dt = new DataTransfer();
@@ -483,7 +483,7 @@ describe('キーボードだけで操作できる', () => {
     });
   });
 
-  test('サイドバーのタブ: 左右の矢印で切り替えられる', async () => {
+  test('sidebar tabs: switch with the left and right arrows', async () => {
     await withPage(browser, async ({ page }) => {
       await loadFolder(page, fixture('nav'));
       await page.waitForSelector('.mdv-sidenav a');
@@ -504,7 +504,7 @@ describe('キーボードだけで操作できる', () => {
       await page.keyboard.press('Home');
       assert.deepEqual(await tabs(), ['true', 'false']);
     });
-    // カスタムナビがなければ、タブもタブパネルの役割も出さない
+    // Without custom navigation, neither tabs nor the tabpanel role are shown
     await withPage(browser, async ({ page }) => {
       await loadFolder(page, fixture('site'));
       assert.ok(await page.isHidden('.mdv-side-tabs'));
@@ -512,13 +512,13 @@ describe('キーボードだけで操作できる', () => {
     });
   });
 
-  test('フォーカスの位置が見える', async () => {
+  test('the focus position is visible', async () => {
     await withPage(browser, async ({ page }) => {
       await loadFolder(page, fixture('a11y'));
       await page.waitForFunction(() => document.querySelectorAll('.mdv-mermaid svg').length === 2);
       await page.focus('.mdv-skip');
       const seen = [];
-      // ページの最後まで Tab で進み、止まった要素すべてでフォーカスの枠が見えることを確かめる
+      // Tab through to the end of the page and check that every stop shows a visible focus ring
       for (let i = 0; i < 80; i++) {
         const info = await page.evaluate(() => {
           const el = document.activeElement;
@@ -534,18 +534,18 @@ describe('キーボードだけで操作できる', () => {
         await page.keyboard.press('Tab');
       }
       const hidden = seen.filter((x) => !x.visible || !x.rect).map((x) => x.what);
-      assert.deepEqual(hidden, [], 'フォーカスの枠が出ない要素');
+      assert.deepEqual(hidden, [], 'elements without a visible focus ring');
       const kinds = Array.from(new Set(seen.map((x) => x.what)));
       for (const k of ['a.mdv-skip', 'button.mdv-iconbtn', 'input.mdv-search-input', 'a.mdv-anchor', 'button.mdv-copy', 'summary.', 'a.mdv-toc-link']) {
-        assert.ok(kinds.includes(k), `${k} を確認している（確認したもの: ${kinds.join(', ')}）`);
+        assert.ok(kinds.includes(k), `${k} is checked (checked: ${kinds.join(', ')})`);
       }
       assert.ok(seen.length > 30);
     });
   });
 });
 
-describe('動きを減らす設定・読み上げのための情報', () => {
-  test('「視差効果を減らす」設定では、アニメーションと滑らかなスクロールを使わない', async () => {
+describe('Reduced motion and screen reader information', () => {
+  test('with the "reduce motion" setting, no animations or smooth scrolling are used', async () => {
     const durations = () => Array.from(document.querySelectorAll('.mdv-app, .mdv-app *')).reduce((acc, el) => {
       const cs = getComputedStyle(el);
       const active = (v) => v.split(',').some((x) => parseFloat(x) > 0);
@@ -569,18 +569,18 @@ describe('動きを減らす設定・読み上げのための情報', () => {
     };
     const normal = await run('no-preference');
     const reduced = await run('reduce');
-    assert.ok(normal.transitions > 0, '通常は切り替えの動きがある（確認が意味を持つこと）');
+    assert.ok(normal.transitions > 0, 'transitions exist normally (so the check is meaningful)');
     assert.deepEqual(reduced, { transitions: 0, animations: 0, scroll: 'auto' });
   });
 
-  test('画面の区分（ランドマーク）と名前', async () => {
+  test('page regions (landmarks) and names', async () => {
     await withPage(browser, async ({ page }) => {
       await loadFolder(page, fixture('site'));
       const r = await page.evaluate(() => ({
         banner: document.querySelectorAll('header.mdv-header').length,
         main: document.querySelectorAll('main').length,
         navs: Array.from(document.querySelectorAll('nav')).map((n) => n.getAttribute('aria-label')),
-        h1: Array.from(document.querySelectorAll('main h1')).filter((h) => h.getClientRects().length > 0).length, // 表示されている h1 は 1 つ
+        h1: Array.from(document.querySelectorAll('main h1')).filter((h) => h.getClientRects().length > 0).length, // exactly one visible h1
         lang: document.documentElement.lang,
         title: document.title,
         live: document.querySelector('.mdv-toasts').getAttribute('aria-live'),
@@ -594,7 +594,7 @@ describe('動きを減らす設定・読み上げのための情報', () => {
         search: ['combobox', '文書を検索', 'mdv-search-list', 'false', 'list'],
         current: ['location', 'page'], hiddenInputs: true, icons: true
       });
-      // 検索結果の件数は、読み上げの対象になる
+      // The search result count is announced to screen readers
       await page.fill('.mdv-search-input', '固有語');
       await page.waitForSelector('.mdv-search-item');
       assert.equal(await page.getAttribute('.mdv-search-foot [role="status"]', 'role'), 'status');

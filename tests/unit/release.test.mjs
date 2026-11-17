@@ -1,4 +1,4 @@
-// リリースのファイル（tools/dev/make-release.mjs）の確認（SPEC 8.8）
+// Checks of the release files (tools/dev/make-release.mjs) (SPEC 8.8)
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -12,7 +12,7 @@ const { sectionOf, CONTENTS } = await import(tool);
 const version = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8')).version;
 const hasPython = spawnSync('python3', ['--version']).status === 0;
 
-/** zip の中央ディレクトリから、項目の名前の一覧を返す。 */
+/** Returns the list of entry names from the zip central directory. */
 function zipNames(file) {
   const buf = fs.readFileSync(file);
   const eocd = buf.lastIndexOf(Buffer.from([0x50, 0x4b, 0x05, 0x06]));
@@ -26,8 +26,8 @@ function zipNames(file) {
   return names;
 }
 
-describe('リリース', () => {
-  test('変更履歴から、その版の節だけを取り出す', () => {
+describe('Release', () => {
+  test('Extracts only the section for the given version from the changelog', () => {
     const text = '# x\n\n## 1.2.0 — 2026-11-16\n\n### 追加\n\n- a\n\n## 1.1.0 — 2026-11-15\n\n- b\n';
     assert.equal(sectionOf(text, '1.2.0'), '### 追加\n\n- a');
     assert.equal(sectionOf(text, '1.1.0'), '- b');
@@ -35,12 +35,12 @@ describe('リリース', () => {
     assert.equal(sectionOf(text, '9.9.9'), null);
   });
 
-  test('今の版の節が変更履歴にあり、変更履歴は 1 つだけ（日本語）', () => {
+  test('The changelog has a section for the current version, and there is only one changelog', () => {
     assert.ok(sectionOf(fs.readFileSync(path.join(ROOT, 'CHANGELOG.md'), 'utf8'), version));
     assert.ok(!fs.existsSync(path.join(ROOT, 'CHANGELOG.en.md')));
   });
 
-  test('単一 HTML、zip、説明を作る。zip はリポジトリと同じ並びで、README の手順に要るものを含む（AU-3）', { skip: !hasPython }, () => {
+  test('Creates the single HTML file, the zip and the notes; the zip has the repository layout and contains what the README steps need (AU-3)', { skip: !hasPython }, () => {
     const out = fs.mkdtempSync(path.join(os.tmpdir(), 'mdfolio-release-'));
     const r = spawnSync(process.execPath, [tool, out], { cwd: ROOT, encoding: 'utf8' });
     assert.equal(r.status, 0, r.stderr);
@@ -48,19 +48,19 @@ describe('リリース', () => {
     assert.ok(fs.readFileSync(path.join(out, 'mdfolio.html')).equals(fs.readFileSync(path.join(ROOT, 'dist/mdfolio.html'))));
     const names = zipNames(path.join(out, `mdfolio-${version}.zip`));
     const top = `mdfolio-${version}/`;
-    assert.ok(names.every((n) => n.startsWith(top)), '最上位のフォルダは 1 つ');
+    assert.ok(names.every((n) => n.startsWith(top)), 'there is one top-level folder');
     for (const p of ['dist/mdfolio.html', 'examples/mdfolio.css',
       'sample-docs/guide/基本操作.md', 'sample-docs-en/guide/basics.md', 'sample.md', 'sample.en.md',
       'README.md', 'README.ja.md', 'CHANGELOG.md', 'LICENSE', 'THIRD-PARTY-NOTICES.txt']) assert.ok(names.includes(top + p), p);
     assert.ok(!names.includes(top + 'CHANGELOG.en.md'));
-    assert.ok(!names.some((n) => /node_modules|\/\.git\/|\/src\/|\/tests\//.test(n)), '開発用のファイルを含まない');
-    assert.ok(!names.some((n) => n.startsWith(top + 'dist/mdfolio/')), 'フォルダ版（1.3.0 で廃止）を含まない');
+    assert.ok(!names.some((n) => /node_modules|\/\.git\/|\/src\/|\/tests\//.test(n)), 'contains no development files');
+    assert.ok(!names.some((n) => n.startsWith(top + 'dist/mdfolio/')), 'does not contain the folder version (removed in 1.3.0)');
     assert.equal(CONTENTS.length, 11);
-    assert.ok(!names.some((n) => n.startsWith(top + 'tools/')), '利用者向けなので、Node.js で動かす道具は入れない');
+    assert.ok(!names.some((n) => n.startsWith(top + 'tools/')), 'it is for users, so it contains no Node.js tools');
     const notes = fs.readFileSync(path.join(out, 'notes.md'), 'utf8');
     assert.ok(notes.includes('### ') && notes.includes('Assets:'));
-    assert.ok(!/[\u3040-\u30ff]/.test(notes), 'リリースの説明は英語（仮名を含まない）');
-    assert.ok(!notes.includes(`## ${version}`), '節の見出しは入れない');
+    assert.ok(!/[\u3040-\u30ff]/.test(notes), 'the release notes are in English (no kana)');
+    assert.ok(!notes.includes(`## ${version}`), 'the section heading is not included');
     fs.rmSync(out, { recursive: true, force: true });
   });
 });

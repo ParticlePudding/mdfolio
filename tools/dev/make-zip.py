@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""配布用の zip を作る。
+"""Creates the distribution zip.
 
-日本語のファイル名を含むので、名前が UTF-8 であることを示す印（汎用フラグのビット 11）を必ず付ける。
-この印がないと、Windows のエクスプローラーで展開したときにファイル名が文字化けし、文書どうしのリンクも切れる。
-Python の zipfile は、ASCII 以外の名前にこの印を自動で付ける。作成後に全項目を読み直して確かめる。
+The zip contains Japanese file names, so the flag that marks names as UTF-8 (bit 11 of the general purpose flags)
+must always be set. Without it, Windows Explorer garbles the file names when extracting, and links between documents break.
+Python's zipfile sets this flag automatically for non-ASCII names. After creating the zip, all entries are read back to check.
 
-    python3 tools/dev/make-zip.py <出力.zip> <zip 内の最上位フォルダ名> <入れるパス>...
+    python3 tools/dev/make-zip.py <output.zip> <top-level folder name in the zip> <path to add>...
 """
 import os
 import sys
@@ -31,17 +31,17 @@ def main():
         os.remove(out)
     with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
         for p in paths:
-            src, _, arc = p.partition('=')  # 「元のパス=zip 内の名前」で名前を変えられる
+            src, _, arc = p.partition('=')  # "source path=name in zip" renames the entry
             add(zf, src, top + '/' + (arc or os.path.basename(src.rstrip('/'))))
-    # 検証: ASCII 以外の名前には、すべて UTF-8 の印が付いていること
+    # Check: every non-ASCII name has the UTF-8 flag
     with zipfile.ZipFile(out) as zf:
         bad = [i.filename for i in zf.infolist() if any(ord(c) > 127 for c in i.filename) and not i.flag_bits & 0x800]
         if bad or zf.testzip() is not None:
-            print('zip の検証に失敗しました:', bad[:5])
+            print('zip verification failed:', bad[:5])
             return 1
         names = zf.namelist()
     non_ascii = sum(1 for n in names if any(ord(c) > 127 for c in n))
-    print('%s: %d 項目（日本語などの名前 %d 件、すべて UTF-8 の印あり）、%d バイト' % (out, len(names), non_ascii, os.path.getsize(out)))
+    print('%s: %d entries (%d with non-ASCII names such as Japanese, all flagged as UTF-8), %d bytes' % (out, len(names), non_ascii, os.path.getsize(out)))
     return 0
 
 

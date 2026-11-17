@@ -1,4 +1,4 @@
-// 文書の読み込み（FR-101〜FR-112, FR-902）
+// Loading documents (FR-101 to FR-112, FR-902)
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -23,42 +23,42 @@ const setInfo = (page) => page.evaluate(() => {
   return s ? { name: s.name, source: s.source, single: s.single, docs: s.docs.slice(), entries: Array.from(s.entries.keys()).sort(), home: s.home } : null;
 });
 
-describe('フォルダを開く（FR-101, FR-105, FR-106）', () => {
-  test('<input> 方式: 配下を再帰的に読み込み、ホーム文書を表示する', async () => {
+describe('Opening a folder (FR-101, FR-105, FR-106)', () => {
+  test('<input> method: loads everything below recursively and shows the home document', async () => {
     await withPage(browser, async ({ page }) => {
       await loadFolder(page, fixture('site'));
       assert.equal(await heading(page), 'テスト用サイト');
       assert.equal(await hash(page), '#/README.md');
       assert.equal(await page.title(), 'テスト用サイト - site');
-      assert.equal(await page.textContent('.mdv-title'), 'site', 'フォルダ名がサイトタイトルになる');
+      assert.equal(await page.textContent('.mdv-title'), 'site', 'the folder name becomes the site title');
       const info = await setInfo(page);
       assert.equal(info.name, 'site');
       assert.equal(info.source, 'files');
       assert.equal(info.single, false);
-      assert.deepEqual(info.docs, SITE_DOCS, 'ツリー順: ファイル（README が先頭）→ フォルダ');
+      assert.deepEqual(info.docs, SITE_DOCS, 'tree order: files (README first) -> folders');
       assert.equal(info.home, 'README.md');
       assert.ok(await page.isVisible('.mdv-search'));
       assert.ok(await page.isVisible('.mdv-sidebar'));
     });
   });
 
-  test('. で始まる要素と node_modules は読み込まない。添付は一覧に持つだけで表示しない', async () => {
+  test('segments starting with . and node_modules are not loaded; attachments are only listed, not shown', async () => {
     await withPage(browser, async ({ page }) => {
       await loadFolder(page, fixture('site'));
       const info = await setInfo(page);
       for (const p of ['.hidden/secret.md', '.dotfile.md', 'node_modules/pkg/readme.md']) {
-        assert.ok(!info.entries.includes(p), `${p} は読み込まれない`);
+        assert.ok(!info.entries.includes(p), `${p} is not loaded`);
       }
       for (const p of ['assets/pixel.png', 'assets/data.csv', 'notes.txt']) {
-        assert.ok(info.entries.includes(p), `${p} は添付として保持する`);
+        assert.ok(info.entries.includes(p), `${p} is kept as an attachment`);
       }
       const tree = await page.evaluate(() => Array.from(document.querySelectorAll('.mdv-side-tree a')).map((a) => a.textContent));
       assert.deepEqual(tree, ['README', 'bom', 'sjis', 'syntax', 'utf16', 'xss', 'index', 'intro', 'Setup', 'deep', '仕様書 v1.0']);
-      assert.ok(!tree.includes('notes'), 'Markdown 以外はツリーに出さない');
+      assert.ok(!tree.includes('notes'), 'non-Markdown files are not shown in the tree');
     });
   });
 
-  test('「フォルダを開く」ボタン → ファイル選択ダイアログ（File System Access API がない場合）', async () => {
+  test('"Open folder" button -> file selection dialog (when the File System Access API is unavailable)', async () => {
     await withPage(browser, async ({ page }) => {
       const [chooser] = await Promise.all([page.waitForEvent('filechooser'), page.click('.mdv-open-folder')]);
       assert.equal(chooser.isMultiple(), true);
@@ -68,7 +68,7 @@ describe('フォルダを開く（FR-101, FR-105, FR-106）', () => {
     });
   });
 
-  test('showDirectoryPicker が拒否された場合は <input> 方式に自動で切り替える', async () => {
+  test('falls back to the <input> method automatically when showDirectoryPicker is refused', async () => {
     await withPage(browser, mockOptions({ reject: 'SecurityError' }), async ({ page }) => {
       const [chooser] = await Promise.all([page.waitForEvent('filechooser'), page.click('.mdv-open-folder')]);
       assert.equal(await page.evaluate(() => window.__pickerCalls), 1);
@@ -77,7 +77,7 @@ describe('フォルダを開く（FR-101, FR-105, FR-106）', () => {
     });
   });
 
-  test('利用者がフォルダ選択をキャンセルした場合は何もしない', async () => {
+  test('does nothing when the user cancels folder selection', async () => {
     await withPage(browser, mockOptions({ reject: 'AbortError' }), async ({ page }) => {
       let chooserShown = false;
       page.on('filechooser', () => { chooserShown = true; });
@@ -90,7 +90,7 @@ describe('フォルダを開く（FR-101, FR-105, FR-106）', () => {
     });
   });
 
-  test('showDirectoryPicker 方式: ハンドルから読み込み、走査の進捗を表示する', async () => {
+  test('showDirectoryPicker method: loads from the handle and shows scanning progress', async () => {
     const files = { 'README.md': '# モックのホーム\n\n[次](docs/a.md)\n', 'docs/a.md': '# A\n', '.git/config.md': '# no\n', 'node_modules/x.md': '# no\n' };
     await withPage(browser, mockOptions({ name: 'mock-folder', files, generate: [{ count: 900, prefix: 'many/n', ext: '.md' }], slow: 20 }), async ({ page }) => {
       await page.click('.mdv-open-folder');
@@ -101,13 +101,13 @@ describe('フォルダを開く（FR-101, FR-105, FR-106）', () => {
       assert.equal(info.source, 'handles');
       assert.equal(info.docs.length, 902);
       assert.ok(!info.entries.some((p) => p.startsWith('.git/') || p.startsWith('node_modules/')));
-      assert.deepEqual((await toasts(page)).filter((x) => x.includes('読み込んでいます')), [], '進捗の通知は終わったら消える');
+      assert.deepEqual((await toasts(page)).filter((x) => x.includes('読み込んでいます')), [], 'the progress notice disappears when finished');
     });
   });
 });
 
-describe('ファイルを開く（FR-102, FR-112）', () => {
-  test('単一ファイル: 表示できるが、画像は解決できない旨を示す', async () => {
+describe('Opening files (FR-102, FR-112)', () => {
+  test('single file: can be displayed, but indicates that images cannot be resolved', async () => {
     await withPage(browser, async ({ page }) => {
       await loadFiles(page, [path.join(fixture('single'), 'one.md')]);
       assert.equal(await heading(page), '単一ファイル');
@@ -117,11 +117,11 @@ describe('ファイルを開く（FR-102, FR-112）', () => {
       const ph = await page.textContent('.mdv-ph');
       assert.ok(ph.includes('pic.png'));
       assert.ok(ph.includes('フォルダとして開くと表示できます'));
-      assert.equal(await page.locator('.mdv-prose a.mdv-missing').count(), 1, '選択していない文書へのリンクは「見つからない」扱い');
+      assert.equal(await page.locator('.mdv-prose a.mdv-missing').count(), 1, 'links to unselected documents are treated as "not found"');
     });
   });
 
-  test('複数ファイル: 文書間のリンクと、一緒に選んだ画像が使える', async () => {
+  test('multiple files: links between documents and images selected together work', async () => {
     await withPage(browser, async ({ page }) => {
       const dir = fixture('single');
       await loadFiles(page, [path.join(dir, 'one.md'), path.join(dir, 'other.md'), path.join(dir, 'pic.png')]);
@@ -133,8 +133,8 @@ describe('ファイルを開く（FR-102, FR-112）', () => {
   });
 });
 
-describe('ドラッグ＆ドロップ（FR-103）', () => {
-  test('ファイルのドロップ', async () => {
+describe('Drag and drop (FR-103)', () => {
+  test('dropping files', async () => {
     await withPage(browser, async ({ page }) => {
       await page.evaluate(() => {
         const dt = new DataTransfer();
@@ -149,14 +149,14 @@ describe('ドラッグ＆ドロップ（FR-103）', () => {
     });
   });
 
-  // webkitGetAsEntry が返すエントリ（Firefox / Safari のドロップ）を模したもの
+  // Imitates the entries returned by webkitGetAsEntry (drops in Firefox / Safari)
   const fakeEntries = () => {
     const fileEntry = (name, text) => ({ isFile: true, isDirectory: false, name, file: (ok) => ok(new File([text], name, { lastModified: 1700000000000 })) });
     const dirEntry = (name, children) => ({
       isFile: false, isDirectory: true, name,
       createReader: () => {
         let i = 0;
-        // 実物と同じく、複数回に分けて返す
+        // Like the real thing, returns them in several batches
         return { readEntries: (ok) => { const batch = children.slice(i, i + 2); i += 2; setTimeout(() => ok(batch), 0); } };
       }
     });
@@ -168,7 +168,7 @@ describe('ドラッグ＆ドロップ（FR-103）', () => {
     };
   };
 
-  test('フォルダを 1 つドロップ: そのフォルダがルートになる（エントリ方式）', async () => {
+  test('dropping one folder: that folder becomes the root (entry method)', async () => {
     await withPage(browser, { init: fakeEntries }, async ({ page }) => {
       await page.evaluate(() => {
         const { fileEntry, dirEntry } = window.__fake;
@@ -190,7 +190,7 @@ describe('ドラッグ＆ドロップ（FR-103）', () => {
     });
   });
 
-  test('複数の項目をドロップ: ルート直下に並べる', async () => {
+  test('dropping several items: placed directly under the root', async () => {
     await withPage(browser, { init: fakeEntries }, async ({ page }) => {
       await page.evaluate(() => {
         const { fileEntry, dirEntry } = window.__fake;
@@ -207,7 +207,7 @@ describe('ドラッグ＆ドロップ（FR-103）', () => {
     });
   });
 
-  test('フォルダを 1 つドロップ（ハンドル方式、Edge / Chrome）', async () => {
+  test('dropping one folder (handle method, Edge / Chrome)', async () => {
     await withPage(browser, mockOptions({ name: 'handle-drop', files: { 'README.md': '# ハンドルのホーム\n', 'sub/x.md': '# X\n' } }), async ({ page }) => {
       await page.evaluate(() => {
         const ev = new Event('drop', { bubbles: true, cancelable: true });
@@ -223,7 +223,7 @@ describe('ドラッグ＆ドロップ（FR-103）', () => {
     });
   });
 
-  test('ドラッグ中の表示: 開始画面ではトンボが寄り、文書表示中はドロップ案内を重ねる', async () => {
+  test('while dragging: on the start screen the crop marks move in; while a document is shown, a drop prompt is overlaid', async () => {
     await withPage(browser, async ({ page }) => {
       const fire = (type) => page.evaluate((t) => {
         const ev = new Event(t, { bubbles: true, cancelable: true });
@@ -232,7 +232,7 @@ describe('ドラッグ＆ドロップ（FR-103）', () => {
       }, type);
       await fire('dragenter');
       assert.ok(await page.evaluate(() => document.querySelector('.mdv-app').classList.contains('is-dragover')));
-      assert.ok(await page.isHidden('.mdv-dropveil'), '開始画面では用紙そのものが反応する');
+      assert.ok(await page.isHidden('.mdv-dropveil'), 'on the start screen the sheet itself reacts');
       await fire('dragleave');
       assert.ok(!(await page.evaluate(() => document.querySelector('.mdv-app').classList.contains('is-dragover'))));
       await loadFolder(page, fixture('nav'));
@@ -241,7 +241,7 @@ describe('ドラッグ＆ドロップ（FR-103）', () => {
       assert.equal((await page.textContent('.mdv-dropveil')).trim(), 'ここにドロップして開く');
       await fire('dragleave');
       assert.ok(await page.isHidden('.mdv-dropveil'));
-      // ファイル以外（文字列など）のドラッグには反応しない
+      // Does not react to dragging non-files (such as strings)
       await page.evaluate(() => {
         const ev = new Event('dragenter', { bubbles: true, cancelable: true });
         Object.defineProperty(ev, 'dataTransfer', { value: { types: ['text/plain'] } });
@@ -252,8 +252,8 @@ describe('ドラッグ＆ドロップ（FR-103）', () => {
   });
 });
 
-describe('置き換えと、文書がない場合（FR-111, FR-902）', () => {
-  test('Markdown 文書がないフォルダ: 通知し、開始画面のまま', async () => {
+describe('Replacing, and when there are no documents (FR-111, FR-902)', () => {
+  test('folder without Markdown documents: notifies and stays on the start screen', async () => {
     await withPage(browser, async ({ page }) => {
       await page.locator('.mdv-input-dir').setInputFiles(fixture('nodocs'));
       await page.waitForSelector('.mdv-toast-error');
@@ -263,7 +263,7 @@ describe('置き換えと、文書がない場合（FR-111, FR-902）', () => {
     });
   });
 
-  test('文書セットを開いているときに文書のないフォルダを開いても、表示を維持する', async () => {
+  test('opening a folder without documents while a document set is open keeps the current display', async () => {
     await withPage(browser, async ({ page }) => {
       await loadFolder(page, fixture('site'));
       await goTo(page, '#/guide/intro.md', 'イントロダクション');
@@ -274,7 +274,7 @@ describe('置き換えと、文書がない場合（FR-111, FR-902）', () => {
     });
   });
 
-  test('別のフォルダを開くと確認なしで置き換わり、ホーム文書を表示する', async () => {
+  test('opening another folder replaces the current one without confirmation and shows its home document', async () => {
     await withPage(browser, async ({ page }) => {
       await loadFolder(page, fixture('site'));
       await goTo(page, '#/guide/intro.md', 'イントロダクション');
@@ -284,15 +284,15 @@ describe('置き換えと、文書がない場合（FR-111, FR-902）', () => {
       assert.equal(await hash(page), '#/README.md');
       assert.equal(await page.title(), 'ナビ付きサイト - nav');
       assert.equal(await page.textContent('.mdv-title'), 'nav');
-      assert.equal(await page.inputValue('.mdv-search-input'), '', '検索はリセットされる');
+      assert.equal(await page.inputValue('.mdv-search-input'), '', 'search is reset');
       const info = await setInfo(page);
       assert.deepEqual(info.docs, ['README.md', '_sidebar.md', 'a.md', 'b/c.md', 'b/unlisted.md']);
     });
   });
 });
 
-describe('文字コード（FR-107）', () => {
-  test('Shift_JIS・UTF-16（BOM）・BOM 付き UTF-8 を自動判定する', async () => {
+describe('Character encodings (FR-107)', () => {
+  test('auto-detects Shift_JIS, UTF-16 (BOM) and UTF-8 with BOM', async () => {
     await withPage(browser, async ({ page }) => {
       await loadFolder(page, fixture('site'));
       await goTo(page, '#/sjis.md', 'シフトJISの文書');
@@ -300,8 +300,8 @@ describe('文字コード（FR-107）', () => {
       await goTo(page, '#/utf16.md', 'UTF-16 の文書');
       assert.ok((await page.textContent('.mdv-prose')).includes('固有語イータ。'));
       await goTo(page, '#/bom.md', 'BOM 付き UTF-8');
-      assert.equal(await heading(page), 'BOM 付き UTF-8', 'BOM が見出しに混ざらない');
-      // 検索索引も同じ判定で作られる
+      assert.equal(await heading(page), 'BOM 付き UTF-8', 'the BOM does not leak into the heading');
+      // The search index is built with the same detection
       await waitIndexed(page);
       await page.fill('.mdv-search-input', 'イプシロン');
       await page.waitForSelector('.mdv-search-item');
@@ -310,8 +310,8 @@ describe('文字コード（FR-107）', () => {
   });
 });
 
-describe('上限（FR-110）', () => {
-  test('文書は 5,000 件まで。超えた分は読み込まず通知する', async () => {
+describe('Limits (FR-110)', () => {
+  test('up to 5,000 documents; the excess is not loaded and a notice is shown', async () => {
     await withPage(browser, mockOptions({ name: 'many', files: { 'README.md': '# 多数の文書\n' }, generate: [{ count: 5010, prefix: 'd/doc', ext: '.md' }] }), async ({ page }) => {
       await openMock(page);
       const info = await setInfo(page);
@@ -321,34 +321,34 @@ describe('上限（FR-110）', () => {
     });
   });
 
-  test('走査は 50,000 件まで。途中で打ち切って通知する', async () => {
+  test('scanning stops at 50,000 entries; it is cut off and a notice is shown', async () => {
     await withPage(browser, mockOptions({ name: 'huge', files: { 'README.md': '# 巨大なフォルダ\n' }, generate: [{ count: 50010, prefix: 'bin/f', ext: '.dat' }] }), async ({ page }) => {
       await openMock(page);
       const count = await page.evaluate(() => window.MDV.app.state.set.entries.size);
-      assert.ok(count <= 50000, `保持している件数 ${count}`);
+      assert.ok(count <= 50000, `entries kept: ${count}`);
       assert.ok(count >= 49990);
       assert.ok((await toasts(page)).some((x) => x.includes('ファイルとフォルダが 50000 件を超えたため')));
     });
   });
 
-  test('10MB を超える文書は変換せず、テキストとして表示する', async () => {
+  test('documents over 10MB are not converted and are shown as text', async () => {
     await withPage(browser, mockOptions({ name: 'big', files: { 'README.md': '# 小さい文書\n\n[big](big.md)\n' }, big: { path: 'big.md', title: '巨大', bytes: 10 * 1024 * 1024 + 100 } }), async ({ page }) => {
       await openMock(page);
       await page.evaluate(() => { location.hash = '#/big.md'; });
       await page.waitForSelector('pre.mdv-plain', { timeout: 60000 });
       assert.equal(await page.textContent('.mdv-notice'), 'この文書は 10MB を超えるため、変換せずにテキストとして表示しています。');
       assert.ok((await page.evaluate(() => document.querySelector('pre.mdv-plain').textContent.slice(0, 12))).startsWith('# 巨大'));
-      assert.equal(await page.locator('.mdv-prose h1').count(), 0, 'Markdown として変換していない');
+      assert.equal(await page.locator('.mdv-prose h1').count(), 0, 'not converted as Markdown');
       assert.equal(await page.title(), 'big - big');
-      // 通常の文書に戻ると注記は消える
+      // The note disappears when returning to a normal document
       await goTo(page, '#/README.md', '小さい文書');
       assert.ok(await page.isHidden('.mdv-notice'));
     });
   });
 });
 
-describe('読み込めないファイル（FR-901）', () => {
-  test('読み込みに失敗した文書は、その旨を表示する（画面は止まらない）', async () => {
+describe('Unreadable files (FR-901)', () => {
+  test('a document that fails to load shows a message (the screen keeps working)', async () => {
     const files = { 'README.md': '# ホーム\n\n[壊れた文書](broken.md)\n', 'broken.md': '# 読めない\n' };
     await withPage(browser, mockOptions({ name: 'x', files }), async ({ page }) => {
       await page.evaluate(() => { window.__mockFs.fail['broken.md'] = true; });
@@ -361,13 +361,13 @@ describe('読み込めないファイル（FR-901）', () => {
     });
   });
 
-  test('<input> 方式で開いた後にファイルが消えても、通知して動作を続ける', async () => {
+  test('if a file disappears after opening via <input>, a notice is shown and the app keeps working', async () => {
     const dir = writeTree(tmpDir(), { 'README.md': '# 一時フォルダ\n\n[消える文書](gone.md)\n', 'gone.md': '# 消える文書\n' });
     await withPage(browser, async ({ page }) => {
       await page.locator('.mdv-input-dir').setInputFiles(dir);
       await waitHeading(page, '一時フォルダ');
       await waitIndexed(page);
-      // 索引の作成時に内容を読み込んでいるため、消えた後も表示はできる
+      // Contents were read when building the index, so it can still be displayed after it disappears
       fs.rmSync(path.join(dir, 'gone.md'));
       await page.click('.mdv-prose a:has-text("消える文書")');
       await waitHeading(page, '消える文書');

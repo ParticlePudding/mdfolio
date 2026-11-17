@@ -1,24 +1,24 @@
 #!/usr/bin/env node
 /**
- * GitHub Pages に置くファイル一式を、英語と日本語で作る（SPEC 8.7）。英語をトップ（ルート）に、日本語を ja/ に置く。
+ * Creates the set of files for GitHub Pages, in English and Japanese (SPEC 8.7). English goes at the top (root), Japanese in ja/.
  *
- *   node tools/dev/make-pages.mjs [出力フォルダ]      既定: tmp/pages
+ *   node tools/dev/make-pages.mjs [output folder]      Default: tmp/pages
  *
- * 先に npm run build を実行しておくこと（dist/mdfolio.html を使う）。出力フォルダの中身は毎回消してから作り直す。
+ * Run npm run build first (it uses dist/mdfolio.html). The output folder is emptied and rebuilt every time.
  *
- *   index.html            案内（英語。スクリプトなし。ライセンス表記の全文を含む）
- *   mdfolio.html          ビューア（dist/mdfolio.html。1 つだけ。画面の言語はブラウザーに合わせる）
- *   sample-site.html      書き出しの見本（sample-docs-en/。画面は英語に固定）
- *   style/                見た目の見本（書き出しの見本と、隣に置いた mdfolio.css。examples/mdfolio.css の写し）
- *   mdfolio-docs.html     説明書（README.md と docs/ の 3 文書）
- *   ja/index.html         案内（日本語）
- *   ja/sample-site.html   書き出しの見本（sample-docs/。画面は日本語に固定）
- *   ja/style/             見た目の見本（日本語）
- *   ja/mdfolio-docs.html  説明書（README.ja.md）
- *   en/index.html         以前の英語の案内の場所。トップへ移動する（古いリンクのため。スクリプトなし）
- *   .nojekyll             GitHub Pages の変換（Jekyll）を止める（「_」で始まるファイルを公開しない、などの変換をさせない）
+ *   index.html            Landing page (English; no scripts; includes the full license notices)
+ *   mdfolio.html          The viewer (dist/mdfolio.html; only one; the interface language follows the browser)
+ *   sample-site.html      Export sample (sample-docs-en/; interface fixed to English)
+ *   style/                Custom look sample (the export sample plus an mdfolio.css next to it, a copy of examples/mdfolio.css)
+ *   mdfolio-docs.html     Documentation (README.md and the 3 documents in docs/)
+ *   ja/index.html         Landing page (Japanese)
+ *   ja/sample-site.html   Export sample (sample-docs/; interface fixed to Japanese)
+ *   ja/style/             Custom look sample (Japanese)
+ *   ja/mdfolio-docs.html  Documentation (README.ja.md)
+ *   en/index.html         Former location of the English landing page; redirects to the top (for old links; no scripts)
+ *   .nojekyll             Turns off GitHub Pages processing (Jekyll), such as not publishing files that start with "_"
  *
- * 見本の画面の言語を固定するのは公開ページだけで、dist/ の見本（lang: auto）は変えない。
+ * The interface language of the samples is fixed only on the public pages; the samples in dist/ (lang: auto) are unchanged.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -33,11 +33,11 @@ const SITE = 'https://particlepudding.github.io/mdfolio/';
 const viewer = path.join(ROOT, 'dist/mdfolio.html');
 
 if (!fs.existsSync(viewer)) {
-  console.error('dist/mdfolio.html がありません。先に npm run build を実行してください。');
+  console.error('dist/mdfolio.html is missing. Run npm run build first.');
   process.exit(1);
 }
 if (out === ROOT || out === path.join(ROOT, 'dist') || ROOT.startsWith(out + path.sep)) {
-  console.error('出力先にこのフォルダや dist/ は指定できません: ' + out);
+  console.error('The output folder cannot be this folder or dist/: ' + out);
   process.exit(1);
 }
 
@@ -57,7 +57,7 @@ for (const [lang, c] of Object.entries(LANGS)) {
   const at = (p) => path.join(out, c.dir, p);
   run('tools/build-site.mjs', [c.docs, '--out', at('sample-site.html'), '--title', c.title, '--lang', lang]);
   run('tools/dev/make-docs-site.mjs', [at('mdfolio-docs.html'), '--lang', lang]);
-  // 見た目の見本: 同じ書き出しの隣に mdfolio.css を置く（SPEC 3.10、8.7）
+  // Custom look sample: put mdfolio.css next to the same export (SPEC 3.10, 8.7)
   fs.mkdirSync(at('style'), { recursive: true });
   fs.copyFileSync(at('sample-site.html'), at('style/sample-site.html'));
   fs.copyFileSync(path.join(ROOT, 'examples/mdfolio.css'), at('style/mdfolio.css'));
@@ -65,7 +65,7 @@ for (const [lang, c] of Object.entries(LANGS)) {
 
 const mb = (fs.statSync(viewer).size / 1048576).toFixed(1);
 
-// ライセンス表記の全文（アプリの HTML に埋め込んでいるもの（tools/build.mjs）と同じ並び）
+// Full license notices (in the same order as the ones embedded in the app HTML by tools/build.mjs)
 const readText = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8').replace(/\r\n?/g, '\n').trim();
 const esc = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const LICENSES = esc([`mdfolio ${version}`, '='.repeat(78), '', readText('LICENSE'), '', '', readText('THIRD-PARTY-NOTICES.txt')].join('\n'));
@@ -215,7 +215,7 @@ ${t.local.map((li) => `  <li>${li}</li>`).join('\n')}
 };
 fs.writeFileSync(path.join(out, 'index.html'), page('en'));
 fs.writeFileSync(path.join(out, 'ja/index.html'), page('ja'));
-// 以前の英語の案内（en/）は、トップへ移動する。スクリプトを使わず、meta refresh と通常のリンクで移動する（SPEC PG-1）
+// The former English landing page (en/) redirects to the top, using meta refresh and a normal link instead of scripts (SPEC PG-1)
 fs.writeFileSync(path.join(out, 'en/index.html'), `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -233,4 +233,4 @@ fs.writeFileSync(path.join(out, 'en/index.html'), `<!DOCTYPE html>
 `);
 
 const count = (dir) => fs.readdirSync(dir, { withFileTypes: true }).reduce((n, e) => n + (e.isDirectory() ? count(path.join(dir, e.name)) : 1), 0);
-console.log(`${path.relative(ROOT, out) || out}: ${count(out)} ファイル（日本語と英語）`);
+console.log(`${path.relative(ROOT, out) || out}: ${count(out)} files (English and Japanese)`);

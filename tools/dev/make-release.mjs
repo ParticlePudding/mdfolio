@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 /**
- * リリースに添付するファイルと、リリースの説明を作る（SPEC 8.8 AU-3、AU-5）。
+ * Creates the release assets and the release notes (SPEC 8.8 AU-3, AU-5).
  *
- *   node tools/dev/make-release.mjs [出力フォルダ]      既定: tmp/release
+ *   node tools/dev/make-release.mjs [output folder]      Default: tmp/release
  *
- * 先に npm run build を実行しておくこと。作るもの:
- *   mdfolio.html            単一 HTML 版（dist/mdfolio.html の写し。これ 1 つで動く）
- *   mdfolio-<版>.zip        配布用の zip（中身はリポジトリと同じ並び。README の手順がそのまま使える）
- *   notes.md                リリースの説明（CHANGELOG.md の、その版の部分。英語）
+ * Run npm run build first. It creates:
+ *   mdfolio.html            The single HTML file (a copy of dist/mdfolio.html; this one file is all you need)
+ *   mdfolio-<version>.zip   The distribution zip (same layout as the repository, so the README steps work as written)
+ *   notes.md                The release notes (the section for this version in CHANGELOG.md, in English)
  *
- * zip は tools/dev/make-zip.py で作る（日本語のファイル名に UTF-8 の印を付ける）。Python 3 が必要。
+ * The zip is made by tools/dev/make-zip.py (which marks Japanese file names as UTF-8). Requires Python 3.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -21,11 +21,11 @@ const out = path.resolve(process.argv[2] || path.join(ROOT, 'tmp/release'));
 const version = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8')).version;
 
 function fail(message) {
-  console.error('エラー: ' + message);
+  console.error('Error: ' + message);
   process.exit(1);
 }
 
-/** 変更履歴から、その版の節（「## <版> — 日付」から次の「## 」の前まで）を取り出す。 */
+/** Extracts the section for a version from the changelog (from "## <version> — date" up to the next "## "). */
 export function sectionOf(text, ver) {
   const lines = text.replace(/\r\n?/g, '\n').split('\n');
   const start = lines.findIndex((l) => new RegExp('^## ' + ver.replace(/\./g, '\\.') + '(\\s|$)').test(l));
@@ -35,7 +35,7 @@ export function sectionOf(text, ver) {
   return lines.slice(start + 1, end).join('\n').trim();
 }
 
-// 配布用の zip に入れるもの（リポジトリと同じ並び）
+// What goes into the distribution zip (same layout as the repository)
 export const CONTENTS = [
   'dist/mdfolio.html', 'examples/mdfolio.css',
   'sample-docs', 'sample-docs-en', 'sample.md', 'sample.en.md',
@@ -43,11 +43,11 @@ export const CONTENTS = [
 ];
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  for (const p of CONTENTS) if (!fs.existsSync(path.join(ROOT, p))) fail(p + ' がありません（先に npm run build を実行してください）');
+  for (const p of CONTENTS) if (!fs.existsSync(path.join(ROOT, p))) fail(p + ' is missing (run npm run build first)');
   const generator = /<meta name="generator" content="mdfolio ([^"]+)">/.exec(fs.readFileSync(path.join(ROOT, 'dist/mdfolio.html'), 'utf8'));
-  if (!generator || generator[1] !== version) fail(`dist/mdfolio.html の版（${generator && generator[1]}）が package.json の版（${version}）と一致しません。npm run build を実行してください`);
+  if (!generator || generator[1] !== version) fail(`The version of dist/mdfolio.html (${generator && generator[1]}) does not match the version in package.json (${version}). Run npm run build`);
   const changes = sectionOf(fs.readFileSync(path.join(ROOT, 'CHANGELOG.md'), 'utf8'), version);
-  if (!changes) fail(`CHANGELOG.md に「## ${version}」の節が必要です`);
+  if (!changes) fail(`CHANGELOG.md needs a "## ${version}" section`);
 
   fs.rmSync(out, { recursive: true, force: true });
   fs.mkdirSync(out, { recursive: true });

@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 /**
- * ビルド: src/ と vendor/ から dist/mdfolio.html を生成する。
- * Node.js の標準機能だけで動く（npm パッケージは不要）。
+ * Build: generates dist/mdfolio.html from src/ and vendor/.
+ * Uses only Node.js built-in modules (no npm packages needed).
  *
  *   node tools/build.mjs [--out dist/mdfolio.html] [--without mermaid,katex]
  *
- * 仕様 8.5 の手順:
- *   1. 部品（CSS・スクリプト・リソース）を組み立てる
- *   2. インラインスクリプト中の <!-- / <script / </script を、意味を変えないエスケープに置換する
- *   3. 各スクリプトの SHA-256 を CSP に埋め込む
- *   4. 出力を検証する
+ * Steps (SPEC 8.5):
+ *   1. Assemble the parts (CSS, scripts, resources)
+ *   2. Replace <!-- / <script / </script in inline scripts with escapes that keep their meaning
+ *   3. Put the SHA-256 of each script into the CSP
+ *   4. Verify the output
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -25,7 +25,7 @@ const core = require(path.join(ROOT, 'src/core.js'));
 const MAX_BYTES = 6 * 1024 * 1024; // NFR-3
 
 function fail(message) {
-  console.error('ビルド失敗: ' + message);
+  console.error('Build failed: ' + message);
   process.exit(1);
 }
 
@@ -35,9 +35,9 @@ function parseArgs(argv) {
     const a = argv[i];
     if (a === '--out') args.out = argv[++i];
     else if (a === '--without') args.without = String(argv[++i] || '').split(',').map((s) => s.trim()).filter(Boolean);
-    else fail('不明な引数: ' + a);
+    else fail('Unknown argument: ' + a);
   }
-  for (const w of args.without) if (w !== 'mermaid' && w !== 'katex') fail('--without に指定できるのは mermaid, katex です');
+  for (const w of args.without) if (w !== 'mermaid' && w !== 'katex') fail('--without accepts only mermaid and katex');
   return args;
 }
 
@@ -46,23 +46,23 @@ const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
 const sha256Base64 = (text) => crypto.createHash('sha256').update(text, 'utf8').digest('base64');
 const sha256Hex = (buf) => crypto.createHash('sha256').update(buf).digest('hex');
 
-// ---------------------------------------------------------------- 検証（入力）
+// ---------------------------------------------------------------- Checks (input)
 
 const pkg = JSON.parse(read('package.json'));
-if (pkg.version !== core.VERSION) fail(`package.json の version (${pkg.version}) と src/core.js の VERSION (${core.VERSION}) が一致しません`);
+if (pkg.version !== core.VERSION) fail(`The version in package.json (${pkg.version}) does not match VERSION in src/core.js (${core.VERSION})`);
 
 const manifest = JSON.parse(read('vendor/manifest.json'));
 const vendorFiles = new Map();
 for (const c of manifest.components) {
   for (const f of c.files) {
     const abs = path.join(ROOT, 'vendor', f.path);
-    if (!fs.existsSync(abs)) fail(`vendor/${f.path} がありません`);
-    if (sha256Hex(fs.readFileSync(abs)) !== f.sha256) fail(`vendor/${f.path} の内容が manifest.json の SHA-256 と一致しません`);
+    if (!fs.existsSync(abs)) fail(`vendor/${f.path} is missing`);
+    if (sha256Hex(fs.readFileSync(abs)) !== f.sha256) fail(`The content of vendor/${f.path} does not match the SHA-256 in manifest.json`);
     vendorFiles.set(f.path, c);
   }
 }
 
-/** 自作ソースに、不可視文字や制御文字が紛れ込んでいないことを確かめる。 */
+/** Makes sure no invisible or control characters have slipped into our own sources. */
 function assertCleanSource(name, text) {
   for (let i = 0; i < text.length; i++) {
     const c = text.charCodeAt(i);
@@ -70,20 +70,20 @@ function assertCleanSource(name, text) {
       c === 0xFEFF || (c >= 0x200B && c <= 0x200D) || c === 0x2060;
     if (bad) {
       const line = text.slice(0, i).split('\n').length;
-      fail(`${name}:${line} に不可視文字 U+${c.toString(16).toUpperCase().padStart(4, '0')} があります`);
+      fail(`${name}:${line} contains the invisible character U+${c.toString(16).toUpperCase().padStart(4, '0')}`);
     }
   }
 }
 
-// ---------------------------------------------------------------- インラインスクリプト
+// ---------------------------------------------------------------- Inline scripts
 
 const stats = [];
 
 /**
- * 通常のインラインスクリプトとして HTML に埋め込める形にする。
- * - 末尾の sourceMappingURL コメントを除く
- * - <!-- / <script / </script の < を \x3c に置換する（文字列・正規表現の中では同じ意味になる）
- * - 置換後に構文チェックを行う（演算子として現れていた場合はここで失敗する）
+ * Turns a script into a form that can be embedded in HTML as an ordinary inline script.
+ * - Removes the trailing sourceMappingURL comment
+ * - Replaces the < of <!-- / <script / </script with \x3c (same meaning inside strings and regular expressions)
+ * - Checks the syntax after replacing (fails here if one of them appeared as an operator)
  */
 function forInline(name, text) {
   let s = text.replace(/\r\n?/g, '\n');
@@ -97,9 +97,9 @@ function forInline(name, text) {
   try {
     new vm.Script(s, { filename: name });
   } catch (e) {
-    fail(`${name}: エスケープ後の構文チェックに失敗しました: ${e.message}`);
+    fail(`${name}: syntax check after escaping failed: ${e.message}`);
   }
-  if (/<\/script/i.test(s) || s.includes('<!--')) fail(`${name}: 埋め込めない文字列が残っています`);
+  if (/<\/script/i.test(s) || s.includes('<!--')) fail(`${name}: text that cannot be embedded remains`);
   stats.push({ name, bytes: Buffer.byteLength(s), escapes: count });
   return s.endsWith('\n') ? s : s + '\n';
 }
@@ -112,7 +112,7 @@ const vendorOrder = [
   'highlightjs/highlight.min.js',
   ...hljsExtra
 ];
-for (const f of vendorOrder) if (!vendorFiles.has(f)) fail(`vendor/manifest.json に ${f} がありません`);
+for (const f of vendorOrder) if (!vendorFiles.has(f)) fail(`${f} is not listed in vendor/manifest.json`);
 
 const vendorJs = vendorOrder.map((f) => forInline('vendor/' + f, read('vendor/' + f))).join(';\n');
 
@@ -123,7 +123,7 @@ const appJs = appSources.map((f) => {
   return forInline(f, text);
 }).join(';\n');
 
-// ---------------------------------------------------------------- 遅延読み込みライブラリ・リソース
+// ---------------------------------------------------------------- Lazily loaded libraries and resources
 
 const useKatex = !args.without.includes('katex');
 const useMermaid = !args.without.includes('mermaid');
@@ -131,21 +131,21 @@ const useMermaid = !args.without.includes('mermaid');
 const katexJs = useKatex ? read('vendor/katex/katex.min.js') : null;
 const mermaidJs = useMermaid ? read('vendor/mermaid/mermaid.tiny.js') : null;
 
-/** KaTeX の CSS が参照するフォント（woff2）を data: URI として埋め込む。 */
+/** Embeds the fonts (woff2) referenced by the KaTeX CSS as data: URIs. */
 function inlineKatexCss() {
   let css = read('vendor/katex/katex.min.css');
   let fonts = 0;
   css = css.replace(/src:url\(fonts\/([A-Za-z0-9_-]+)\.woff2\) format\("woff2"\),url\(fonts\/[A-Za-z0-9_-]+\.woff\) format\("woff"\),url\(fonts\/[A-Za-z0-9_-]+\.ttf\) format\("truetype"\)/g, (m, name) => {
     const file = path.join(ROOT, 'vendor/katex/fonts', name + '.woff2');
-    if (!fs.existsSync(file)) fail(`KaTeX のフォントがありません: ${name}.woff2`);
+    if (!fs.existsSync(file)) fail(`KaTeX font not found: ${name}.woff2`);
     fonts++;
     return `src:url(data:font/woff2;base64,${fs.readFileSync(file).toString('base64')}) format("woff2")`;
   });
-  if (!fonts || /url\((?!data:)/.test(css)) fail('KaTeX の CSS に、埋め込めていない url() が残っています');
+  if (!fonts || /url\((?!data:)/.test(css)) fail('The KaTeX CSS still contains url() references that were not embedded');
   return css;
 }
 
-// 画面の部品（app.css）のあとに、本文と配色（document.css）を置く。利用者の mdfolio.css はさらにそのあと（SPEC 3.10）
+// The UI parts (app.css) come first, then the document body and colors (document.css). The user's mdfolio.css comes after both (SPEC 3.10)
 const cssParts = ['src/app.css', 'src/document.css'].map((f) => {
   const text = read(f).replace(/\r\n?/g, '\n');
   assertCleanSource(f, text);
@@ -178,7 +178,7 @@ if (useMermaid) scriptHashes.push({ id: 'mdv-lib-mermaid', hash: sha256Base64(me
 const csp = [
   "default-src 'none'",
   'script-src ' + scriptHashes.map((h) => `'sha256-${h.hash}'`).join(' '),
-  // 'self' file: は、隣に置いた mdfolio.css を読むため（SPEC 3.10）
+  // 'self' file: allows loading an mdfolio.css placed next to the HTML file (SPEC 3.10)
   "style-src 'self' file: 'unsafe-inline'",
   'img-src data: blob: http: https:',
   'media-src data: blob: http: https:',
@@ -191,7 +191,7 @@ const csp = [
   "base-uri 'none'"
 ].join('; ');
 
-// ---------------------------------------------------------------- 組み立て
+// ---------------------------------------------------------------- Assembly
 
 const JSON_TYPE = 'application/json';
 const blocks = [
@@ -212,29 +212,29 @@ blocks.push({ id: 'mdv-js-app', type: '', text: appJs });
 const parts = { lang: 'ja', title: core.NAME, csp, generator: `${core.NAME} ${core.VERSION}`, css, blocks };
 const html = core.composeHtml(parts);
 
-// ---------------------------------------------------------------- 検証（出力）
+// ---------------------------------------------------------------- Checks (output)
 
-if (html.includes('\r')) fail('出力に CR が含まれています（改行は LF のみ）');
+if (html.includes('\r')) fail('The output contains CR (line breaks must be LF only)');
 const back = core.extractParts(html);
-if (core.composeHtml(back) !== html) fail('分解 → 再組み立ての結果が一致しません');
+if (core.composeHtml(back) !== html) fail('Splitting and reassembling the output does not give the same result');
 for (const h of scriptHashes) {
   const b = core.findBlock(back, h.id);
-  if (!b) fail(`ブロック ${h.id} がありません`);
+  if (!b) fail(`Block ${h.id} is missing`);
   const actual = b.type === JSON_TYPE ? sha256Base64(JSON.parse(b.text)) : sha256Base64(b.text);
-  if (actual !== h.hash) fail(`ブロック ${h.id} のハッシュが CSP と一致しません`);
-  if (!back.csp.includes(`'sha256-${h.hash}'`)) fail(`CSP に ${h.id} のハッシュがありません`);
+  if (actual !== h.hash) fail(`The hash of block ${h.id} does not match the CSP`);
+  if (!back.csp.includes(`'sha256-${h.hash}'`)) fail(`The CSP does not contain the hash of ${h.id}`);
 }
-// 遅延ライブラリのハッシュは、vendor/ の配布ファイルそのものの SHA-256 と一致する
+// The hashes of the lazily loaded libraries equal the SHA-256 of the distributed files in vendor/ as they are
 for (const [id, file] of [['mdv-lib-katex', 'vendor/katex/katex.min.js'], ['mdv-lib-mermaid', 'vendor/mermaid/mermaid.tiny.js']]) {
   const h = scriptHashes.find((x) => x.id === id);
   if (!h) continue;
   const raw = crypto.createHash('sha256').update(fs.readFileSync(path.join(ROOT, file))).digest('base64');
-  if (raw !== h.hash) fail(`${id} のハッシュが ${file} の SHA-256 と一致しません`);
+  if (raw !== h.hash) fail(`The hash of ${id} does not match the SHA-256 of ${file}`);
 }
 const bytes = Buffer.byteLength(html);
-if (bytes > MAX_BYTES) fail(`出力が ${MAX_BYTES} バイトを超えています（${bytes} バイト）`);
+if (bytes > MAX_BYTES) fail(`The output is larger than ${MAX_BYTES} bytes (${bytes} bytes)`);
 
-// ---------------------------------------------------------------- 書き出し
+// ---------------------------------------------------------------- Write the output
 
 const outPath = path.resolve(ROOT, args.out);
 fs.mkdirSync(path.dirname(outPath), { recursive: true });
@@ -256,6 +256,6 @@ const buildManifest = {
 fs.writeFileSync(outPath.replace(/\.html$/, '') + '.manifest.json', JSON.stringify(buildManifest, null, 2) + '\n');
 
 const mb = (n) => (n / 1024 / 1024).toFixed(2) + ' MB';
-console.log(`${path.relative(ROOT, outPath)} を生成しました: ${mb(bytes)}（${bytes} バイト）`);
-for (const b of buildManifest.blocks) console.log(`  ${b.id.padEnd(20)} ${String(b.bytes).padStart(9)} バイト`);
-console.log(`  CSS                  ${String(Buffer.byteLength(css)).padStart(9)} バイト`);
+console.log(`Generated ${path.relative(ROOT, outPath)}: ${mb(bytes)} (${bytes} bytes)`);
+for (const b of buildManifest.blocks) console.log(`  ${b.id.padEnd(20)} ${String(b.bytes).padStart(9)} bytes`);
+console.log(`  CSS                  ${String(Buffer.byteLength(css)).padStart(9)} bytes`);

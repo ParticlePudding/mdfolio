@@ -1,5 +1,5 @@
 /*!
- * mdfolio md — markdown-it の設定と拡張（ブラウザ・Node.js 共用）
+ * mdfolio md — markdown-it configuration and extensions (shared by browser and Node.js)
  * MIT License
  */
 (function (root, factory) {
@@ -20,10 +20,10 @@
   }
 
   // ---------------------------------------------------------------------------
-  // 数式: $...$ / $$...$$
+  // Math: $...$ / $$...$$
   // ---------------------------------------------------------------------------
 
-  /** $ が数式の開き・閉じになれるかを前後の文字から判定する（金額表記との誤認を避ける）。 */
+  /** Decide from the surrounding characters whether $ can open or close math (to avoid mistaking currency amounts for math). */
   function mathDelim(src, pos, max) {
     var prev = pos > 0 ? src.charCodeAt(pos - 1) : -1;
     var next = pos + 1 < max ? src.charCodeAt(pos + 1) : -1;
@@ -34,7 +34,7 @@
     return { canOpen: canOpen, canClose: canClose };
   }
 
-  /** from 以降で、エスケープされていない needle の位置を返す。 */
+  /** Return the position of the first unescaped needle at or after from. */
   function findUnescaped(src, needle, from, max) {
     var at = from;
     for (;;) {
@@ -53,7 +53,7 @@
     var max = state.posMax;
     if (src.charCodeAt(pos) !== 0x24 /* $ */) return false;
 
-    // $$...$$（段落内のディスプレイ数式）
+    // $$...$$ (display math inside a paragraph)
     if (pos + 1 < max && src.charCodeAt(pos + 1) === 0x24) {
       var endD = findUnescaped(src, '$$', pos + 2, max);
       if (endD < 0 || endD === pos + 2 || src.slice(pos + 2, endD).indexOf('`') >= 0) {
@@ -88,7 +88,7 @@
       state.pos = start + 1;
       return true;
     }
-    // 閉じが条件を満たさない、または途中にコード（`）を挟む場合は数式とみなさない
+    // Not treated as math if the closer does not meet the conditions or if code (`) appears in between
     if (!mathDelim(src, end, max).canClose || src.slice(start, end).indexOf('`') >= 0) {
       if (!silent) state.pending += '$';
       state.pos = start;
@@ -117,17 +117,17 @@
 
     var trimmed = firstLine.replace(/\s+$/, '');
     if (trimmed.length >= 2 && trimmed.slice(-2) === '$$') {
-      // 1 行で完結: $$ ... $$
+      // Complete on one line: $$ ... $$
       lines.push(trimmed.slice(0, -2));
       found = true;
     } else {
-      // 開始行の途中に $$ がある場合（例: 「$$a$$ と続く文」）は段落内の数式として扱う
+      // If $$ appears partway through the opening line (e.g. "$$a$$ followed by text"), treat it as math inside a paragraph
       if (firstLine.indexOf('$$') >= 0) return false;
       if (firstLine.trim()) lines.push(firstLine);
       for (next = startLine + 1; next < endLine; next++) {
         var lp = state.bMarks[next] + state.tShift[next];
         var lm = state.eMarks[next];
-        if (lp < lm && state.sCount[next] < state.blkIndent) break; // 外側のブロックを抜けた
+        if (lp < lm && state.sCount[next] < state.blkIndent) break; // Left the enclosing block
         var line = state.src.slice(lp, lm);
         var lt = line.replace(/\s+$/, '');
         if (lt.length >= 2 && lt.slice(-2) === '$$') {
@@ -139,7 +139,7 @@
         lines.push(line);
       }
     }
-    if (!found) return false; // 閉じがなければ数式とみなさない（文書全体を飲み込まないため）
+    if (!found) return false; // Not treated as math without a closer (so it does not swallow the whole document)
     if (silent) return true;
 
     state.line = next + 1;
@@ -165,7 +165,7 @@
   }
 
   // ---------------------------------------------------------------------------
-  // タスクリスト: - [ ] / - [x]
+  // Task lists: - [ ] / - [x]
   // ---------------------------------------------------------------------------
 
   function taskListPlugin(md) {
@@ -184,7 +184,7 @@
         box.content = '<input type="checkbox" disabled' + (m[1] === ' ' ? '' : ' checked') + '> ';
         tok.children.unshift(box);
         tokens[i - 2].attrJoin('class', 'task-list-item');
-        // 親リストに印を付ける
+        // Mark the parent list
         var level = tokens[i - 2].level - 1;
         for (var j = i - 3; j >= 0; j--) {
           if (tokens[j].level === level && (tokens[j].type === 'bullet_list_open' || tokens[j].type === 'ordered_list_open')) {
@@ -197,7 +197,7 @@
   }
 
   // ---------------------------------------------------------------------------
-  // GitHub 形式のアラート: > [!NOTE]
+  // GitHub-style alerts: > [!NOTE]
   // ---------------------------------------------------------------------------
 
   function alertPlugin(md, getLabels) {
@@ -216,7 +216,7 @@
         if (ALERT_TYPES.indexOf(type) < 0) continue;
         if (kids.length > 1 && kids[1].type !== 'softbreak' && kids[1].type !== 'hardbreak') continue;
 
-        // 対応する閉じトークンを探す
+        // Find the matching closing token
         var close = -1;
         for (var j = i + 1; j < tokens.length; j++) {
           if (tokens[j].type === 'blockquote_close' && tokens[j].level === tokens[i].level) { close = j; break; }
@@ -227,7 +227,7 @@
         tokens[i].attrJoin('class', 'markdown-alert markdown-alert-' + type);
         tokens[close].tag = 'div';
 
-        // マーカー行を取り除く
+        // Remove the marker line
         kids.splice(0, kids.length > 1 ? 2 : 1);
         var nl = inline.content.indexOf('\n');
         inline.content = nl < 0 ? '' : inline.content.slice(nl + 1);
@@ -236,7 +236,7 @@
         title.content = '<p class="markdown-alert-title">' + md.utils.escapeHtml(labels[type] || DEFAULT_ALERT_LABELS[type]) + '</p>\n';
         title.block = true;
         if (!kids.length) {
-          // マーカーだけの段落は段落ごと取り除く
+          // A paragraph containing only the marker is removed entirely
           tokens.splice(i + 1, 3, title);
         } else {
           tokens.splice(i + 1, 0, title);
@@ -246,7 +246,7 @@
   }
 
   // ---------------------------------------------------------------------------
-  // 見出し ID
+  // Heading IDs
   // ---------------------------------------------------------------------------
 
   function inlineText(children) {
@@ -274,7 +274,7 @@
   }
 
   // ---------------------------------------------------------------------------
-  // フェンス: mermaid / math
+  // Fences: mermaid / math
   // ---------------------------------------------------------------------------
 
   function fencePlugin(md) {
@@ -293,7 +293,7 @@
   }
 
   // ---------------------------------------------------------------------------
-  // 参照（リンク・画像）と利用機能の抽出
+  // Extracting references (links, images) and features used
   // ---------------------------------------------------------------------------
 
   var HTML_ATTR_RE = /\b(src|href|poster)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+))/gi;
@@ -315,15 +315,15 @@
   }
 
   // ---------------------------------------------------------------------------
-  // レンダラーの生成
+  // Creating the renderer
   // ---------------------------------------------------------------------------
 
   /**
    * options:
-   *   markdownit   markdown-it の関数（省略時はグローバル）
-   *   footnote     markdown-it-footnote（省略時はグローバル。なければ脚注なし）
-   *   highlight    function (code, lang) → ハイライト済み HTML（なければ空文字）
-   *   alertLabels  アラート見出しの文言を返す関数、またはオブジェクト
+   *   markdownit   the markdown-it function (defaults to the global)
+   *   footnote     markdown-it-footnote (defaults to the global; no footnotes if absent)
+   *   highlight    function (code, lang) -> highlighted HTML (empty string if none)
+   *   alertLabels  a function returning alert heading text, or an object
    */
   function createRenderer(options) {
     options = options || {};
@@ -337,7 +337,7 @@
       langPrefix: 'language-',
       highlight: options.highlight || null
     });
-    // README.md や main.py のような文字列を URL と誤認しないよう、スキームなしのリンク化を止める
+    // Disable scheme-less linkify so strings like README.md or main.py are not mistaken for URLs
     md.linkify.set({ fuzzyLink: false, fuzzyIP: false, fuzzyEmail: true });
 
     var footnote = options.footnote || root.markdownitFootnote;
@@ -354,7 +354,7 @@
       return md.render(String(src), env);
     }
 
-    /** 文書中のリンク先・画像と、数式・図の利用有無を返す（書き出し時の添付収集に使う）。 */
+    /** Return the link targets and images in a document, and whether math and diagrams are used (used to collect attachments on export). */
     function collectRefs(src) {
       var out = { links: [], images: [], hasMath: false, hasMermaid: false };
       var tokens = md.parse(String(src), {});

@@ -1,4 +1,4 @@
-// 表示設定（FR-501〜FR-504）、外部画像（FR-210）、設定の保存（FR-702）
+// Display settings (FR-501 to FR-504), external images (FR-210), saving settings (FR-702)
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -16,21 +16,21 @@ const theme = (page) => page.getAttribute('html', 'data-theme');
 const stored = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('mdv:settings:v1') || '{}'));
 const bodyBg = (page) => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
 
-describe('テーマ（FR-501）', () => {
-  test('自動 → ライト → ダーク と切り替わり、次回に引き継ぐ', async () => {
+describe('Theme (FR-501)', () => {
+  test('cycles auto -> light -> dark and carries over to the next visit', async () => {
     await withPage(browser, async ({ page }) => {
       assert.equal(await theme(page), 'light');
       assert.equal(await page.getAttribute('.mdv-btn-theme', 'aria-label'), 'テーマ: 自動（OS の設定に合わせる）');
       assert.equal(await bodyBg(page), 'rgb(237, 241, 245)');
-      // 自動: OS の設定に追従する
+      // Auto: follows the OS setting
       await page.emulateMedia({ colorScheme: 'dark' });
       await page.waitForFunction(() => document.documentElement.getAttribute('data-theme') === 'dark');
       assert.equal(await bodyBg(page), 'rgb(15, 23, 34)');
-      // ライトに固定: OS がダークでもライト
+      // Fixed to light: light even when the OS is dark
       await page.click('.mdv-btn-theme');
       assert.equal(await theme(page), 'light');
       assert.equal(await page.getAttribute('.mdv-btn-theme', 'aria-label'), 'テーマ: ライト');
-      // ダークに固定
+      // Fixed to dark
       await page.emulateMedia({ colorScheme: 'light' });
       await page.click('.mdv-btn-theme');
       assert.equal(await theme(page), 'dark');
@@ -38,21 +38,21 @@ describe('テーマ（FR-501）', () => {
       assert.equal((await stored(page)).theme, 'dark');
       await page.reload();
       await page.waitForSelector('.mdv-app');
-      assert.equal(await theme(page), 'dark', '再読み込み後も引き継ぐ');
+      assert.equal(await theme(page), 'dark', 'carried over after reload');
       await page.click('.mdv-btn-theme');
       assert.equal((await stored(page)).theme, 'auto');
       assert.equal(await theme(page), 'light');
     });
   });
 
-  test('OS がダークなら、最初からダークで表示する', async () => {
+  test('shows dark from the start when the OS is dark', async () => {
     await withPage(browser, { colorScheme: 'dark' }, async ({ page }) => {
       assert.equal(await theme(page), 'dark');
       assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector('.mdv-sheet')).backgroundColor), 'rgb(21, 31, 44)');
     });
   });
 
-  test('テーマを切り替えると、図も配色を合わせて描き直す', async () => {
+  test('switching the theme redraws diagrams with matching colors', async () => {
     await withPage(browser, async ({ page }) => {
       await loadFolder(page, fixture('site'));
       await goTo(page, '#/syntax.md', '記法');
@@ -64,13 +64,13 @@ describe('テーマ（FR-501）', () => {
       assert.equal(await theme(page), 'dark');
       await page.waitForFunction(() => getComputedStyle(document.querySelector('.mdv-mermaid svg .node rect')).fill === 'rgb(29, 45, 66)');
       assert.equal(await page.locator('.mdv-mermaid svg').count(), 1);
-      assert.equal(await page.locator('.mdv-mermaid-error').count(), 1, '誤りのある図はエラー表示のまま');
+      assert.equal(await page.locator('.mdv-mermaid-error').count(), 1, 'a diagram with errors keeps showing the error');
     });
   });
 });
 
-describe('画面の言語（FR-502）', () => {
-  test('メニューから切り替えられ、次回に引き継ぐ', async () => {
+describe('UI language (FR-502)', () => {
+  test('can be switched from the menu and carries over to the next visit', async () => {
     await withPage(browser, async ({ page }) => {
       await loadFolder(page, fixture('site'));
       assert.match(await page.textContent('.mdv-doc-date'), /^更新 \d{4}-\d{2}-\d{2} \d{2}:\d{2}$/);
@@ -95,12 +95,12 @@ describe('画面の言語（FR-502）', () => {
   });
 });
 
-describe('外部の画像（FR-210, SEC-5, SEC-10）', () => {
+describe('External images (FR-210, SEC-5, SEC-10)', () => {
   const ITEM = '.mdv-menu-item[data-action="menuExternalImages"]';
   const extImg = (page) => page.waitForFunction(() => { const i = document.querySelector('.mdv-prose img[alt="外部画像"]'); return i && i.complete && i.naturalWidth === 64; });
   const locked = (page) => page.evaluate(() => window.MDV.app.state.mediaLocked);
   const checked = async (page) => { await openMenu(page); const v = await page.getAttribute(ITEM, 'aria-checked'); await page.keyboard.press('Escape'); return v; };
-  /** 文書を経由せずに画像を読み込ませて、ブラウザー自身が止めるかどうかを確かめる。 */
+  /** Load an image without going through a document, to check whether the browser itself blocks it. */
   const probe = (page, url) => page.evaluate((u) => new Promise((resolve) => {
     const i = new Image();
     i.onload = () => resolve('loaded');
@@ -119,7 +119,7 @@ describe('外部の画像（FR-210, SEC-5, SEC-10）', () => {
     });
   }
 
-  test('既定では表示せず、通信もしない。ブラウザーの CSP でも止めている', async () => {
+  test('by default, not shown and no requests are made; the browser CSP also blocks them', async () => {
     sink.hits.length = 0;
     await withPage(browser, { allowErrors: true }, async ({ page, record }) => {
       assert.equal(await locked(page), true);
@@ -130,42 +130,42 @@ describe('外部の画像（FR-210, SEC-5, SEC-10）', () => {
       assert.ok(text.includes(`外部のメディアは表示していません: ${sink.origin}/movie.mp4`));
       assert.equal(await page.locator('.mdv-prose img, .mdv-prose video').count(), 0);
       assert.deepEqual(record.requests, []);
-      assert.deepEqual(record.errors, [], '表示の段階で取り除くので、CSP 違反も起きない');
+      assert.deepEqual(record.errors, [], 'removed at render time, so no CSP violations occur either');
       assert.equal(await checked(page), 'false');
-      // 表示処理を通らない読み込みも、ブラウザーが止める
+      // Loads that bypass rendering are also blocked by the browser
       assert.equal(await probe(page, sink.origin + '/direct.png'), 'blocked');
       assert.deepEqual(record.blocked, [sink.origin + '/direct.png']);
-      assert.deepEqual(sink.paths(), [], 'サーバーには何も届いていない');
+      assert.deepEqual(sink.paths(), [], 'nothing reached the server');
     });
   });
 
-  test('表示に切り替えるときは確認し、再読み込みして反映する。戻すときはその場で反映する', async () => {
+  test('turning it on asks for confirmation and applies after a reload; turning it off applies immediately', async () => {
     sink.hits.length = 0;
     const dir = docsWithExternalImage();
     await withPage(browser, { allowErrors: true }, async ({ page, record }) => {
       await loadFolder(page, dir);
       await goTo(page, '#/other.md', '別の文書');
-      // 確認のダイアログ。キャンセルすれば何も変わらない
+      // Confirmation dialog. Cancelling changes nothing
       await clickMenu(page, 'menuExternalImages');
       await page.waitForSelector('dialog.mdv-dialog-external[open]');
       assert.equal(await page.textContent('.mdv-dialog-external .mdv-dialog-title'), '外部の画像を表示しますか');
       assert.equal(await page.textContent('.mdv-dialog-external .mdv-dialog-lead'), '表示すると、画像や動画の配信元のサーバーに接続します。設定を切り替えるために、ページを再読み込みします。');
       assert.equal(await page.textContent('.mdv-dialog-external .mdv-dialog-note'), '再読み込みすると、開いているフォルダは閉じます。再読み込みのあとで、もう一度開いてください。');
-      assert.ok(await page.evaluate(() => document.activeElement.classList.contains('mdv-external-cancel')), '初期フォーカスはキャンセル');
+      assert.ok(await page.evaluate(() => document.activeElement.classList.contains('mdv-external-cancel')), 'initial focus is on Cancel');
       await page.click('.mdv-external-cancel');
       await page.waitForSelector('dialog.mdv-dialog-external', { state: 'detached' });
       assert.equal((await stored(page)).externalImages, undefined);
       assert.equal(await locked(page), true);
-      // 表示して再読み込み
+      // Turn on and reload
       await clickMenu(page, 'menuExternalImages');
       await page.waitForSelector('dialog.mdv-dialog-external[open]');
       await Promise.all([page.waitForEvent('load'), page.click('.mdv-external-run')]);
       await page.waitForFunction(() => window.MDV && window.MDV.app && window.MDV.app.state.view === 'welcome');
       assert.equal(await locked(page), false);
       assert.equal((await stored(page)).externalImages, true);
-      assert.ok((await page.textContent('.mdv-welcome-pending')).includes('other.md'), '見ていた文書の場所は URL に残る');
+      assert.ok((await page.textContent('.mdv-welcome-pending')).includes('other.md'), 'the location of the document being viewed stays in the URL');
       assert.deepEqual(sink.paths(), []);
-      // フォルダを開き直すと、元の文書に戻り、外部の画像が表示される
+      // Reopening the folder returns to the original document and shows the external images
       await loadFolder(page, dir);
       await waitHeading(page, '別の文書');
       await goTo(page, '#/README.md', '外部画像の確認');
@@ -174,9 +174,9 @@ describe('外部の画像（FR-210, SEC-5, SEC-10）', () => {
       assert.equal(await page.getAttribute('.mdv-prose img[alt="外部画像"]', 'referrerpolicy'), 'no-referrer');
       assert.ok(sink.paths().includes('/external.png'));
       assert.ok(sink.paths().includes('/movie.mp4'));
-      assert.ok(sink.hits.every((h) => h.referer === undefined && h.cookie === undefined), 'リファラーも Cookie も送らない');
+      assert.ok(sink.hits.every((h) => h.referer === undefined && h.cookie === undefined), 'sends neither Referer nor cookies');
       assert.equal(await checked(page), 'true');
-      // 表示しない側へは、その場で切り替わる（確認も再読み込みもない）
+      // Turning it off switches immediately (no confirmation, no reload)
       const before = sink.hits.length;
       await clickMenu(page, 'menuExternalImages');
       await page.waitForFunction(() => !document.querySelector('.mdv-prose img[alt="外部画像"]'));
@@ -185,13 +185,13 @@ describe('外部の画像（FR-210, SEC-5, SEC-10）', () => {
       assert.equal((await stored(page)).externalImages, false);
       assert.equal(await checked(page), 'false');
       assert.equal(await probe(page, sink.origin + '/after-off.png'), 'blocked');
-      assert.equal(sink.hits.length, before, '切り替えたあとは通信しない');
-      assert.equal(await heading(page), '外部画像の確認', 'フォルダは開いたまま');
+      assert.equal(sink.hits.length, before, 'no requests after switching');
+      assert.equal(await heading(page), '外部画像の確認', 'the folder stays open');
       assert.deepEqual(record.requests.filter((u) => !u.startsWith(sink.origin)), []);
     });
   });
 
-  test('サイトモードでは、再読み込みしても同じ文書に戻る', async () => {
+  test('in site mode, returns to the same document after reload', async () => {
     sink.hits.length = 0;
     const out = path.join(tmpDir(), 'ext-site.html');
     execFileSync(process.execPath, [path.join(ROOT, 'tools/build-site.mjs'), docsWithExternalImage(), '--out', out, '--title', '外部画像'], { cwd: ROOT });
@@ -200,7 +200,7 @@ describe('外部の画像（FR-210, SEC-5, SEC-10）', () => {
       assert.equal(await locked(page), true);
       await clickMenu(page, 'menuExternalImages');
       await page.waitForSelector('dialog.mdv-dialog-external[open]');
-      assert.equal(await page.locator('.mdv-dialog-external .mdv-dialog-note').count(), 0, '閉じるフォルダがないので、その説明は出さない');
+      assert.equal(await page.locator('.mdv-dialog-external .mdv-dialog-note').count(), 0, 'no folder to close, so that note is not shown');
       assert.deepEqual(sink.paths(), []);
       await Promise.all([page.waitForEvent('load'), page.click('.mdv-external-run')]);
       await waitHeading(page, '外部画像の確認');
@@ -211,7 +211,7 @@ describe('外部の画像（FR-210, SEC-5, SEC-10）', () => {
     });
   });
 
-  test('設定を保存できない環境では、切り替えられないことを知らせる（再読み込みしない）', async () => {
+  test('where settings cannot be saved, says it cannot be switched (no reload)', async () => {
     const init = () => {
       const original = Storage.prototype.setItem;
       Storage.prototype.setItem = function () { throw new DOMException('denied', 'SecurityError'); };
@@ -227,12 +227,12 @@ describe('外部の画像（FR-210, SEC-5, SEC-10）', () => {
       await page.waitForSelector('dialog.mdv-dialog-external', { state: 'detached' });
       assert.equal(await locked(page), true);
       assert.equal(await checked(page), 'false');
-      assert.equal(await page.getAttribute('.mdv-app', 'data-has-set'), 'true', 'フォルダは開いたまま');
+      assert.equal(await page.getAttribute('.mdv-app', 'data-has-set'), 'true', 'the folder stays open');
       assert.equal(await page.getAttribute('.mdv-app', 'data-view'), 'doc');
     });
   });
 
-  test('設定ブロックで既定を許可にできる（FR-701）。利用者はその場で止められる', async () => {
+  test('the config block can make allowing the default (FR-701); the user can turn it off on the spot', async () => {
     sink.hits.length = 0;
     const parts = core.extractParts(fs.readFileSync(VIEWER, 'utf8'));
     core.findBlock(parts, 'mdv-config').text = core.jsonForScript({ allowExternalImages: true });
@@ -254,8 +254,8 @@ describe('外部の画像（FR-210, SEC-5, SEC-10）', () => {
   });
 });
 
-describe('画面幅による切り替え（FR-503）', () => {
-  test('広い画面: サイドバーを開閉でき、状態を引き継ぐ', async () => {
+describe('Layout by screen width (FR-503)', () => {
+  test('wide screen: the sidebar can be toggled and its state is carried over', async () => {
     await withPage(browser, async ({ page }) => {
       await loadFolder(page, fixture('site'));
       assert.ok(await page.isVisible('.mdv-sidebar'));
@@ -271,7 +271,7 @@ describe('画面幅による切り替え（FR-503）', () => {
     });
   });
 
-  test('中くらいの画面: 目次は本文の先頭の折りたたみに移る', async () => {
+  test('medium screen: the table of contents moves into a collapsible at the top of the body', async () => {
     await withPage(browser, { viewport: { width: 1000, height: 800 } }, async ({ page }) => {
       await loadFolder(page, fixture('site'));
       assert.ok(await page.isVisible('.mdv-sidebar'));
@@ -283,7 +283,7 @@ describe('画面幅による切り替え（FR-503）', () => {
     });
   });
 
-  test('狭い画面: サイドバーはドロワーになり、背景・Esc・移動で閉じる', async () => {
+  test('narrow screen: the sidebar becomes a drawer that closes on backdrop click, Esc or navigation', async () => {
     await withPage(browser, { viewport: { width: 600, height: 800 } }, async ({ page }) => {
       await loadFolder(page, fixture('site'));
       const open = () => page.evaluate(() => document.querySelector('.mdv-app').classList.contains('is-drawer-open'));
@@ -301,29 +301,29 @@ describe('画面幅による切り替え（FR-503）', () => {
       await page.click('.mdv-btn-sidebar');
       await page.click('.mdv-side-tree a[href="#/syntax.md"]');
       await waitHeading(page, '記法');
-      assert.equal(await open(), false, '文書を選ぶと閉じる');
+      assert.equal(await open(), false, 'closes when a document is chosen');
     });
   });
 
-  test('スマートフォン相当の幅でも、ページが横にはみ出さない', async () => {
+  test('the page does not overflow horizontally even at smartphone width', async () => {
     await withPage(browser, { viewport: { width: 375, height: 700 } }, async ({ page }) => {
       const overflow = () => page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
-      assert.ok((await overflow()) <= 0, '開始画面');
+      assert.ok((await overflow()) <= 0, 'start screen');
       await loadFolder(page, fixture('site'));
-      assert.ok((await overflow()) <= 0, 'ホーム');
+      assert.ok((await overflow()) <= 0, 'home');
       await goTo(page, '#/syntax.md', '記法');
       await page.waitForSelector('.mdv-mermaid svg');
-      assert.ok((await overflow()) <= 0, '表・コード・図を含む文書');
+      assert.ok((await overflow()) <= 0, 'document with tables, code and diagrams');
       await page.fill('.mdv-search-input', '固有語');
       await page.waitForSelector('.mdv-search-item');
       const panel = await page.evaluate(() => { const r = document.getElementById('mdv-search-panel').getBoundingClientRect(); return { left: r.left, right: r.right }; });
-      assert.ok(panel.left >= 0 && panel.right <= 375, '検索パネルが画面内に収まる');
+      assert.ok(panel.left >= 0 && panel.right <= 375, 'the search panel fits within the screen');
     });
   });
 });
 
-describe('指で操作する端末（スマートフォン・タブレット）', () => {
-  test('ファイルの選択を種類で絞り込まない（.md を選べない端末があるため）。パソコンでは Markdown に絞り込む', async () => {
+describe('Touch devices (smartphones and tablets)', () => {
+  test('file picking is not filtered by type (some devices cannot pick .md); on desktop it is filtered to Markdown', async () => {
     await withPage(browser, async ({ page }) => {
       const accept = await page.getAttribute('.mdv-input-files', 'accept');
       assert.ok(accept.split(',').includes('.md') && accept.split(',').includes('text/markdown'));
@@ -333,17 +333,17 @@ describe('指で操作する端末（スマートフォン・タブレット）'
       await withPage(browser, { context, allowErrors: true }, async ({ page, record }) => {
         assert.equal(await page.evaluate(() => window.matchMedia('(pointer: coarse)').matches), true);
         assert.equal(await page.getAttribute('.mdv-input-files', 'accept'), null);
-        // 開始画面の説明は、ドロップではなく選ぶ操作を案内する
+        // The start screen text guides the user to pick files rather than drop them
         assert.equal(await page.textContent('.mdv-welcome-lead'), 'フォルダかファイルを選んでください。ファイルはこの端末の中だけで処理され、外部には送信されません。');
-        // Markdown 以外を選んだときは、何も変えずに知らせる
+        // Picking something other than Markdown changes nothing and shows a notice
         await page.locator('.mdv-input-files').setInputFiles(fixture('site/assets/data.csv'));
         await page.waitForSelector('.mdv-toast');
         assert.ok((await page.textContent('.mdv-toast')).includes('Markdown 文書が見つかりませんでした'));
         assert.equal(await page.evaluate(() => window.MDV.app.state.view), 'welcome');
-        // Markdown のファイルは開ける
+        // Markdown files can be opened
         await page.locator('.mdv-input-files').setInputFiles(fixture('site/syntax.md'));
         await waitHeading(page, '記法');
-        assert.ok((await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)) <= 0, '横にはみ出さない');
+        assert.ok((await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)) <= 0, 'no horizontal overflow');
         assert.deepEqual(record.errors, []);
       });
     } finally {
@@ -352,45 +352,45 @@ describe('指で操作する端末（スマートフォン・タブレット）'
   });
 });
 
-describe('スクロールバーを常に表示する環境（Windows など）での見た目', () => {
-  // テスト用のブラウザーはスクロールバーを隠すため、はみ出しの有無を数値で確かめる
+describe('Appearance where scrollbars are always shown (Windows, etc.)', () => {
+  // The test browser hides scrollbars, so check for overflow numerically
   const overflowing = () => Array.from(document.querySelectorAll('.mdv-app, .mdv-app *')).filter((el) => {
-    if (el.closest('.mdv-prose')) return false; // 本文の表・コードは、意図して横スクロールにしている
+    if (el.closest('.mdv-prose')) return false; // Tables and code in the body scroll horizontally on purpose
     const cs = getComputedStyle(el);
     if (!/(auto|scroll)/.test(cs.overflowX) && !/(auto|scroll)/.test(cs.overflowY)) return false;
     return el.scrollWidth > el.clientWidth;
   }).map((el) => el.nodeName.toLowerCase() + '.' + String(el.getAttribute('class') || '').split(' ')[0] + ` ${el.scrollWidth}>${el.clientWidth}`);
 
-  test('サイドバー・目次・検索結果・メニューに、横スクロールバーが出ない', async () => {
+  test('no horizontal scrollbars in the sidebar, table of contents, search results or menu', async () => {
     await withPage(browser, async ({ page }) => {
       await loadFolder(page, fixture('site'));
-      assert.deepEqual(await page.evaluate(overflowing), [], 'ホーム（表示中の文書のタブがある状態）');
+      assert.deepEqual(await page.evaluate(overflowing), [], 'home (with the tab for the current document)');
       await goTo(page, '#/guide/sub/deep.md', '深い文書');
-      assert.deepEqual(await page.evaluate(overflowing), [], '深い階層');
+      assert.deepEqual(await page.evaluate(overflowing), [], 'deep nesting');
       await page.fill('.mdv-search-input', '固有語');
       await page.waitForSelector('.mdv-search-item');
-      assert.deepEqual(await page.evaluate(overflowing), [], '検索結果');
+      assert.deepEqual(await page.evaluate(overflowing), [], 'search results');
       await page.keyboard.press('Escape');
       await openMenu(page);
-      assert.deepEqual(await page.evaluate(overflowing), [], 'メニュー');
+      assert.deepEqual(await page.evaluate(overflowing), [], 'menu');
       await page.keyboard.press('Escape');
-      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true, 'ページ全体');
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true, 'whole page');
       await loadFolder(page, fixture('nav'));
       await page.waitForSelector('.mdv-sidenav a');
-      assert.deepEqual(await page.evaluate(overflowing), [], 'カスタムナビ');
+      assert.deepEqual(await page.evaluate(overflowing), [], 'custom navigation');
     });
     await withPage(browser, { viewport: { width: 390, height: 800 } }, async ({ page }) => {
       await loadFolder(page, fixture('site'));
       await page.click('.mdv-btn-sidebar');
       await page.waitForSelector('.mdv-app[data-sidebar="open"]');
       await page.waitForTimeout(300);
-      assert.deepEqual(await page.evaluate(overflowing), [], '狭い画面のドロワー');
+      assert.deepEqual(await page.evaluate(overflowing), [], 'drawer on a narrow screen');
     });
   });
 });
 
-describe('印刷（FR-504）', () => {
-  test('本文のみを、常にライト配色で出力する', async () => {
+describe('Printing (FR-504)', () => {
+  test('prints only the body, always in light colors', async () => {
     await withPage(browser, { colorScheme: 'dark' }, async ({ page }) => {
       await loadFolder(page, fixture('site'));
       await goTo(page, '#/syntax.md', '記法');
@@ -414,10 +414,10 @@ describe('印刷（FR-504）', () => {
       assert.equal(r.bg, 'rgb(255, 255, 255)');
       assert.equal(r.sheet, 'rgb(255, 255, 255)');
       assert.equal(r.color, 'rgb(0, 0, 0)');
-      assert.equal(r.alertTitle, 'rgb(138, 90, 0)', 'アラートの色もライト配色');
-      assert.equal(r.codeWrap, 'pre-wrap', '長いコードは折り返して印刷する');
+      assert.equal(r.alertTitle, 'rgb(138, 90, 0)', 'alert colors are also light');
+      assert.equal(r.codeWrap, 'pre-wrap', 'long code wraps when printed');
       const pdf = await page.pdf({ format: 'A4' });
-      assert.ok(pdf.length > 5000, 'PDF として出力できる');
+      assert.ok(pdf.length > 5000, 'can be output as PDF');
     });
   });
 });

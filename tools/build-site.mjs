@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
- * サイト HTML の書き出し（コマンドライン版） / Export a site as one HTML file (command-line version)
+ * Export a site as one HTML file (command-line version)
  *
- * 表示の言語は、環境変数 MDFOLIO_LANG（ja / en）、LC_ALL・LC_MESSAGES・LANG、OS の言語設定の順で決める。
  * The language of the messages follows MDFOLIO_LANG (ja / en), LC_ALL, LC_MESSAGES, LANG, then the OS.
- * 英語の使い方は --help で表示される / Run with --help for usage in English.
+ * Run with --help for usage in English (MDFOLIO_LANG=en) or Japanese (MDFOLIO_LANG=ja).
+ * The Japanese usage below is printed by --help as is, so keep it in Japanese.
  *
  *   node tools/build-site.mjs <文書フォルダ> [オプション]
  *
@@ -29,7 +29,7 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-/** 表示の言語（SPEC FR-605） */
+/** Message language (SPEC FR-605) */
 function detectLang(env = process.env) {
   const pick = [env.MDFOLIO_LANG, env.LC_ALL, env.LC_MESSAGES, env.LANG].find((v) => v && v !== '');
   const value = pick || (() => { try { return Intl.DateTimeFormat().resolvedOptions().locale; } catch (e) { return ''; } })();
@@ -130,7 +130,7 @@ function parseArgs(argv) {
   return args;
 }
 
-/** ビューアの HTML からスクリプトを取り出して評価し、core / md を得る。 */
+/** Takes the scripts out of the viewer HTML and evaluates them to get core / md. */
 function loadViewer(viewerPath) {
   if (!fs.existsSync(viewerPath)) fail(t('noViewer', viewerPath));
   const html = fs.readFileSync(viewerPath, 'utf8');
@@ -143,7 +143,7 @@ function loadViewer(viewerPath) {
   return { html, core: MDV.core, md: MDV.md };
 }
 
-/** フォルダを走査して、ルートからの相対パス（/ 区切り）の一覧を返す。 */
+/** Walks the folder and returns the paths relative to the root (separated by /). */
 function walk(core, rootDir) {
   const out = [];
   let count = 0;
@@ -171,10 +171,10 @@ const { html, core, md } = loadViewer(path.resolve(args.viewer));
 const parts = core.extractParts(html);
 const warnings = [];
 
-// 文書と添付を分ける
+// Split documents and attachments
 const scan = walk(core, dir);
 if (scan.truncated) warnings.push(t('truncated', core.LIMITS.maxEntries));
-const diskPath = new Map(); // 正規化したパス → 実際のパス
+const diskPath = new Map(); // normalized path -> actual path on disk
 const entries = [];
 let docCount = 0;
 for (const rel of scan.files) {
@@ -192,7 +192,7 @@ const index = core.createIndex(entries);
 const docPaths = core.flattenTree(core.buildTree(entries.filter((e) => e.kind === 'doc').map((e) => e.path)));
 if (!docPaths.length) fail(t('noDocs', dir));
 
-// 文書を読み、参照されている添付を集める
+// Read the documents and collect the attachments they reference
 const renderer = md.createRenderer({});
 const files = [];
 const refs = [];
@@ -204,7 +204,7 @@ for (const p of docPaths) {
   const stat = fs.statSync(abs);
   const text = core.detectAndDecode(fs.readFileSync(abs)).text;
   files.push({ path: p, kind: 'doc', text, mtime: Math.floor(stat.mtimeMs) });
-  if (stat.size > core.LIMITS.maxDocBytes) continue; // ビューアではプレーンテキスト表示になる
+  if (stat.size > core.LIMITS.maxDocBytes) continue; // The viewer shows it as plain text
   const r = renderer.collectRefs(core.parseFrontMatter(text).body);
   if (r.hasMath) hasMath = true;
   if (r.hasMermaid) hasMermaid = true;
@@ -224,7 +224,7 @@ for (const p of refs) {
 }
 if (skipped) warnings.push(t('bigAssets', skipped));
 
-// ホーム文書
+// Home document
 const name = path.basename(dir);
 const title = args.title || name;
 let home = '';
@@ -242,7 +242,7 @@ if (!hasMermaid) dropLibs.push('mermaid');
 
 const siteData = core.buildSiteData(name, files);
 const config = { title, lang: args.lang, theme: args.theme, home, allowExternalImages: args.allowExternalImages, allowDownloads: args.allowDownloads, lockExternalImages: args.lockExternalImages };
-// 見た目の CSS（SPEC FR-1006）。指定がなければ、ビューアに埋め込まれているものを引き継ぐ
+// CSS for the look (SPEC FR-1006). If none is given, keep the one embedded in the viewer
 let userCss;
 if (args.css !== null) {
   if (!fs.existsSync(args.css) || !fs.statSync(args.css).isFile()) fail(t('cssMissing', args.css));

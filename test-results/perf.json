@@ -1,52 +1,52 @@
 {
-  "machine": "2 コア / Intel(R) Xeon(R) Processor @ 2.10GHz",
-  "viewerBytes": 4335042,
+  "machine": "4 cores / Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "viewerBytes": 4332916,
   "measured": {
-    "起動（開始画面の構築まで）": {
-      "ms": 149,
+    "Startup (until the start screen is built)": {
+      "ms": 162,
       "limitMs": 1000,
-      "note": "7 回の中央値。最大 162 ms"
+      "note": "Median of 7 runs. Max 199 ms"
     },
-    "起動（最初の描画まで）": {
-      "ms": 196,
+    "Startup (until first paint)": {
+      "ms": 208,
       "limitMs": 1000,
-      "note": "7 回の中央値。最大 216 ms"
+      "note": "Median of 7 runs. Max 248 ms"
     },
-    "1MB の文書の表示": {
-      "ms": 2023,
+    "1 MB document: display": {
+      "ms": 1941,
       "limitMs": 3000,
-      "note": "1.00 MB、見出し・表・コードブロック各 1653 個。5 回の中央値。最大 2135 ms",
-      "maxMs": 2135
+      "note": "1.00 MB, 1653 each of headings, tables and code blocks. Median of 5 runs. Max 2166 ms",
+      "maxMs": 2166
     },
-    "1MB の文書: コードの色分け完了まで（参考）": {
-      "ms": 6089,
+    "1 MB document: until code highlighting completes (reference)": {
+      "ms": 5362,
       "limitMs": null,
-      "note": "表示のあと、操作を妨げない範囲で少しずつ処理する。目標値はない"
+      "note": "Processed bit by bit after display without blocking interaction. No target value"
     },
-    "1,000 文書: ツリー表示": {
-      "ms": 67,
+    "1,000 documents: tree display": {
+      "ms": 47,
       "limitMs": 2000,
-      "note": "「フォルダを開く」から、一覧と最初の文書が表示されるまで"
+      "note": "From \"Open folder\" until the list and the first document are shown"
     },
-    "1,000 文書: 索引作成": {
-      "ms": 720,
+    "1,000 documents: indexing": {
+      "ms": 1338,
       "limitMs": 10000,
-      "note": "「フォルダを開く」から、全文検索の索引ができるまで"
+      "note": "From \"Open folder\" until the full-text search index is built"
     },
-    "1,000 文書: 検索応答": {
-      "ms": 173,
+    "1,000 documents: search response": {
+      "ms": 172,
       "limitMs": 300,
-      "note": "入力から結果の表示まで（入力待ち 150 ms を含む）。5 種類の検索語の最大値。中央値 165 ms"
+      "note": "From input until results are shown (including the 150 ms input debounce). Max over 5 search terms. Median 164 ms"
     },
-    "1,000 文書（実ファイル）: ツリー表示": {
-      "ms": 433,
+    "1,000 documents (real files): tree display": {
+      "ms": 386,
       "limitMs": 2000,
-      "note": "ファイルの受け渡しにかかる時間を含む"
+      "note": "Includes the time to hand over the files"
     },
-    "1,000 文書（実ファイル）: 索引作成": {
-      "ms": 1553,
+    "1,000 documents (real files): indexing": {
+      "ms": 1681,
       "limitMs": 10000,
-      "note": "ファイルの受け渡しにかかる時間を含む"
+      "note": "Includes the time to hand over the files"
     }
   }
 }

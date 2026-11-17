@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// WebKit（Safari と同じ系統のエンジン）での動作確認。WebKitGTK と WebKitWebDriver を使う。
+// Checks on WebKit (the same engine family as Safari). Uses WebKitGTK and WebKitWebDriver.
 //   Ubuntu: apt-get install webkit2gtk-driver libwebkit2gtk-4.1-0 xvfb
-//   実行:   node tests/cross/webkit.smoke.mjs
+//   Run:    node tests/cross/webkit.smoke.mjs
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
@@ -10,7 +10,7 @@ import { runSmoke, ROOT } from './smoke.mjs';
 
 const MINIBROWSER = ['/usr/lib/x86_64-linux-gnu/webkit2gtk-4.1/MiniBrowser', '/usr/lib/aarch64-linux-gnu/webkit2gtk-4.1/MiniBrowser', '/usr/libexec/webkit2gtk-4.1/MiniBrowser'].find((p) => fs.existsSync(p));
 if (!MINIBROWSER || !fs.existsSync('/usr/bin/WebKitWebDriver')) {
-  console.log('WebKitGTK（MiniBrowser / WebKitWebDriver）が見つからないため、実行しません。');
+  console.log('WebKitGTK (MiniBrowser / WebKitWebDriver) not found; skipping.');
   process.exit(2);
 }
 
@@ -31,11 +31,11 @@ const d = new Driver('http://127.0.0.1:' + port);
 let results = [];
 let version = '';
 try {
-  await waitFor(async () => (await fetch(d.base + '/status')).ok, 15000, 'WebKitWebDriver の起動');
+  await waitFor(async () => (await fetch(d.base + '/status')).ok, 15000, 'WebKitWebDriver startup');
   const session = await d.start({ browserName: 'MiniBrowser', 'webkitgtk:browserOptions': { binary: MINIBROWSER, args: ['--automation'] } });
   version = session.capabilities.browserVersion;
   await d.setSize(1280, 900);
-  console.log(`WebKitGTK ${version}（MiniBrowser）`);
+  console.log(`WebKitGTK ${version} (MiniBrowser)`);
   const shots = async (name) => {
     const dir = path.join(ROOT, 'test-results');
     fs.mkdirSync(dir, { recursive: true });
@@ -43,9 +43,9 @@ try {
   };
   results = await runSmoke(d, 'WebKitGTK ' + version, console.log, shots);
 } catch (e) {
-  console.log('実行できませんでした: ' + e.message);
+  console.log('Could not run: ' + e.message);
   console.log(log.slice(-1500));
-  results.push({ name: '実行', ok: false, detail: e.message });
+  results.push({ name: 'run', ok: false, detail: e.message });
 } finally {
   await d.quit();
   wd.kill();
@@ -57,5 +57,5 @@ const skipped = results.filter((r) => r.skipped);
 const out = path.join(ROOT, 'test-results');
 fs.mkdirSync(out, { recursive: true });
 fs.writeFileSync(path.join(out, 'cross-webkit.json'), JSON.stringify({ engine: 'WebKitGTK', version, results }, null, 2) + '\n');
-console.log(`\n${results.length} 項目: 合格 ${results.length - failed.length - skipped.length}、不合格 ${failed.length}、未確認 ${skipped.length}`);
+console.log(`\n${results.length} items: ${results.length - failed.length - skipped.length} passed, ${failed.length} failed, ${skipped.length} unverified`);
 process.exit(failed.length ? 1 : 0);

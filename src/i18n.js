@@ -1,5 +1,5 @@
 /*!
- * mdfolio i18n — 画面の文言（日本語・英語）
+ * mdfolio i18n — UI text (Japanese and English)
  * MIT License
  */
 (function (root) {
@@ -281,12 +281,12 @@
     return 'en';
   }
 
-  /** 文言を取り出し、{0} {1} … を引数で置き換える。 */
+  /** Get a message and replace {0} {1} … with the arguments. */
   function translate(lang, key, args) {
     var table = lang === 'ja' ? ja : en;
     var s = Object.prototype.hasOwnProperty.call(table, key) ? table[key] : (Object.prototype.hasOwnProperty.call(en, key) ? en[key] : key);
     if (args && args.length) {
-      // {0:item|items} は、{0} が 1 のときは前の語、それ以外は後の語になる（英語の単数・複数）
+      // {0:item|items} becomes the first word when {0} is 1 and the second word otherwise (English singular/plural)
       s = s.replace(/\{(\d+):([^|{}]*)\|([^{}]*)\}/g, function (m, n, one, many) { return args[n] === undefined ? m : (Number(args[n]) === 1 ? one : many); });
       s = s.replace(/\{(\d+)\}/g, function (m, n) { return args[n] === undefined ? m : String(args[n]); });
     }

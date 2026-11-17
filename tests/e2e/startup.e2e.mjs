@@ -1,4 +1,4 @@
-// 起動・開始画面・CSP・設定ブロック・ヘルプ・ライセンス表示
+// Startup, start screen, CSP, config block, help, license display
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -11,7 +11,7 @@ let browser;
 before(async () => { browser = await launchBrowser(); });
 after(async () => { await browser.close(); });
 
-/** ビューアの HTML の部品を書き換えた変種を作る。 */
+/** Build a variant of the viewer HTML with some of its parts rewritten. */
 function variant(mutate) {
   const parts = core.extractParts(fs.readFileSync(VIEWER, 'utf8'));
   mutate(parts);
@@ -20,21 +20,21 @@ function variant(mutate) {
   return pathToFileURL(file).href;
 }
 
-describe('起動', () => {
-  test('開始画面が表示され、エラー・CSP 違反・通信がない（FR-901, SEC-5, NFR-1）', async () => {
+describe('Startup', () => {
+  test('shows the start screen with no errors, CSP violations or network requests (FR-901, SEC-5, NFR-1)', async () => {
     await withPage(browser, async ({ page }) => {
       assert.equal(await page.title(), 'mdfolio');
       assert.equal(await page.textContent('.mdv-welcome-title'), 'Markdown のフォルダを、そのままサイトとして読む。');
       assert.ok(await page.isVisible('.mdv-open-folder'));
       assert.ok(await page.isVisible('.mdv-open-files'));
-      assert.ok(await page.isHidden('.mdv-search'), '文書セットがない間は検索欄を出さない');
+      assert.ok(await page.isHidden('.mdv-search'), 'no search box while no document set is loaded');
       assert.ok(await page.isHidden('.mdv-sidebar'));
       assert.ok(await page.isHidden('.mdv-open-last'));
       assert.equal(await page.getAttribute('.mdv-app', 'data-has-set'), 'false');
       assert.equal(await page.getAttribute('html', 'lang'), 'ja');
       const info = await page.evaluate(() => ({
         externalScripts: document.querySelectorAll('script[src]').length,
-        // <link> はタブのアイコン（HTML の中に持つ data: URL）と、隣の mdfolio.css（SPEC 3.10）だけ。外部のファイルは参照しない
+        // The only <link>s are the tab icon (a data: URL inside the HTML) and the neighboring mdfolio.css (SPEC 3.10). No external files are referenced
         links: Array.from(document.querySelectorAll('link:not([data-mdv-dyn])')).map((l) => l.rel + ' ' + l.getAttribute('href').slice(0, 19)),
         externalRefs: document.querySelectorAll('link[href^="http"], link[href^="/"], script[src], img[src^="http"], iframe').length,
         version: window.MDV.app.version,
@@ -45,7 +45,7 @@ describe('起動', () => {
     });
   });
 
-  test('CSP: スクリプトはハッシュのみ許可、通信先なし（SEC-4）', async () => {
+  test('CSP: scripts allowed by hash only, no network destinations (SEC-4)', async () => {
     await withPage(browser, async ({ page }) => {
       const csp = await page.getAttribute('meta[http-equiv="Content-Security-Policy"]', 'content');
       const directives = Object.fromEntries(csp.split(';').map((d) => d.trim()).filter(Boolean).map((d) => {
@@ -59,14 +59,14 @@ describe('起動', () => {
       assert.equal(directives['base-uri'], "'none'");
       assert.equal(directives['form-action'], "'none'");
       const sources = directives['script-src'].split(/\s+/);
-      assert.equal(sources.length, 4, 'スクリプトは 4 つ（ライブラリ・アプリ・KaTeX・Mermaid）');
+      assert.equal(sources.length, 4, 'four scripts (libraries, app, KaTeX, Mermaid)');
       for (const s of sources) assert.match(s, /^'sha256-[A-Za-z0-9+/]{43}='$/);
       assert.ok(!csp.includes('unsafe-eval'));
       assert.ok(!directives['script-src'].includes('unsafe-inline'));
     });
   });
 
-  test('CSP: 注入されたスクリプト・イベントハンドラ・eval・通信は実行されない（SEC-4, SEC-5）', async () => {
+  test('CSP: injected scripts, event handlers, eval and network requests do not run (SEC-4, SEC-5)', async () => {
     await withPage(browser, { allowErrors: true }, async ({ page, record }) => {
       const r = await page.evaluate(async () => {
         const out = {};
@@ -88,39 +88,39 @@ describe('起動', () => {
         await new Promise((res) => setTimeout(res, 300));
         return out;
       });
-      assert.equal(r.injected, 'undefined', 'ハッシュに一致しないスクリプトは実行されない');
-      assert.equal(r.handler, 'undefined', 'イベントハンドラ属性は実行されない');
-      assert.equal(r.jsurl, 'undefined', 'javascript: URL は実行されない');
-      assert.equal(r.fn, 'EvalError', 'new Function は使えない');
-      assert.equal(r.fetch, 'TypeError', 'fetch は CSP で拒否される');
-      assert.ok(record.errors.some((e) => /Content Security Policy/.test(e)), 'CSP 違反として記録される');
+      assert.equal(r.injected, 'undefined', 'scripts that do not match a hash do not run');
+      assert.equal(r.handler, 'undefined', 'event handler attributes do not run');
+      assert.equal(r.jsurl, 'undefined', 'javascript: URLs do not run');
+      assert.equal(r.fn, 'EvalError', 'new Function is unavailable');
+      assert.equal(r.fetch, 'TypeError', 'fetch is refused by the CSP');
+      assert.ok(record.errors.some((e) => /Content Security Policy/.test(e)), 'recorded as a CSP violation');
       const leaked = record.requests.filter((u) => !/example\.invalid\/x\.png$/.test(u));
-      assert.deepEqual(leaked, [], 'スクリプトからの通信は出ていかない');
+      assert.deepEqual(leaked, [], 'no requests leave from scripts');
     });
   });
 
-  test('画面の言語はブラウザの言語設定に従う（FR-502）', async () => {
+  test('the UI language follows the browser language setting (FR-502)', async () => {
     await withPage(browser, { locale: 'en-US' }, async ({ page }) => {
       assert.equal(await page.getAttribute('html', 'lang'), 'en');
       assert.equal(await page.textContent('.mdv-welcome-title'), 'Browse a folder of Markdown files as a website.');
       assert.equal((await page.textContent('.mdv-open-folder')).trim(), 'Open folder');
     });
     await withPage(browser, { locale: 'fr-FR' }, async ({ page }) => {
-      assert.equal(await page.getAttribute('html', 'lang'), 'en', '日本語以外は英語');
+      assert.equal(await page.getAttribute('html', 'lang'), 'en', 'English for anything other than Japanese');
     });
   });
 });
 
-describe('ヘルプ・ライセンス', () => {
-  test('開始画面から使い方を開き、戻れる（FR-801）', async () => {
+describe('Help and licenses', () => {
+  test('opens the guide from the start screen and can go back (FR-801)', async () => {
     await withPage(browser, async ({ page }) => {
       await page.click('.mdv-welcome-foot a');
       await waitHeading(page, 'mdfolio の使い方');
       assert.equal(await hash(page), '#!help');
       assert.equal(await page.title(), '使い方 - mdfolio');
-      assert.ok(await page.isVisible('.mdv-toc'), '目次が出る');
+      assert.ok(await page.isVisible('.mdv-toc'), 'table of contents is shown');
       assert.ok((await page.locator('.mdv-toc .mdv-toc-link').count()) >= 5);
-      // ヘルプ内の見出しリンクはヘルプの中で移動する
+      // Heading links inside the help navigate within the help
       await page.click('.mdv-toc .mdv-toc-link:has-text("困ったとき")');
       assert.equal(await hash(page), '#!help#' + encodeURIComponent('困ったとき'));
       await page.waitForFunction(() => window.scrollY > 100);
@@ -131,13 +131,13 @@ describe('ヘルプ・ライセンス', () => {
     });
   });
 
-  test('英語の画面では英語のヘルプを表示する', async () => {
+  test('shows the English help when the UI is in English', async () => {
     await withPage(browser, { locale: 'en-US', hash: '#!help' }, async ({ page }) => {
       await waitHeading(page, 'How to use mdfolio');
     });
   });
 
-  test('ライセンスとバージョンを表示できる（FR-802）', async () => {
+  test('can show licenses and the version (FR-802)', async () => {
     await withPage(browser, async ({ page }) => {
       await clickMenu(page, 'menuAbout');
       await page.waitForSelector('dialog.mdv-dialog-about[open]');
@@ -145,9 +145,9 @@ describe('ヘルプ・ライセンス', () => {
       assert.ok(lead.includes('mdfolio') && lead.includes(core.VERSION));
       const text = await page.textContent('.mdv-licenses');
       for (const s of ['MIT License', 'Particle Pudding', 'markdown-it', 'dompurify', 'highlight.js', 'Ivan Sagalaev', 'katex', '@mermaid-js/tiny', 'SIL OPEN FONT LICENSE', 'Apache License', 'd3', 'lodash-es', 'Permission is hereby granted']) {
-        assert.ok(text.includes(s), `ライセンス表記に「${s}」が含まれる`);
+        assert.ok(text.includes(s), `license text includes "${s}"`);
       }
-      assert.ok(!/elkjs|GNU GENERAL PUBLIC|Eclipse Public License/i.test(text), 'コピーレフト系ライセンスの表記がない');
+      assert.ok(!/elkjs|GNU GENERAL PUBLIC|Eclipse Public License/i.test(text), 'no copyleft license text');
       assert.ok(text.length > 50000);
       assert.equal(await page.getAttribute('dialog.mdv-dialog-about', 'aria-labelledby') !== null, true);
       await page.click('.mdv-about-close');
@@ -156,8 +156,8 @@ describe('ヘルプ・ライセンス', () => {
   });
 });
 
-describe('閲覧モードでの URL', () => {
-  test('ハッシュ付きで開くと開始画面になり、読み込み後にその文書・位置へ移動する（FR-304）', async () => {
+describe('URLs in viewer mode', () => {
+  test('opening with a hash shows the start screen, then moves to that document and position after loading (FR-304)', async () => {
     const target = core.buildRoute('guide/intro.md', '末尾');
     await withPage(browser, { hash: target }, async ({ page }) => {
       assert.ok(await page.isVisible('.mdv-welcome'));
@@ -166,12 +166,12 @@ describe('閲覧モードでの URL', () => {
       await loadFolder(page, fixture('site'));
       await waitHeading(page, 'イントロダクション');
       assert.equal(await hash(page), target);
-      assert.ok(await page.evaluate(() => window.scrollY > 300), '見出しの位置までスクロールしている');
+      assert.ok(await page.evaluate(() => window.scrollY > 300), 'scrolled to the heading position');
       assert.ok(await page.isHidden('.mdv-welcome-pending'));
     });
   });
 
-  test('読み込んだフォルダにない文書を指していた場合はホームを表示する', async () => {
+  test('shows the home document when the hash points to a document not in the loaded folder', async () => {
     await withPage(browser, { hash: '#/no/such.md' }, async ({ page }) => {
       await loadFolder(page, fixture('site'));
       assert.equal(await heading(page), 'テスト用サイト');
@@ -180,8 +180,8 @@ describe('閲覧モードでの URL', () => {
   });
 });
 
-describe('設定ブロック（FR-701）', () => {
-  test('タイトル・言語・テーマ・ホーム文書の既定を指定できる', async () => {
+describe('Config block (FR-701)', () => {
+  test('can set defaults for title, language, theme and home document', async () => {
     const url = variant((parts) => {
       core.findBlock(parts, 'mdv-config').text = core.jsonForScript({ title: 'カスタム <サイト>', lang: 'en', theme: 'dark', home: 'guide/Setup.md', allowExternalImages: false });
     });
@@ -197,7 +197,7 @@ describe('設定ブロック（FR-701）', () => {
     });
   });
 
-  test('壊れた設定ブロックでも既定値で動く', async () => {
+  test('works with default values when the config block is broken', async () => {
     const url = variant((parts) => { core.findBlock(parts, 'mdv-config').text = '{ this is not json'; });
     await withPage(browser, { url }, async ({ page }) => {
       assert.equal(await page.textContent('.mdv-title'), 'mdfolio');
@@ -206,7 +206,7 @@ describe('設定ブロック（FR-701）', () => {
     });
   });
 
-  test('未対応の形式のサイトデータは読み込まず、通知して閲覧モードで起動する（仕様 5.5）', async () => {
+  test('site data in an unsupported format is not loaded; shows a notice and starts in viewer mode (spec 5.5)', async () => {
     const url = variant((parts) => { core.findBlock(parts, 'mdv-site').text = core.jsonForScript({ format: 999, files: [] }); });
     await withPage(browser, { url }, async ({ page }) => {
       await page.waitForSelector('.mdv-toast-error');
@@ -217,8 +217,8 @@ describe('設定ブロック（FR-701）', () => {
   });
 });
 
-describe('保存領域が使えない環境（FR-702, NFR-7）', () => {
-  test('localStorage / IndexedDB が例外を投げても動作する', async () => {
+describe('Environments where storage is unavailable (FR-702, NFR-7)', () => {
+  test('works even when localStorage / IndexedDB throw', async () => {
     const init = () => {
       Storage.prototype.getItem = function () { throw new DOMException('denied', 'SecurityError'); };
       Storage.prototype.setItem = function () { throw new DOMException('denied', 'SecurityError'); };
@@ -229,7 +229,7 @@ describe('保存領域が使えない環境（FR-702, NFR-7）', () => {
       assert.ok(await page.isHidden('.mdv-open-last'));
       await page.click('.mdv-btn-theme');
       await page.click('.mdv-btn-theme');
-      assert.equal(await page.getAttribute('html', 'data-theme'), 'dark', '保存できなくてもその場の切り替えは効く');
+      assert.equal(await page.getAttribute('html', 'data-theme'), 'dark', 'switching works in place even when it cannot be saved');
       await loadFolder(page, fixture('site'));
       assert.equal(await heading(page), 'テスト用サイト');
     });

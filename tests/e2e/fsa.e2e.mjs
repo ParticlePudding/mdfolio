@@ -1,5 +1,5 @@
-// フォルダのハンドルを使う機能: 再読み込み・自動更新（FR-109）、前回のフォルダ（FR-108）
-// 前半はフォルダ選択を差し替えて file:// 上で確認し、後半は本物のハンドル（OPFS）で確認する。
+// Features that use folder handles: reload and auto-update (FR-109), last folder (FR-108)
+// The first half checks on file:// with a replaced folder picker; the second half checks with real handles (OPFS).
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -16,7 +16,7 @@ after(async () => { await browser.close(); });
 const long = (title, word) => `# ${title}\n\n${word}\n\n` + Array.from({ length: 60 }, (_, i) => `段落 ${i + 1}: スクロール確認用の文章です。`).join('\n\n') + '\n';
 const treeLabels = (page) => page.evaluate(() => Array.from(document.querySelectorAll('.mdv-side-tree a')).map((a) => a.textContent.trim()));
 const renderSeq = (page) => page.evaluate(() => window.MDV.app.state.renderSeq);
-/** 差し替えたフォルダの中身を書き換える（ディスク上での変更の代わり）。 */
+/** Rewrite the contents of the replaced folder (standing in for changes on disk). */
 const mutate = (page, changes) => page.evaluate((c) => {
   const files = window.__mockFs.files;
   Object.keys(c).forEach((p) => {
@@ -25,10 +25,10 @@ const mutate = (page, changes) => page.evaluate((c) => {
   });
 }, changes);
 
-describe('自動更新（FR-109）', () => {
+describe('Auto-update (FR-109)', () => {
   const spec = () => ({ name: 'notes', files: { 'README.md': long('メモ', '旧い内容です。'), 'other.md': '# 別の文書\n\n[戻る](README.md)\n' } });
 
-  test('表示中の文書が変更されると、スクロール位置を保ったまま表示を更新する', async () => {
+  test('when the displayed document changes, the display updates while keeping the scroll position', async () => {
     await withPage(browser, mockOptions(spec()), async ({ page }) => {
       await openMock(page);
       assert.equal(await page.evaluate(() => window.MDV.app.state.set.source), 'handles');
@@ -37,10 +37,10 @@ describe('自動更新（FR-109）', () => {
       await mutate(page, { 'README.md': long('メモ（改訂）', '新しい内容です。検索語ガンマ。') });
       await page.waitForFunction(() => document.querySelector('.mdv-prose').textContent.includes('新しい内容です'), null, { timeout: 6000 });
       assert.equal(await heading(page), 'メモ（改訂）');
-      assert.ok(Math.abs((await page.evaluate(() => window.scrollY)) - 600) <= 2, 'スクロール位置は変わらない');
+      assert.ok(Math.abs((await page.evaluate(() => window.scrollY)) - 600) <= 2, 'scroll position is unchanged');
       assert.equal(await page.title(), 'メモ（改訂） - notes');
-      assert.deepEqual(await toasts(page), [], '自動更新では通知を出さない');
-      // 検索の索引も新しい内容になる
+      assert.deepEqual(await toasts(page), [], 'auto-update shows no notice');
+      // The search index also gets the new content
       await page.fill('.mdv-search-input', 'ガンマ');
       await page.waitForSelector('.mdv-search-item');
       assert.ok((await page.textContent('.mdv-search-item')).includes('メモ（改訂）'));
@@ -49,53 +49,53 @@ describe('自動更新（FR-109）', () => {
     });
   });
 
-  test('変更がなければ描き直さない。別の文書へ移れば、その文書を監視する', async () => {
+  test('no redraw when nothing changed; moving to another document watches that document', async () => {
     await withPage(browser, mockOptions(spec()), async ({ page }) => {
       await openMock(page);
       const seq = await renderSeq(page);
       const reads = await page.evaluate(() => window.__mockFs.reads);
       await page.waitForTimeout(4500);
-      assert.equal(await renderSeq(page), seq, '描き直していない');
-      assert.ok((await page.evaluate(() => window.__mockFs.reads)) >= reads + 2, '定期的に更新日時を確かめている');
+      assert.equal(await renderSeq(page), seq, 'not redrawn');
+      assert.ok((await page.evaluate(() => window.__mockFs.reads)) >= reads + 2, 'modification times are checked periodically');
       await goTo(page, '#/other.md', '別の文書');
       await mutate(page, { 'README.md': long('メモ', '裏で変わった内容。') });
       const seq2 = await renderSeq(page);
       await page.waitForTimeout(2600);
-      assert.equal(await renderSeq(page), seq2, '表示していない文書の変更では描き直さない');
+      assert.equal(await renderSeq(page), seq2, 'changes to a document not on screen cause no redraw');
       await mutate(page, { 'other.md': '# 別の文書（更新）\n' });
       await waitHeading(page, '別の文書（更新）');
-      // 戻ると、裏で変わっていた文書も新しい内容で表示される
+      // On return, a document changed in the background is shown with its new content
       await goTo(page, '#/README.md', 'メモ');
       await page.waitForFunction(() => document.querySelector('.mdv-prose').textContent.includes('裏で変わった内容'));
     });
   });
 
-  test('表示中の文書が削除されても、表示はそのままでエラーにしない', async () => {
+  test('if the displayed document is deleted, the display stays and no error is raised', async () => {
     await withPage(browser, mockOptions(spec()), async ({ page }) => {
       await openMock(page);
       await mutate(page, { 'README.md': null });
       await page.waitForTimeout(2600);
       assert.equal(await heading(page), 'メモ');
       assert.deepEqual(await toasts(page), []);
-      // ほかの文書は引き続き読める
+      // Other documents can still be read
       await goTo(page, '#/other.md', '別の文書');
     });
   });
 
-  test('フォルダを開き直すと、前のフォルダの監視をやめる', async () => {
+  test('reopening a folder stops watching the previous folder', async () => {
     await withPage(browser, mockOptions(spec()), async ({ page }) => {
       await openMock(page);
       await loadFolder(page, fixture('single'));
       await page.waitForFunction(() => window.MDV.app.state.set.source !== 'handles');
       const reads = await page.evaluate(() => window.__mockFs.reads);
       await page.waitForTimeout(2600);
-      assert.equal(await page.evaluate(() => window.__mockFs.reads), reads, '前のフォルダを読みに行かない');
+      assert.equal(await page.evaluate(() => window.__mockFs.reads), reads, 'the previous folder is not read');
     });
   });
 });
 
-describe('再読み込み（FR-109）', () => {
-  test('フォルダを読み直して、追加・削除・変更を反映する。表示中の文書は保つ', async () => {
+describe('Reload (FR-109)', () => {
+  test('rereads the folder and reflects additions, deletions and changes, keeping the displayed document', async () => {
     const spec = { name: 'notes', files: { 'README.md': '# ホーム\n\n[a](a.md)\n', 'a.md': '# 文書 A\n', 'old.md': '# 古い文書\n' } };
     await withPage(browser, mockOptions(spec), async ({ page }) => {
       await openMock(page);
@@ -106,7 +106,7 @@ describe('再読み込み（FR-109）', () => {
       await waitHeading(page, '文書 A（改訂）');
       assert.deepEqual(await toasts(page), ['再読み込みしました']);
       assert.equal(await hash(page), '#/a.md');
-      assert.deepEqual(await treeLabels(page), ['README', 'a', 'added'], '追加したファイルが増え、削除したファイルが消える');
+      assert.deepEqual(await treeLabels(page), ['README', 'a', 'added'], 'added files appear and deleted files disappear');
       await waitIndexed(page);
       await page.fill('.mdv-search-input', 'デルタ');
       await page.waitForSelector('.mdv-search-item');
@@ -115,7 +115,7 @@ describe('再読み込み（FR-109）', () => {
     });
   });
 
-  test('表示中の文書がなくなっていたら、ホームを表示する', async () => {
+  test('if the displayed document is gone, shows the home document', async () => {
     const spec = { name: 'notes', files: { 'README.md': '# ホーム\n', 'gone.md': '# 消える文書\n' } };
     await withPage(browser, mockOptions(spec), async ({ page }) => {
       await openMock(page);
@@ -127,7 +127,7 @@ describe('再読み込み（FR-109）', () => {
     });
   });
 
-  test('文書がすべてなくなっていたら、表示はそのままにして知らせる', async () => {
+  test('if all documents are gone, keeps the display and shows a notice', async () => {
     const spec = { name: 'notes', files: { 'README.md': '# ホーム\n' } };
     await withPage(browser, mockOptions(spec), async ({ page }) => {
       await openMock(page);
@@ -139,29 +139,29 @@ describe('再読み込み（FR-109）', () => {
     });
   });
 
-  test('<input> で開いた場合は、表示中の文書を読み直す。変更されていれば開き直しを案内する', async () => {
+  test('when opened via <input>, rereads the displayed document; if it changed, suggests reopening', async () => {
     const dir = writeTree(tmpDir(), { 'README.md': '# 入力欄から開いた文書\n\n最初の内容。\n' });
     await withPage(browser, async ({ page }) => {
       await loadFolder(page, dir);
       await clickMenu(page, 'menuReload');
       await page.waitForSelector('.mdv-toast');
       assert.deepEqual(await toasts(page), ['再読み込みしました']);
-      // ブラウザーは、選択後に変更されたファイルを読ませない（安全のための仕様）
+      // Browsers do not allow reading files changed after selection (a security measure)
       await page.waitForTimeout(1100);
       fs.writeFileSync(path.join(dir, 'README.md'), '# 入力欄から開いた文書\n\n変更後の内容。\n');
       await clickMenu(page, 'menuReload');
       await page.waitForSelector('.mdv-toast-error');
       assert.equal(await page.textContent('.mdv-toast-error'), 'ファイルが変更されたため再読み込みできません。フォルダを開き直してください');
-      assert.ok((await page.textContent('.mdv-prose')).includes('最初の内容。'), '表示は元のまま');
-      // 案内のとおり開き直せば、新しい内容になる
+      assert.ok((await page.textContent('.mdv-prose')).includes('最初の内容。'), 'the display is unchanged');
+      // Reopening as suggested shows the new content
       await loadFolder(page, dir);
       await page.waitForFunction(() => document.querySelector('.mdv-prose').textContent.includes('変更後の内容。'));
     });
   });
 });
 
-describe('前回のフォルダ（FR-108）', () => {
-  test('ハンドルを保存できない環境では、何も表示せず、エラーにもしない', async () => {
+describe('Last folder (FR-108)', () => {
+  test('where handles cannot be saved, nothing is shown and no error is raised', async () => {
     const spec = { name: 'notes', files: { 'README.md': '# ホーム\n' } };
     await withPage(browser, mockOptions(spec), async ({ page }) => {
       await openMock(page);
@@ -173,7 +173,7 @@ describe('前回のフォルダ（FR-108）', () => {
     });
   });
 
-  test('<input> 方式しか使えないブラウザーでは、前回のフォルダを表示しない', async () => {
+  test('in browsers that only support the <input> method, the last folder is not shown', async () => {
     await withPage(browser, async ({ page }) => {
       await loadFolder(page, fixture('single'));
       await page.reload();
@@ -184,9 +184,9 @@ describe('前回のフォルダ（FR-108）', () => {
   });
 });
 
-describe('本物のフォルダハンドルでの確認（OPFS。FR-103, FR-108, FR-109）', () => {
-  // ブラウザーが用意する実物の FileSystemDirectoryHandle を使う。フォルダ選択の画面だけは自動操作できないので、
-  // showDirectoryPicker が OPFS の「docs」フォルダを返すようにしている。OPFS は file:// では使えないため http:// で開く。
+describe('Checks with real folder handles (OPFS; FR-103, FR-108, FR-109)', () => {
+  // Uses the real FileSystemDirectoryHandle provided by the browser. Only the folder picker dialog cannot be automated,
+  // so showDirectoryPicker is made to return the OPFS "docs" folder. OPFS is not available on file://, so the page is opened via http://.
   let server;
   let context;
   const png = fs.readFileSync(path.join(fixture('site'), 'assets/pixel.png')).toString('base64');
@@ -214,7 +214,7 @@ describe('本物のフォルダハンドルでの確認（OPFS。FR-103, FR-108,
     }
   }, files);
 
-  test('開く → 画像の表示 → 自動更新 → 再読み込み → 次回起動時に「前回のフォルダを開く」', async () => {
+  test('open -> show images -> auto-update -> reload -> "Open last folder" on next startup', async () => {
     const page = await context.newPage();
     const record = watch(page);
     await page.goto(server.origin + '/mdfolio.html');
@@ -225,9 +225,9 @@ describe('本物のフォルダハンドルでの確認（OPFS。FR-103, FR-108,
       ['img/pixel.png', png, true],
       ['.hidden/secret.md', '# 隠し\n']
     ]);
-    assert.ok(await page.isHidden('.mdv-open-last'), '初回は「前回のフォルダ」がない');
+    assert.ok(await page.isHidden('.mdv-open-last'), 'no "last folder" the first time');
 
-    // 開く
+    // Open
     await page.click('.mdv-open-folder');
     await waitHeading(page, 'OPFS のホーム');
     const info = await page.evaluate(() => { const s = window.MDV.app.state.set; return { source: s.source, name: s.name, docs: s.docs.slice(), handle: Object.prototype.toString.call(s.rootHandle) }; });
@@ -237,17 +237,17 @@ describe('本物のフォルダハンドルでの確認（OPFS。FR-103, FR-108,
     await waitHeading(page, '下の階層の文書');
     await page.waitForFunction(() => { const i = document.querySelector('.mdv-prose img'); return i && i.complete && i.naturalWidth === 64; });
 
-    // 自動更新
+    // Auto-update
     await writeOpfs(page, [['sub/a.md', '# 下の階層の文書（更新）\n\n書き換えました。\n']]);
     await waitHeading(page, '下の階層の文書（更新）');
 
-    // 再読み込み（追加されたファイルを反映）
+    // Reload (reflects the added file)
     await writeOpfs(page, [['sub/b.md', '# 追加した文書\n']]);
     await clickMenu(page, 'menuReload');
     await page.waitForFunction(() => window.MDV.app.state.set.docs.length === 3);
     assert.equal(await hash(page), '#/sub/a.md');
 
-    // ページを開き直すと、前回のフォルダを開ける。見ていた文書に戻る
+    // Reopening the page lets you open the last folder, returning to the document that was being viewed
     await page.reload();
     await page.waitForSelector('.mdv-app[data-view="welcome"]');
     await page.waitForSelector('.mdv-open-last', { state: 'visible' });
@@ -257,13 +257,13 @@ describe('本物のフォルダハンドルでの確認（OPFS。FR-103, FR-108,
     await waitHeading(page, '下の階層の文書（更新）');
     assert.equal(await page.evaluate(() => window.MDV.app.state.set.docs.length), 3);
 
-    // 別のファイル名の HTML には引き継がない（保存先は HTML ファイルごと）
+    // Not carried over to an HTML file with a different name (stored per HTML file)
     await page.goto(server.origin + '/other.html');
     await page.waitForSelector('.mdv-app[data-view="welcome"]');
     await page.waitForTimeout(400);
     assert.ok(await page.isHidden('.mdv-open-last'));
 
-    // フォルダがなくなっていたら、選び直しを案内して、ボタンを消す
+    // If the folder is gone, suggest choosing again and remove the button
     await page.evaluate(async () => { await (await navigator.storage.getDirectory()).removeEntry('docs', { recursive: true }); });
     await page.goto(server.origin + '/mdfolio.html');
     await page.waitForSelector('.mdv-open-last', { state: 'visible' });
@@ -274,7 +274,7 @@ describe('本物のフォルダハンドルでの確認（OPFS。FR-103, FR-108,
     await page.reload();
     await page.waitForSelector('.mdv-app[data-view="welcome"]');
     await page.waitForTimeout(400);
-    assert.ok(await page.isHidden('.mdv-open-last'), '保存していた情報も消えている');
+    assert.ok(await page.isHidden('.mdv-open-last'), 'the saved information is also cleared');
 
     assertClean(record);
     await page.close();

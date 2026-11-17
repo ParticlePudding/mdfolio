@@ -1,13 +1,13 @@
 /*
- * mdfolio — 画面の部品（app.css）
+ * mdfolio — UI parts (app.css)
  *
- * ヘッダー・サイドバー・目次・メニュー・ダイアログなど、画面の部品の配置と形を決めています。
- * 配色・書体・幅は document.css の変数で変えられるので、通常はこのファイルを編集する必要はありません。
+ * Defines the layout and shape of UI parts such as the header, sidebar, table of contents, menus and dialogs.
+ * Colors, fonts and widths can be changed with the variables in document.css, so normally there is no need to edit this file.
  *
  * MIT License
  */
 
-/* ------------------------------------------------------------------ 土台 */
+/* ------------------------------------------------------------------ Base */
 
 html {
   -webkit-text-size-adjust: 100%;
@@ -62,7 +62,7 @@ body {
   stroke-linejoin: round;
 }
 
-/* ------------------------------------------------------------------ ボタン */
+/* ------------------------------------------------------------------ Buttons */
 
 .mdv-btn {
   display: inline-flex;
@@ -113,7 +113,7 @@ body {
 }
 .mdv-iconbtn:hover { background: var(--rule-soft); color: var(--ink); }
 
-/* ------------------------------------------------------------------ ヘッダー */
+/* ------------------------------------------------------------------ Header */
 
 .mdv-header {
   position: sticky;
@@ -252,7 +252,7 @@ body {
   color: var(--mark-ink);
 }
 
-/* ------------------------------------------------------------------ メニュー */
+/* ------------------------------------------------------------------ Menus */
 
 .mdv-menu-wrap { position: relative; }
 
@@ -294,7 +294,7 @@ body {
 .mdv-menu-check { margin-left: auto; visibility: hidden; color: var(--accent); }
 .mdv-menu-sep { height: 1px; margin: 6px 4px; background: var(--rule-soft); }
 
-/* ------------------------------------------------------------------ 配置 */
+/* ------------------------------------------------------------------ Layout */
 
 .mdv-body {
   flex: 1;
@@ -324,11 +324,11 @@ body {
   min-width: 0;
   padding: 28px 0 112px;
 }
-/* 文書を切り替えるたびにフォーカスを移す入れ物なので、枠は表示しない */
+/* A container that receives focus each time the document changes, so no outline is shown */
 .mdv-app .mdv-main:focus,
 .mdv-app .mdv-main:focus-visible { outline: none; }
 
-/* ------------------------------------------------------------------ サイドバー（綴じ込みの見出しタブ） */
+/* ------------------------------------------------------------------ Sidebar (index tabs of a binder) */
 
 .mdv-sidebar {
   position: sticky;
@@ -338,8 +338,8 @@ body {
   overflow-y: auto;
   overflow-x: hidden;
   padding: 12px 0 32px 12px;
-  /* 右端の罫線は枠線ではなく内側の影で描く。表示中の文書のタブがその上に重なって、紙と地続きに見える
-     （枠線の上へはみ出させる方法だと、スクロールバーを常に表示する環境で横スクロールバーが出てしまう） */
+  /* The right-edge rule is drawn with an inset shadow, not a border. The current document's tab overlaps it and looks continuous with the paper
+     (making it overhang a border causes a horizontal scrollbar in environments that always show scrollbars) */
   box-shadow: inset -1px 0 0 var(--rule);
   font-size: 0.9375rem;
   line-height: 1.45;
@@ -409,10 +409,10 @@ body {
 .mdv-tree summary .mdv-icon { width: 16px; height: 16px; color: var(--muted); transition: transform 0.12s ease; }
 .mdv-tree details[open] > summary .mdv-icon { transform: rotate(90deg); }
 
-/* 表示中の文書: 紙（本文）と地続きのタブにする */
+/* Current document: a tab continuous with the paper (the document body) */
 .mdv-tree-link[aria-current="page"],
 .mdv-sidenav a[aria-current="page"] {
-  position: relative; /* サイドバー右端の罫線（内側の影）より手前に描く */
+  position: relative; /* Draw in front of the sidebar's right-edge rule (the inset shadow) */
   border-color: var(--rule);
   background: var(--sheet);
   color: var(--accent);
@@ -445,7 +445,7 @@ body {
   background: var(--scrim);
 }
 
-/* ------------------------------------------------------------------ 目次（紙の余白の書き込み） */
+/* ------------------------------------------------------------------ Table of contents (notes in the paper's margin) */
 
 .mdv-toc {
   position: sticky;
@@ -491,7 +491,7 @@ body {
 .mdv-toc-inline > summary { padding: 8px 14px; font-weight: 700; cursor: pointer; }
 .mdv-toc-inline .mdv-toc-list { margin: 0 14px 12px; }
 
-/* ------------------------------------------------------------------ 文書の上部（パス・更新日時） */
+/* ------------------------------------------------------------------ Top of the document (path, last updated) */
 
 .mdv-doc-meta {
   display: flex;
@@ -517,7 +517,7 @@ body {
   font-size: 0.9375rem;
 }
 
-/* ------------------------------------------------------------------ 開始画面（トンボ付きの用紙） */
+/* ------------------------------------------------------------------ Start screen (a sheet with crop marks) */
 
 .mdv-welcome {
   display: flex;
@@ -536,7 +536,7 @@ body {
   transition: background-color 0.15s ease;
 }
 
-/* トンボ: 角の外側に、角に触れない 2 本の線 */
+/* Crop marks: two lines outside each corner, not touching the corner */
 .mdv-crop-mark { position: absolute; width: 0; height: 0; color: var(--muted); transition: transform 0.18s ease, color 0.18s ease; }
 .mdv-crop-mark::before,
 .mdv-crop-mark::after { content: ""; position: absolute; background: currentColor; }
@@ -555,7 +555,7 @@ body {
 .mdv-crop-br::before { left: 9px; bottom: 0; }
 .mdv-crop-br::after { right: 0; top: 9px; }
 
-/* ドロップ中: トンボが角に寄り、用紙に色がつく */
+/* While dragging over: the crop marks move to the corners and the sheet gets tinted */
 .mdv-app.is-dragover .mdv-crop { background: var(--accent-soft); }
 .mdv-app.is-dragover .mdv-crop-mark { color: var(--accent); }
 .mdv-app.is-dragover .mdv-crop-tl { transform: translate(9px, 9px); }
@@ -599,7 +599,7 @@ body {
   box-shadow: var(--overlay-shadow);
 }
 
-/* ------------------------------------------------------------------ ダイアログ・通知 */
+/* ------------------------------------------------------------------ Dialogs and notifications */
 
 .mdv-dialog {
   width: min(560px, calc(100vw - 32px));
@@ -687,7 +687,7 @@ body {
 .mdv-toast-error { box-shadow: var(--overlay-shadow), inset 4px 0 0 var(--caution); }
 
 .mdv-hidden-input { position: absolute; width: 1px; height: 1px; overflow: hidden; opacity: 0; pointer-events: none; }
-/* コピー用の一時的な入力欄。画面に固定して、選択のときに画面が動かないようにする */
+/* Temporary input field for copying. Fixed to the viewport so the page does not move on select */
 .mdv-copy-buffer {
   position: fixed;
   top: 0;
@@ -704,7 +704,7 @@ body {
   resize: none;
 }
 
-/* ------------------------------------------------------------------ 画面幅による切り替え */
+/* ------------------------------------------------------------------ Responsive switching by screen width */
 
 @media (max-width: 1199px) {
   .mdv-sheet { grid-template-columns: minmax(0, var(--content-w)); }
@@ -752,7 +752,7 @@ body {
   .mdv-app *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
 }
 
-/* ------------------------------------------------------------------ 印刷: 本文のみ、常にライト配色 */
+/* ------------------------------------------------------------------ Print: document body only, always light colors */
 
 @media print {
   body { background: #FFFFFF; }

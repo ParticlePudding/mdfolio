@@ -1,4 +1,4 @@
-// ナビゲーション: リンク（FR-211）、サイドバー（FR-301, FR-302）、ルーティング（FR-304〜FR-307）
+// Navigation: links (FR-211), sidebar (FR-301, FR-302), routing (FR-304 to FR-307)
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -16,8 +16,8 @@ after(async () => { await browser.close(); });
 const link = (page, text) => page.locator('.mdv-prose a', { hasText: text }).first();
 const activeTreeItem = (page) => page.evaluate(() => { const a = document.querySelector('.mdv-side-tree a[aria-current="page"]'); return a ? a.textContent : null; });
 
-describe('文書間のリンク（FR-211, 仕様 5.3）', () => {
-  test('相対リンクでアプリ内を移動し、タイトル・URL・サイドバーが追従する', async () => {
+describe('Links between documents (FR-211, spec 5.3)', () => {
+  test('relative links navigate within the app, and the title, URL and sidebar follow', async () => {
     await withPage(browser, async ({ page }) => {
       await loadFolder(page, fixture('site'));
       assert.equal(await activeTreeItem(page), 'README');
@@ -27,7 +27,7 @@ describe('文書間のリンク（FR-211, 仕様 5.3）', () => {
       assert.equal(await page.title(), 'イントロダクション - site');
       assert.equal(await activeTreeItem(page), 'intro');
       assert.equal(await page.evaluate(() => window.scrollY), 0);
-      assert.equal(await page.evaluate(() => document.activeElement.id), 'mdv-main', '本文領域にフォーカスが移る（NFR-4）');
+      assert.equal(await page.evaluate(() => document.activeElement.id), 'mdv-main', 'focus moves to the main content area (NFR-4)');
     });
   });
 
@@ -39,7 +39,7 @@ describe('文書間のリンク（FR-211, 仕様 5.3）', () => {
     ['記法', '記法', '#/syntax.md']
   ];
   for (const [text, title, route] of cases) {
-    test(`リンクの解決: ${text} → ${route}`, async () => {
+    test(`link resolution: ${text} -> ${route}`, async () => {
       await withPage(browser, async ({ page }) => {
         await loadFolder(page, fixture('site'));
         assert.equal(await link(page, text).getAttribute('href'), route);
@@ -50,7 +50,7 @@ describe('文書間のリンク（FR-211, 仕様 5.3）', () => {
     });
   }
 
-  test('見出し付きのリンクは、その見出しの位置を表示する', async () => {
+  test('a link with a heading shows the position of that heading', async () => {
     await withPage(browser, async ({ page }) => {
       await loadFolder(page, fixture('site'));
       await goTo(page, '#/guide/intro.md', 'イントロダクション');
@@ -64,7 +64,7 @@ describe('文書間のリンク（FR-211, 仕様 5.3）', () => {
     });
   });
 
-  test('ページ内リンク: 描き直さずに位置だけ移動する。重複した見出し・大文字小文字の違いにも対応', async () => {
+  test('in-page links: move position only, without redrawing; handles duplicate headings and case differences', async () => {
     await withPage(browser, async ({ page }) => {
       await loadFolder(page, fixture('site'));
       await goTo(page, '#/guide/intro.md', 'イントロダクション');
@@ -74,14 +74,14 @@ describe('文書間のリンク（FR-211, 仕様 5.3）', () => {
       await page.waitForFunction(() => location.hash === '#/guide/intro.md#' + encodeURIComponent('概要-1'));
       await page.waitForFunction(() => Math.abs(document.getElementById('user-content-概要-1').getBoundingClientRect().top - 68) < 4);
       assert.ok((await topOf('user-content-概要')) < (await topOf('user-content-概要-1')));
-      assert.equal(await page.getAttribute('.mdv-prose h1', 'data-test-mark'), '1', '同じ文書の中では描き直さない');
+      assert.equal(await page.getAttribute('.mdv-prose h1', 'data-test-mark'), '1', 'no redraw within the same document');
       await page.evaluate(() => window.scrollTo(0, 0));
       await link(page, '大文字で指定した見出しへ').click();
       await page.waitForFunction(() => Math.abs(document.getElementById('user-content-hello-world').getBoundingClientRect().top - 68) < 4);
     });
   });
 
-  test('解決できないリンク: 「見つかりません」を表示し、ホームへ戻れる', async () => {
+  test('unresolvable links: show "not found" and allow going back home', async () => {
     await withPage(browser, async ({ page }) => {
       await loadFolder(page, fixture('site'));
       const missing = link(page, '存在しない文書');
@@ -95,13 +95,13 @@ describe('文書間のリンク（FR-211, 仕様 5.3）', () => {
       assert.equal(await activeTreeItem(page), null);
       await page.click('.mdv-empty a.mdv-btn');
       await waitHeading(page, 'テスト用サイト');
-      // ルートより上を指すリンクは、リンクとして機能させない
+      // Links pointing above the root do not work as links
       assert.equal(await link(page, 'ルートの外').getAttribute('href'), null);
       assert.equal(await link(page, 'ルートの外').getAttribute('class'), 'mdv-missing');
     });
   });
 
-  test('外部リンク: 新しいタブで開き、noopener noreferrer を付ける（SEC-7）', async () => {
+  test('external links: open in a new tab with noopener noreferrer (SEC-7)', async () => {
     await withPage(browser, async ({ page }) => {
       await loadFolder(page, fixture('site'));
       const ext = link(page, '外部サイト');
@@ -114,23 +114,23 @@ describe('文書間のリンク（FR-211, 仕様 5.3）', () => {
     });
   });
 
-  test('添付ファイルへのリンクはダウンロードになる（ブラウザ内では開かない、SEC-9）', async () => {
+  test('links to attachments become downloads (not opened in the browser, SEC-9)', async () => {
     await withPage(browser, async ({ page, context }) => {
       await loadFolder(page, fixture('site'));
       const csv = await captureDownload(page, () => link(page, '添付 CSV').click());
       assert.equal(csv.name, 'data.csv');
       assert.equal(fs.readFileSync(csv.file, 'utf8'), fs.readFileSync(path.join(fixture('site'), 'assets/data.csv'), 'utf8'));
-      assert.equal(await heading(page), 'テスト用サイト', '画面は移動しない');
-      // HTML の添付も、開かずにダウンロードする
+      assert.equal(await heading(page), 'テスト用サイト', 'the screen does not navigate');
+      // HTML attachments are also downloaded, not opened
       const html = await captureDownload(page, () => link(page, '添付 HTML').click());
       assert.equal(html.name, 'evil.html');
       await page.waitForTimeout(300);
-      assert.equal(context.pages().length, 1, '新しいタブは開かない');
+      assert.equal(context.pages().length, 1, 'no new tab is opened');
       assert.equal(await page.evaluate(() => typeof window.__xss), 'undefined');
     });
   });
 
-  test('添付のパスを直接開いた場合は、ダウンロード用の画面を表示する', async () => {
+  test('opening an attachment path directly shows the download screen', async () => {
     await withPage(browser, async ({ page }) => {
       await loadFolder(page, fixture('site'));
       await goTo(page, '#/assets/data.csv');
@@ -143,8 +143,8 @@ describe('文書間のリンク（FR-211, 仕様 5.3）', () => {
   });
 });
 
-describe('ルーティング（FR-304, FR-306）', () => {
-  test('ブラウザの「戻る」「進む」で移動できる', async () => {
+describe('Routing (FR-304, FR-306)', () => {
+  test('can navigate with the browser\'s Back and Forward', async () => {
     await withPage(browser, async ({ page }) => {
       await loadFolder(page, fixture('site'));
       await link(page, 'イントロ').click();
@@ -163,14 +163,14 @@ describe('ルーティング（FR-304, FR-306）', () => {
     });
   });
 
-  test('「戻る」「進む」では以前のスクロール位置を復元する', async () => {
+  test('Back and Forward restore the previous scroll position', async () => {
     await withPage(browser, async ({ page }) => {
       await loadFolder(page, fixture('site'));
       await goTo(page, '#/guide/intro.md', 'イントロダクション');
       await page.evaluate(() => window.scrollTo(0, 900));
       await page.waitForFunction(() => { const s = window.MDV.app.state; return s.scrollMap.get(s.navIdx) === 900; });
       await goTo(page, '#/guide/Setup.md', 'セットアップ');
-      assert.equal(await page.evaluate(() => window.scrollY), 0, '新しく開いた文書は先頭から');
+      assert.equal(await page.evaluate(() => window.scrollY), 0, 'a newly opened document starts at the top');
       await page.goBack();
       await waitHeading(page, 'イントロダクション');
       await page.waitForFunction(() => Math.abs(window.scrollY - 900) <= 2);
@@ -180,7 +180,7 @@ describe('ルーティング（FR-304, FR-306）', () => {
     });
   });
 
-  test('存在しないパスを直接指定した場合も「見つかりません」を表示する', async () => {
+  test('a nonexistent path given directly also shows "not found"', async () => {
     await withPage(browser, async ({ page }) => {
       await loadFolder(page, fixture('site'));
       await goTo(page, '#/nothing/here.md');
@@ -189,17 +189,17 @@ describe('ルーティング（FR-304, FR-306）', () => {
     });
   });
 
-  test('手入力の URL（エンコードなしの日本語、# だけのハッシュ）も解釈する', async () => {
+  test('also interprets hand-typed URLs (unencoded Japanese, a hash with only #)', async () => {
     await withPage(browser, async ({ page }) => {
       await loadFolder(page, fixture('site'));
       await goTo(page, '#/日本語 フォルダ/仕様書 v1.0.md', '仕様書');
       await goTo(page, '#' + encodeURIComponent('見出し括弧つき'));
       await page.waitForFunction(() => location.hash.endsWith('#' + encodeURIComponent('見出し括弧つき')) && location.hash.startsWith('#/'));
-      assert.equal(await heading(page), '仕様書', '文書は変わらず、URL が正規の形に直る');
+      assert.equal(await heading(page), '仕様書', 'the document stays the same and the URL is corrected to its canonical form');
     });
   });
 
-  test('サイトタイトルを押すとホームへ、表示中の文書をもう一度選ぶと先頭へ戻る', async () => {
+  test('clicking the site title goes home; selecting the displayed document again goes back to the top', async () => {
     await withPage(browser, async ({ page }) => {
       await loadFolder(page, fixture('site'));
       await goTo(page, '#/guide/intro.md', 'イントロダクション');
@@ -213,8 +213,8 @@ describe('ルーティング（FR-304, FR-306）', () => {
   });
 });
 
-describe('文書の上部の表示（FR-305）', () => {
-  test('パスと更新日時を表示する', async () => {
+describe('Document header (FR-305)', () => {
+  test('shows the path and modification time', async () => {
     await withPage(browser, async ({ page }) => {
       await loadFolder(page, fixture('site'));
       await goTo(page, '#/guide/sub/deep.md', '深い文書');
@@ -225,8 +225,8 @@ describe('文書の上部の表示（FR-305）', () => {
   });
 });
 
-describe('ホーム文書（FR-307）', () => {
-  test('README がなければ index、どちらもなければツリー順で最初の文書', async () => {
+describe('Home document (FR-307)', () => {
+  test('without README, index; without either, the first document in tree order', async () => {
     const withIndex = writeTree(tmpDir(), { 'zzz.md': '# Z\n', 'Index.MD': '# インデックス\n', 'sub/README.md': '# サブの README\n' });
     await withPage(browser, async ({ page }) => {
       await loadFolder(page, withIndex);
@@ -236,21 +236,21 @@ describe('ホーム文書（FR-307）', () => {
     const none = writeTree(tmpDir(), { 'sub/a.md': '# サブ A\n', 'b10.md': '# B10\n', 'b2.md': '# B2\n' });
     await withPage(browser, async ({ page }) => {
       await loadFolder(page, none);
-      assert.equal(await heading(page), 'B2', '自然順で b2 が b10 より先');
+      assert.equal(await heading(page), 'B2', 'natural order puts b2 before b10');
     });
   });
 });
 
-describe('サイドバー（FR-301）', () => {
-  test('フォルダの開閉と、表示中の文書の強調', async () => {
+describe('Sidebar (FR-301)', () => {
+  test('opening and closing folders, and highlighting the displayed document', async () => {
     await withPage(browser, async ({ page }) => {
       await loadFolder(page, fixture('site'));
       const open = (name) => page.evaluate((n) => document.querySelector(`.mdv-side-tree details[data-path="${n}"]`).open, name);
-      assert.equal(await open('guide'), true, '文書が少ないときはすべて開いておく');
+      assert.equal(await open('guide'), true, 'with few documents, all folders are open');
       await page.click('.mdv-side-tree details[data-path="guide"] > summary');
       assert.equal(await open('guide'), false);
       assert.ok(await page.isHidden('.mdv-side-tree a[href="#/guide/intro.md"]'));
-      // 閉じたフォルダの中の文書へ移動すると、そのフォルダが開く
+      // Navigating to a document inside a closed folder opens that folder
       await goTo(page, '#/guide/sub/deep.md', '深い文書');
       assert.equal(await open('guide'), true);
       assert.equal(await open('guide/sub'), true);
@@ -260,7 +260,7 @@ describe('サイドバー（FR-301）', () => {
     });
   });
 
-  test('文書が多いときは、表示中の文書までの道筋だけを開く', async () => {
+  test('with many documents, only the path to the displayed document is opened', async () => {
     const spec = { name: 'many', files: { 'README.md': '# 多数\n' }, generate: [{ count: 40, prefix: 'alpha/doc' }, { count: 40, prefix: 'beta/doc' }] };
     await withPage(browser, mockOptions(spec), async ({ page }) => {
       await openMock(page);
@@ -272,8 +272,8 @@ describe('サイドバー（FR-301）', () => {
   });
 });
 
-describe('カスタムナビ（FR-302）', () => {
-  test('_sidebar.md があれば「ナビ」に表示し、「ファイル」と切り替えられる', async () => {
+describe('Custom navigation (FR-302)', () => {
+  test('if _sidebar.md exists, it is shown under "Nav" and can be switched with "Files"', async () => {
     await withPage(browser, async ({ page }) => {
       await loadFolder(page, fixture('nav'));
       await page.waitForSelector('.mdv-sidenav a');
@@ -293,7 +293,7 @@ describe('カスタムナビ（FR-302）', () => {
       assert.equal(await page.getAttribute('.mdv-sidenav a:has-text("A の文書")', 'aria-current'), 'page');
       await page.click('.mdv-sidenav a:has-text("C の文書")');
       await waitHeading(page, '文書 C');
-      // 「ファイル」に切り替えると、ナビに載っていない文書にも到達できる
+      // Switching to "Files" reaches documents not listed in the navigation
       await page.click('.mdv-side-tab[data-tab="files"]');
       assert.ok(await page.isVisible('.mdv-side-tree'));
       assert.ok(await page.isHidden('.mdv-sidenav'));
@@ -302,7 +302,7 @@ describe('カスタムナビ（FR-302）', () => {
     });
   });
 
-  test('SUMMARY.md でも同じ。ナビのないフォルダではタブを出さない', async () => {
+  test('same for SUMMARY.md; folders without navigation show no tabs', async () => {
     await withPage(browser, async ({ page }) => {
       await loadFolder(page, fixture('summary'));
       await page.waitForSelector('.mdv-sidenav a');

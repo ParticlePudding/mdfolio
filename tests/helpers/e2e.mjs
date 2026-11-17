@@ -1,4 +1,4 @@
-// E2E テスト用の共通処理（Playwright で実ブラウザを操作する）
+// Shared helpers for E2E tests (drive a real browser with Playwright)
 import { chromium } from 'playwright';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -8,8 +8,8 @@ import http from 'node:http';
 import { pathToFileURL } from 'node:url';
 import { ROOT, core } from './load.mjs';
 
-// コマンド（更新コマンド、コマンドライン版の書き出し）の表示の言語は、テストでは日本語に固定する。
-// 実行する機械の言語設定に左右されないように（SPEC FD-10）。英語の表示は、テストの中で個別に指定して確かめる。
+// In tests, the language of command output (the update command, the command-line export) is pinned to Japanese,
+// so results do not depend on the language setting of the machine running them (SPEC FD-10). English output is checked by specifying it explicitly in individual tests.
 process.env.MDFOLIO_LANG = process.env.MDFOLIO_LANG || 'ja';
 
 export { ROOT, core };
@@ -18,8 +18,8 @@ export const VIEWER_URL = pathToFileURL(VIEWER).href;
 export const FIXTURES = path.join(ROOT, 'tests/fixtures');
 export const fixture = (name) => path.join(FIXTURES, name);
 
-// テスト環境のロケールが POSIX のままだと、Chrome が日本語のファイル名のファイルを読めない。
-// ブラウザのプロセスにだけ UTF-8 のロケールを指定する。
+// If the test environment's locale is left as POSIX, Chrome cannot read files with Japanese names.
+// Set a UTF-8 locale for the browser process only.
 const BROWSER_ENV = { ...process.env, LANG: 'C.UTF-8', LC_ALL: 'C.UTF-8' };
 
 export function launchBrowser(options = {}) {
@@ -31,10 +31,10 @@ export function launchPersistent(userDataDir, options = {}) {
 }
 
 /**
- * コンソールエラー（CSP 違反を含む）・ページの例外・通信を記録する。
- * requests は実際に送ろうとした通信、blocked は CSP が送信前に止めたもの。
+ * Record console errors (including CSP violations), page exceptions and network requests.
+ * requests holds requests actually attempted; blocked holds those CSP stopped before sending.
  */
-/** 隣の mdfolio.css（SPEC 3.10）。HTML は常にこれを読みに行き、なければ見つからないと記録される。仕様どおりの動きなので除外する */
+/** The neighboring mdfolio.css (SPEC 3.10). The HTML always tries to load it and records it as not found when absent. This is the specified behavior, so it is excluded */
 export const isUserCssUrl = (u) => /\/mdfolio\.css(?:[?#]|$)/.test(String(u || ''));
 
 export function watch(page) {
@@ -49,7 +49,7 @@ export function watch(page) {
   page.on('request', (r) => {
     const u = r.url();
     if (u.startsWith('blob:') || u.startsWith('data:')) return;
-    if (r.isNavigationRequest() && r.frame() === page.mainFrame()) return; // HTML 自身の読み込み
+    if (r.isNavigationRequest() && r.frame() === page.mainFrame()) return; // loading the HTML itself
     if (isUserCssUrl(u) && r.resourceType() === 'stylesheet') { record.userCss.push(u); return; }
     record.requests.push(u);
   });
@@ -63,20 +63,20 @@ export function watch(page) {
   return record;
 }
 
-/** エラー・CSP 違反・想定外の通信がないことを確かめる（合格基準）。 */
+/** Check that there are no errors, CSP violations or unexpected requests (the pass criteria). */
 export function assertClean(record) {
-  assert.deepEqual(record.errors, [], 'コンソールエラー・CSP 違反・例外がないこと');
-  assert.deepEqual(record.requests, [], 'HTML 自身の読み込み以外の通信がないこと');
+  assert.deepEqual(record.errors, [], 'no console errors, CSP violations or exceptions');
+  assert.deepEqual(record.requests, [], 'no requests other than loading the HTML itself');
 }
 
 /**
- * ビューアを開く。
+ * Open the viewer.
  * options:
- *   url / hash            開く URL（既定は dist/mdfolio.html を file:// で）
+ *   url / hash            URL to open (default: dist/mdfolio.html via file://)
  *   locale, viewport, colorScheme
- *   picker                'none'（既定。File System Access API を隠して <input> 方式にする）| 'keep'
- *   init, initArg         ページのスクリプトより前に実行する関数
- *   context               既存のコンテキストを使う場合
+ *   picker                'none' (default: hide the File System Access API and use the <input> method) | 'keep'
+ *   init, initArg         function to run before the page's scripts
+ *   context               when using an existing context
  */
 export async function openPage(browser, options = {}) {
   const ownContext = !options.context;
@@ -90,7 +90,7 @@ export async function openPage(browser, options = {}) {
   const record = watch(page);
   await page.addInitScript((picker) => {
     if (picker === 'none') {
-      try { Object.defineProperty(window, 'showDirectoryPicker', { value: undefined, configurable: true, writable: true }); } catch (e) { /* 無視 */ }
+      try { Object.defineProperty(window, 'showDirectoryPicker', { value: undefined, configurable: true, writable: true }); } catch (e) { /* ignore */ }
     }
   }, options.picker || 'none');
   if (options.init) await page.addInitScript(options.init, options.initArg);
@@ -99,7 +99,7 @@ export async function openPage(browser, options = {}) {
   return { context, page, record, ownContext };
 }
 
-/** ページを開いてテスト本体を実行し、最後に合格基準（エラーなし・通信なし）を確かめる。 */
+/** Open the page, run the test body, then check the pass criteria (no errors, no requests). */
 export async function withPage(browser, options, fn) {
   if (typeof options === 'function') { fn = options; options = {}; }
   const opened = await openPage(browser, options);
@@ -112,7 +112,7 @@ export async function withPage(browser, options, fn) {
   }
 }
 
-/** <input webkitdirectory> にフォルダを設定して開く。 */
+/** Set a folder on <input webkitdirectory> and open it. */
 export async function loadFolder(page, dir) {
   await page.locator('.mdv-input-dir').setInputFiles(dir);
   await page.waitForSelector('.mdv-app[data-has-set="true"] .mdv-doc:not([hidden]) .mdv-prose > *');
@@ -123,7 +123,7 @@ export async function loadFiles(page, files) {
   await page.waitForSelector('.mdv-app[data-has-set="true"] .mdv-doc:not([hidden]) .mdv-prose > *');
 }
 
-/** 見出し（h1）が指定の文字列を含むまで待つ。 */
+/** Wait until the heading (h1) contains the given string. */
 export async function waitHeading(page, text) {
   await page.waitForFunction((t) => {
     const h1 = document.querySelector('.mdv-doc:not([hidden]) .mdv-prose h1');
@@ -138,7 +138,7 @@ export async function waitIndexed(page) {
   });
 }
 
-/** ハッシュを変えて移動し、見出しが出るまで待つ。 */
+/** Navigate by changing the hash, and wait for the heading to appear. */
 export async function goTo(page, route, heading) {
   await page.evaluate((r) => { location.hash = r; }, route);
   if (heading) await waitHeading(page, heading);
@@ -168,7 +168,7 @@ export function tmpDir(prefix = 'mdfolio-test-') {
   return fs.mkdtempSync(path.join(os.tmpdir(), prefix));
 }
 
-/** { '相対パス': '内容' | Buffer } からフォルダを作る。 */
+/** Create a folder from { 'relative path': 'content' | Buffer }. */
 export function writeTree(dir, files) {
   for (const [rel, content] of Object.entries(files)) {
     const abs = path.join(dir, rel);
@@ -178,7 +178,7 @@ export function writeTree(dir, files) {
   return dir;
 }
 
-/** ダウンロードを待って保存し、保存先のパスと提示されたファイル名を返す。 */
+/** Wait for a download, save it, and return the saved path and the suggested file name. */
 export async function captureDownload(page, action, dir) {
   const [download] = await Promise.all([page.waitForEvent('download'), action()]);
   const name = download.suggestedFilename();
@@ -187,7 +187,7 @@ export async function captureDownload(page, action, dir) {
   return { file, name };
 }
 
-/** 設定ブロックだけを書き換えたビューアを一時フォルダに作り、その URL（file://）を返す。 */
+/** Create a viewer in a temporary folder with only the settings block rewritten, and return its URL (file://). */
 export function viewerWithConfig(config) {
   const parts = core.extractParts(fs.readFileSync(VIEWER, 'utf8'));
   core.findBlock(parts, 'mdv-config').text = core.jsonForScript(config);
@@ -197,8 +197,8 @@ export function viewerWithConfig(config) {
 }
 
 /**
- * 「外部のサーバー」の代わりになる HTTP サーバー。届いたリクエストを hits に記録する。
- * ブラウザーが本当に通信したかどうかを、サーバー側の記録で確かめるために使う。
+ * An HTTP server standing in for an "external server". Records incoming requests in hits.
+ * Used to confirm, from the server's own log, whether the browser actually made a request.
  */
 export async function startSink() {
   const hits = [];
@@ -218,7 +218,7 @@ export async function startSink() {
   };
 }
 
-/** dist/ を配信する小さな HTTP サーバー（http:// での動作確認用）。 */
+/** A small HTTP server serving dist/ (for checking behavior over http://). */
 export async function startServer(files) {
   const server = http.createServer((req, res) => {
     const url = decodeURIComponent(req.url.split('?')[0]);
@@ -232,10 +232,10 @@ export async function startServer(files) {
 }
 
 /**
- * テスト用のフォルダ選択（showDirectoryPicker の差し替え）。addInitScript に渡して使う。
- * spec: { name, files: { 'パス': { text, mtime } | '文字列' }, reject: 'AbortError' など, slow: ミリ秒,
- *         generate: [{ count, prefix, ext, text（見出し行）, body（本文） }] }
- * ページ側では window.__mockFs を書き換えると、ファイルの追加・変更・削除を再現できる。
+ * Folder picker for tests (a replacement for showDirectoryPicker). Pass it to addInitScript.
+ * spec: { name, files: { 'path': { text, mtime } | 'string' }, reject: 'AbortError' etc., slow: milliseconds,
+ *         generate: [{ count, prefix, ext, text (heading line), body (body text) }] }
+ * On the page side, modifying window.__mockFs simulates adding, changing and deleting files.
  */
 export function installMockPicker(spec) {
   const files = {};
@@ -243,7 +243,7 @@ export function installMockPicker(spec) {
     const v = spec.files[p];
     files[p] = typeof v === 'string' ? { text: v, mtime: 1700000000000 } : v;
   });
-  // 大量のファイルや巨大な文書は、ページの中で生成する
+  // Large numbers of files and huge documents are generated inside the page
   (spec.generate || []).forEach((g) => {
     for (let i = 0; i < g.count; i++) {
       files[(g.prefix || 'f') + String(i).padStart(6, '0') + (g.ext || '.md')] = { text: (g.text || '# doc') + ' ' + i + '\n' + (g.body ? '\n' + g.body : ''), mtime: 1700000000000 };
@@ -308,12 +308,12 @@ export function installMockPicker(spec) {
   };
 }
 
-/** installMockPicker を使ってページを開く。 */
+/** Open the page using installMockPicker. */
 export function mockOptions(spec, extra = {}) {
   return { picker: 'keep', init: installMockPicker, initArg: spec, ...extra };
 }
 
-/** 「フォルダを開く」ボタンから、差し替えたフォルダ選択で開く。 */
+/** Open via the "Open folder" button, using the replaced folder picker. */
 export async function openMock(page) {
   await page.click('.mdv-open-folder');
   await page.waitForSelector('.mdv-app[data-has-set="true"] .mdv-doc:not([hidden]) .mdv-prose > *');

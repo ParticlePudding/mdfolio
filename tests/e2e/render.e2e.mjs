@@ -1,4 +1,4 @@
-// 表示（レンダリング）: FR-201〜FR-213
+// Display (rendering): FR-201 to FR-213
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { launchBrowser, withPage, loadFolder, fixture, hash, heading, goTo, waitHeading, waitIndexed, tmpDir, writeTree, clickMenu } from '../helpers/e2e.mjs';
@@ -10,13 +10,13 @@ after(async () => { await browser.close(); });
 async function openSyntax(page) {
   await loadFolder(page, fixture('site'));
   await goTo(page, '#/syntax.md', '記法');
-  // 図（非同期）の描画完了を待つ
+  // Wait for diagrams (asynchronous) to finish rendering
   await page.waitForSelector('.mdv-mermaid svg');
   await page.waitForSelector('.mdv-mermaid-error');
 }
 
-describe('Markdown の表示', () => {
-  test('フロントマター: 本文に出さず、title を文書タイトルにする（FR-208, FR-213）', async () => {
+describe('Markdown display', () => {
+  test('front matter: not shown in the body; title becomes the document title (FR-208, FR-213)', async () => {
     await withPage(browser, async ({ page }) => {
       await openSyntax(page);
       assert.equal(await page.title(), '記法の確認 - site');
@@ -27,7 +27,7 @@ describe('Markdown の表示', () => {
     });
   });
 
-  test('表: 列揃え・横スクロール（FR-201, FR-212）', async () => {
+  test('tables: column alignment and horizontal scrolling (FR-201, FR-212)', async () => {
     await withPage(browser, async ({ page }) => {
       await openSyntax(page);
       const r = await page.evaluate(() => {
@@ -43,12 +43,12 @@ describe('Markdown の表示', () => {
       });
       assert.equal(r.count, 2);
       assert.equal(r.align, 'right');
-      assert.equal(r.wideScrolls, true, '横に長い表は、表の枠の中でスクロールする');
-      assert.ok(r.pageOverflow <= 0, 'ページ全体は横にはみ出さない');
+      assert.equal(r.wideScrolls, true, 'wide tables scroll inside the table frame');
+      assert.ok(r.pageOverflow <= 0, 'the page as a whole does not overflow horizontally');
     });
   });
 
-  test('タスクリスト: 操作できないチェックボックス（FR-201）', async () => {
+  test('task lists: non-interactive checkboxes (FR-201)', async () => {
     await withPage(browser, async ({ page }) => {
       await openSyntax(page);
       const boxes = await page.evaluate(() => Array.from(document.querySelectorAll('.mdv-prose .task-list-item input')).map((i) => ({ type: i.type, checked: i.checked, disabled: i.disabled })));
@@ -56,7 +56,7 @@ describe('Markdown の表示', () => {
     });
   });
 
-  test('アラート: 種別ごとの表示と、画面の言語に合わせた見出し（FR-207）', async () => {
+  test('alerts: display per type, and titles in the UI language (FR-207)', async () => {
     await withPage(browser, async ({ page }) => {
       await openSyntax(page);
       assert.equal(await page.textContent('.markdown-alert-warning .markdown-alert-title'), '警告');
@@ -66,7 +66,7 @@ describe('Markdown の表示', () => {
     });
   });
 
-  test('コード: ハイライト・言語名・コピー（FR-204）', async () => {
+  test('code: highlighting, language name, copy (FR-204)', async () => {
     await withPage(browser, async ({ page, context }) => {
       await context.grantPermissions(['clipboard-read', 'clipboard-write']).catch(() => {});
       await openSyntax(page);
@@ -91,7 +91,7 @@ describe('Markdown の表示', () => {
     });
   });
 
-  test('数式: インライン・ディスプレイ・金額は対象外・エラーでも続行（FR-205）', async () => {
+  test('math: inline, display, prices excluded, continues after errors (FR-205)', async () => {
     await withPage(browser, async ({ page }) => {
       await openSyntax(page);
       const r = await page.evaluate(async () => {
@@ -110,16 +110,16 @@ describe('Markdown の表示', () => {
       });
       assert.equal(r.inline, 1);
       assert.equal(r.display, 1);
-      assert.equal(r.errors, 1, '誤った数式はその箇所だけエラー表示');
-      assert.equal(r.currency, true, '金額は数式にしない');
-      assert.ok(r.mathml >= 2, '読み上げ用の MathML を出力する');
-      assert.ok(r.fonts >= 1, '内蔵フォントが読み込まれる');
+      assert.equal(r.errors, 1, 'invalid math shows an error only at that spot');
+      assert.equal(r.currency, true, 'prices are not treated as math');
+      assert.ok(r.mathml >= 2, 'outputs MathML for screen readers');
+      assert.ok(r.fonts >= 1, 'built-in fonts are loaded');
       assert.equal(r.fontErrors, 0);
       assert.equal(r.afterMath, true);
     });
   });
 
-  test('図: 正しい図は SVG に、誤りのある図はメッセージと元のコードを表示（FR-206）', async () => {
+  test('diagrams: valid diagrams become SVG; invalid ones show a message and the original code (FR-206)', async () => {
     await withPage(browser, async ({ page }) => {
       await openSyntax(page);
       const r = await page.evaluate(() => {
@@ -141,11 +141,11 @@ describe('Markdown の表示', () => {
       assert.equal(r.errTitle, '図の記述に誤りがあります');
       assert.ok(r.errMsg > 0);
       assert.equal(r.errCode, 'this is not a diagram\n');
-      assert.equal(r.leftovers, 0, '作業用の要素が残らない');
+      assert.equal(r.leftovers, 0, 'no working elements are left behind');
     });
   });
 
-  test('生 HTML: 許可した要素は表示し、style は安全な範囲だけ残す（FR-209, SEC-3）', async () => {
+  test('raw HTML: allowed elements are shown and style keeps only the safe subset (FR-209, SEC-3)', async () => {
     await withPage(browser, async ({ page }) => {
       await openSyntax(page);
       const r = await page.evaluate(() => {
@@ -166,7 +166,7 @@ describe('Markdown の表示', () => {
     });
   });
 
-  test('脚注: 参照から脚注へ、脚注から本文へ移動できる（FR-202）', async () => {
+  test('footnotes: can move from a reference to the footnote and from the footnote back to the text (FR-202)', async () => {
     await withPage(browser, async ({ page }) => {
       await openSyntax(page);
       const inView = (sel) => page.evaluate((s) => {
@@ -187,7 +187,7 @@ describe('Markdown の表示', () => {
     });
   });
 
-  test('自動リンク: スキーム付き URL だけをリンクにする（3.2.1）', async () => {
+  test('autolinks: only URLs with a scheme become links (3.2.1)', async () => {
     await withPage(browser, async ({ page }) => {
       await openSyntax(page);
       const r = await page.evaluate(() => {
@@ -198,7 +198,7 @@ describe('Markdown の表示', () => {
     });
   });
 
-  test('見出し: ID とアンカーリンク（FR-203）', async () => {
+  test('headings: IDs and anchor links (FR-203)', async () => {
     await withPage(browser, async ({ page }) => {
       await openSyntax(page);
       const r = await page.evaluate(() => Array.from(document.querySelectorAll('.mdv-prose h2')).slice(0, 3).map((h) => ({ id: h.id, href: h.querySelector('.mdv-anchor').getAttribute('href'), label: h.querySelector('.mdv-anchor').getAttribute('aria-label') })));
@@ -210,7 +210,7 @@ describe('Markdown の表示', () => {
     });
   });
 
-  test('空の文書・フロントマターだけの文書・見出しのない文書（FR-213）', async () => {
+  test('empty documents, documents with only front matter, documents without headings (FR-213)', async () => {
     const dir = writeTree(tmpDir(), {
       'README.md': '# ホーム\n',
       'empty.md': '',
@@ -227,15 +227,15 @@ describe('Markdown の表示', () => {
       await page.waitForFunction(() => document.title.startsWith('メタだけ - '));
       await goTo(page, '#/no-heading.md');
       await page.waitForFunction(() => document.title.startsWith('no-heading - '));
-      assert.ok(await page.isHidden('.mdv-toc'), '見出しが 2 つ未満なら目次を出さない');
+      assert.ok(await page.isHidden('.mdv-toc'), 'no table of contents with fewer than two headings');
       await goTo(page, '#/crlf.md', 'CRLF の文書');
       assert.equal(await page.locator('.mdv-prose li').count(), 2);
     });
   });
 });
 
-describe('画像・メディア（FR-210）', () => {
-  test('相対パスの画像を表示し、見つからない画像・外部画像はプレースホルダにする', async () => {
+describe('Images and media (FR-210)', () => {
+  test('shows images with relative paths; missing and external images become placeholders', async () => {
     await withPage(browser, async ({ page }) => {
       await loadFolder(page, fixture('site'));
       await page.waitForFunction(() => Array.from(document.querySelectorAll('.mdv-prose img')).length === 3 && Array.from(document.querySelectorAll('.mdv-prose img')).every((i) => i.complete && i.naturalWidth > 0));
@@ -255,7 +255,7 @@ describe('画像・メディア（FR-210）', () => {
     });
   });
 
-  test('深い階層の文書からの相対パス（../../）', async () => {
+  test('relative paths from deeply nested documents (../../)', async () => {
     await withPage(browser, async ({ page }) => {
       await loadFolder(page, fixture('site'));
       await goTo(page, '#/guide/sub/deep.md', '深い文書');
@@ -264,8 +264,8 @@ describe('画像・メディア（FR-210）', () => {
   });
 });
 
-describe('ページ内目次（FR-303）', () => {
-  test('H1〜H4 を一覧し、スクロール位置に応じて現在位置を強調する', async () => {
+describe('In-page table of contents (FR-303)', () => {
+  test('lists H1 to H4 and highlights the current position based on scrolling', async () => {
     await withPage(browser, async ({ page }) => {
       await loadFolder(page, fixture('site'));
       const items = await page.evaluate(() => Array.from(document.querySelectorAll('.mdv-toc .mdv-toc-link')).map((a) => [a.textContent, a.getAttribute('data-depth')]));
@@ -283,7 +283,7 @@ describe('ページ内目次（FR-303）', () => {
   });
 });
 
-describe('コードの色分け（FR-204）: 内容を変えない・大きな文書では後回しにする', () => {
+describe('Code highlighting (FR-204): does not change content, deferred in large documents', () => {
   const pending = (page) => page.evaluate(() => (window.MDV.app.state.pendingCode ? window.MDV.app.state.pendingCode.length : 0));
   const blocks = (page) => page.evaluate(() => Array.from(document.querySelectorAll('.mdv-prose .mdv-code')).map((c) => ({
     lang: c.querySelector('.mdv-code-lang').textContent,
@@ -292,7 +292,7 @@ describe('コードの色分け（FR-204）: 内容を変えない・大きな�
     other: c.querySelectorAll('pre *:not(span):not(code):not(mark)').length
   })));
 
-  test('色分けしても、コードの文字は 1 文字も変わらない', async () => {
+  test('highlighting does not change a single character of the code', async () => {
     const samples = [
       ['js', '\n\n  // 先頭に空行と字下げ\n\tconst a = "<script>alert(1)</script>" && b < c > d;\n\n'],
       ['html', '<div class="x" onclick="alert(1)">&amp; &lt;b&gt; <!-- c --></div>\n<script>window.__xss = 1</script>\n'],
@@ -313,19 +313,19 @@ describe('コードの色分け（FR-204）: 内容を変えない・大きな�
       assert.equal(got.length, samples.length + 1);
       samples.forEach(([lang, code], i) => {
         assert.equal(got[i].lang, lang);
-        assert.equal(got[i].text, code, `${lang}: 表示されるコードは元のまま`);
-        assert.ok(got[i].spans > 0, `${lang}: 色分けされている`);
-        assert.equal(got[i].other, 0, `${lang}: span 以外の要素は作られない`);
+        assert.equal(got[i].text, code, `${lang}: displayed code is unchanged`);
+        assert.ok(got[i].spans > 0, `${lang}: is highlighted`);
+        assert.equal(got[i].other, 0, `${lang}: no elements other than span are created`);
       });
-      // HTML で直接書かれたコードブロックも同じ扱い
+      // Code blocks written directly in HTML are treated the same way
       assert.equal(got[samples.length].text, 'const html = 1 < 2 && "<b>";\n');
       assert.ok(got[samples.length].spans > 0);
       assert.equal(await page.evaluate(() => typeof window.__xss), 'undefined');
-      assert.equal(await pending(page), 0, '小さな文書は、表示と同時にすべて色分けする');
+      assert.equal(await pending(page), 0, 'small documents are fully highlighted as soon as they are shown');
     });
   });
 
-  test('コードブロックが多い文書: 先頭は表示と同時に、残りは画面に近いものから順に色分けする', async () => {
+  test('documents with many code blocks: the first ones are highlighted on display, the rest in order of closeness to the screen', async () => {
     const count = 400;
     const code = (n) => `function step${n}(input) {\n  return input.filter((x) => x.enabled).map((x) => x.value * ${n});\n}\n`;
     let md = '# コードの多い文書\n';
@@ -334,7 +334,7 @@ describe('コードの色分け（FR-204）: 内容を変えない・大きな�
     await withPage(browser, async ({ page }) => {
       await loadFolder(page, dir);
       await waitIndexed(page);
-      // 表示の直後: 先頭の 60 個だけ色分け済み（ページの処理が進まないうちに同じ呼び出しの中で確かめる）
+      // Right after display: only the first 60 are highlighted (checked within the same call, before the page gets to do more work)
       const first = await page.evaluate(() => new Promise((resolve) => {
         const check = () => {
           const h1 = document.querySelector('.mdv-prose h1');
@@ -349,9 +349,9 @@ describe('コードの色分け（FR-204）: 内容を変えない・大きな�
         check();
       }));
       assert.equal(first.total, count);
-      assert.ok(first.done >= 60 && first.done < count, `最初に色分けされるのは一部（${first.done} 個）`);
+      assert.ok(first.done >= 60 && first.done < count, `only some are highlighted at first (${first.done})`);
       assert.equal(first.done + first.pending, count);
-      // しばらくすると、すべて色分けされる。文字は変わらない
+      // After a while, all are highlighted. The text does not change
       await page.waitForFunction(() => window.MDV.app.state.pendingCode === null);
       const all = await blocks(page);
       assert.ok(all.every((b) => b.spans > 0 && b.other === 0));
@@ -359,7 +359,7 @@ describe('コードの色分け（FR-204）: 内容を変えない・大きな�
     });
   });
 
-  test('途中の位置を開いたときは、見えている範囲を先に色分けする。検索語の強調も保つ', async () => {
+  test('when opened at a position partway down, the visible range is highlighted first; search highlights are kept', async () => {
     const count = 400;
     let md = '# コードの多い文書\n';
     for (let n = 1; n <= count; n++) md += `\n## 節 ${n}\n\n\`\`\`js\nconst value${n} = ${n === 350 ? '"目印オメガ"' : n};\n\`\`\`\n`;
@@ -367,10 +367,10 @@ describe('コードの色分け（FR-204）: 内容を変えない・大きな�
     await withPage(browser, async ({ page }) => {
       await loadFolder(page, dir);
       await waitIndexed(page);
-      // 検索結果から開く: 350 番目のコードブロックの中の語が強調され、その位置までスクロールする
+      // Open from search results: the word in the 350th code block is highlighted and the page scrolls to it
       await page.fill('.mdv-search-input', '目印オメガ');
       await page.waitForSelector('.mdv-search-item');
-      // 開いた直後から監視して、「見えている 350 番目」が「離れた 330 番目」より先に色分けされることを確かめる
+      // Watch from right after opening, and check that the visible 350th block is highlighted before the distant 330th
       const order = await page.evaluate(() => new Promise((resolve) => {
         const done = (i) => { const list = document.querySelectorAll('.mdv-prose .mdv-code pre'); return list.length > i && !!list[i].querySelector('span[class^="hljs-"]'); };
         const check = () => {
@@ -397,7 +397,7 @@ describe('コードの色分け（FR-204）: 内容を変えない・大きな�
         };
       });
       assert.deepEqual(r, { mark: '目印オメガ', inCode: true, text: 'const value350 = "目印オメガ";\n', highlighted: true, visible: true });
-      // Esc で強調を消しても、コードは元のまま
+      // Clearing the highlight with Esc leaves the code unchanged
       await page.focus('.mdv-search-input');
       await page.keyboard.press('Escape');
       await page.keyboard.press('Escape');
@@ -406,13 +406,13 @@ describe('コードの色分け（FR-204）: 内容を変えない・大きな�
     });
   });
 
-  test('印刷の前には、残りをまとめて色分けする', async () => {
+  test('before printing, the rest is highlighted all at once', async () => {
     let md = '# 印刷する文書\n';
     for (let n = 1; n <= 300; n++) md += `\n\`\`\`js\nconst v${n} = ${n};\n\`\`\`\n`;
     const dir = writeTree(tmpDir(), { 'README.md': md });
     await withPage(browser, async ({ page }) => {
       const done = await page.evaluate(async (text) => {
-        // 読み込みから印刷の合図までを、ページの処理を挟まずに行う
+        // Do everything from loading to the print signal without letting the page process in between
         const dt = new DataTransfer();
         dt.items.add(new File([text], 'README.md', { type: 'text/markdown' }));
         const input = document.querySelector('.mdv-input-files');

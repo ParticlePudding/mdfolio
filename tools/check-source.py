@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ソース中に不可視文字・制御文字が紛れ込んでいないかを調べる（開発時の確認用）。"""
+"""Checks that no invisible or control characters have slipped into source files (a development check)."""
 import sys
 bad = 0
 for p in sys.argv[1:]:

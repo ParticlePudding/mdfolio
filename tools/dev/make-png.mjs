@@ -1,5 +1,5 @@
-// 開発用: 模様入りの PNG を作る（外部ライブラリなし）
-//   node tools/dev/make-png.mjs <出力パス> [幅] [高さ]
+// For development: creates a patterned PNG (no external libraries)
+//   node tools/dev/make-png.mjs <output path> [width] [height]
 import fs from 'node:fs';
 import zlib from 'node:zlib';
 
@@ -26,7 +26,7 @@ const chunk = (type, data) => {
   return Buffer.concat([len, body, crc]);
 };
 
-// 藍色の濃淡の市松＋斜めの帯
+// Checkerboard in shades of indigo plus diagonal stripes
 const raw = Buffer.alloc((width * 3 + 1) * height);
 for (let y = 0; y < height; y++) {
   const row = y * (width * 3 + 1);

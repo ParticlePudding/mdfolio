@@ -1,10 +1,10 @@
 /*!
- * mdfolio app — 画面と操作
+ * mdfolio app — UI and interaction
  * MIT License
  */
 (function () {
   'use strict';
-  // CLI（Node.js）がこのスクリプトを評価する場合は、画面を持たないので何もしない
+  // When the CLI (Node.js) evaluates this script there is no UI, so do nothing
   if (typeof document === 'undefined' || typeof window === 'undefined' || !document.getElementById('mdv-root')) return;
 
   const core = window.MDV.core;
@@ -17,23 +17,23 @@
   const AUTO_REFRESH_MS = 2000;
   const SEARCH_LIMIT = 50;
   const ID_PREFIX = 'user-content-';
-  const HIGHLIGHT_MAX_CHARS = 200000;   // これより長いコードブロックは色分けしない
-  const HIGHLIGHT_SYNC_CHARS = 20000;   // 1 回の表示で、この文字数までは表示と同時に色分けする
-  const HIGHLIGHT_SYNC_BLOCKS = 60;     // 同じく、このブロック数まで。超えた分は表示のあとで少しずつ処理する
+  const HIGHLIGHT_MAX_CHARS = 200000;   // Code blocks longer than this are not syntax-highlighted
+  const HIGHLIGHT_SYNC_CHARS = 20000;   // Per render, highlight synchronously (along with display) up to this many characters
+  const HIGHLIGHT_SYNC_BLOCKS = 60;     // Likewise, up to this many blocks. The rest are processed bit by bit after display
   const INDEX_TEXT_MAX = 2 * 1024 * 1024;
 
-  // ------------------------------------------------------------------ 状態
+  // ------------------------------------------------------------------ State
 
   const state = {
     config: core.normalizeConfig(null),
     settings: {},
     lang: 'en',
-    mode: 'viewer',        // viewer（閲覧モード）| site（サイトモード）
-    set: null,             // 開いている文書セット
+    mode: 'viewer',        // viewer (viewer mode) | site (site mode)
+    set: null,             // The open document set
     view: 'welcome',       // welcome | doc | help | message
-    current: null,         // 表示中の文書のパス
+    current: null,         // Path of the document being displayed
     currentEntry: null,
-    pendingRoute: null,    // 文書セットの読み込み後に開く場所
+    pendingRoute: null,    // Where to go once the document set has loaded
     renderSeq: 0,
     navCounter: 0,
     navIdx: 0,
@@ -45,23 +45,23 @@
     lastFolder: null,
     mermaidSeq: 0,
     setSeq: 0,
-    userCssProbe: null,    // 隣の mdfolio.css があるか（Promise<boolean>。probeUserCss）
+    userCssProbe: null,    // Whether an adjacent mdfolio.css exists (Promise<boolean>; probeUserCss)
     renderer: null,
     sideTab: 'nav',
     search: { timer: null, results: [], active: -1, query: '', terms: [] },
     refreshTimer: null,
     refreshBusy: false,
     dragDepth: 0,
-    mediaLocked: false,    // 外部の画像・メディアを CSP で遮断しているか（lockExternalMedia）
-    pendingCode: null,     // 表示のあとで色分けするコードブロック（scheduleHighlight）
-    skipHashEvents: 0      // go() で処理済みのため読み飛ばす hashchange の数
+    mediaLocked: false,    // Whether external images/media are blocked via CSP (lockExternalMedia)
+    pendingCode: null,     // Code blocks to highlight after display (scheduleHighlight)
+    skipHashEvents: 0      // Number of hashchange events to skip because go() already handled them
   };
 
   const ui = {};
   const bindings = [];
   const darkQuery = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
 
-  // ------------------------------------------------------------------ 小道具
+  // ------------------------------------------------------------------ Small helpers
 
   function h(tag, attrs, children) {
     const e = document.createElement(tag);
@@ -90,7 +90,7 @@
     return i18n.translate(state.lang, key, Array.prototype.slice.call(arguments, 1));
   }
 
-  /** 文言を要素に結びつける。言語を切り替えたときにまとめて更新する（常設の部品にだけ使う）。 */
+  /** Bind UI text to an element so it is all updated when the language changes (use only for permanent UI parts). */
   function bind(el, apply) {
     bindings.push({ el: el, apply: apply });
     apply(el);
@@ -151,7 +151,7 @@
     toast(t('errorGeneric', msg), { error: true });
   }
 
-  /** 非同期の操作を包み、例外を通知に変える（FR-901）。 */
+  /** Wrap an async operation and turn exceptions into notifications (FR-901). */
   function guard(fn) {
     return function () {
       try {
@@ -163,7 +163,7 @@
     };
   }
 
-  // ------------------------------------------------------------------ 設定
+  // ------------------------------------------------------------------ Settings
 
   function loadSettings() {
     try {
@@ -175,7 +175,7 @@
     }
   }
 
-  /** 設定を保存する。保存できない環境でも動作は続ける（FR-702）。保存できたかどうかを返す。 */
+  /** Save settings. Keep working even where saving is not possible (FR-702). Returns whether saving succeeded. */
   function saveSettings() {
     try {
       window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(state.settings));
@@ -197,14 +197,14 @@
   }
 
   function externalAllowed() {
-    if (state.config.lockExternalImages) return false; // 設定で固定されている（利用者の設定より優先）
+    if (state.config.lockExternalImages) return false; // Fixed by configuration (takes precedence over the user's setting)
     return typeof state.settings.externalImages === 'boolean' ? state.settings.externalImages : state.config.allowExternalImages;
   }
 
-  // 外部の画像・メディアを、ブラウザーの CSP でも読み込ませない（SEC-5）。
-  // 表示のときに取り除く処理（resolveMedia）だけに頼ると、図（Mermaid）の画像指定やスタイルの url() のような
-  // 別の経路からの読み込みを防げない。そこで、許可されていない間は img-src / media-src を絞るポリシーを追加する。
-  // CSP は厳しくする方向にしか変えられないので、許可に切り替えるにはページの再読み込みが必要になる。
+  // Also stop external images/media from loading via the browser's CSP (SEC-5).
+  // Relying only on stripping them at render time (resolveMedia) cannot block loads from other paths,
+  // such as image references in diagrams (Mermaid) or url() in styles. So while not allowed, add a policy that restricts img-src / media-src.
+  // CSP can only be made stricter, so switching to "allowed" requires reloading the page.
   const MEDIA_LOCK_POLICY = 'img-src data: blob:; media-src data: blob:';
 
   function lockExternalMedia() {
@@ -253,7 +253,7 @@
     refreshView();
   }
 
-  // ------------------------------------------------------------------ 通知
+  // ------------------------------------------------------------------ Notifications
 
   function toast(message, opts) {
     opts = opts || {};
@@ -268,7 +268,7 @@
     return { update: function (msg) { el.textContent = msg; }, remove: remove };
   }
 
-  // ------------------------------------------------------------------ 画面の骨組み
+  // ------------------------------------------------------------------ Page skeleton
 
   function buildChrome() {
     const root = document.getElementById('mdv-root');
@@ -277,7 +277,7 @@
     const skip = bind(h('a', { class: 'mdv-skip', href: '#mdv-main' }), (el) => { el.textContent = t('skipToContent'); });
     skip.addEventListener('click', (ev) => { ev.preventDefault(); ui.main.focus(); });
 
-    // ヘッダー
+    // Header
     ui.sidebarBtn = bind(h('button', { class: 'mdv-iconbtn mdv-btn-sidebar', type: 'button', 'aria-expanded': 'true' }, icon('menu')),
       (el) => { el.setAttribute('aria-label', t('toggleSidebar')); el.setAttribute('title', t('toggleSidebar')); });
     ui.title = h('a', { class: 'mdv-title', href: '#/' }, core.NAME);
@@ -309,7 +309,7 @@
       ui.sidebarBtn, ui.title, ui.search, ui.themeBtn, h('div', { class: 'mdv-menu-wrap' }, [ui.menuBtn, ui.menu])
     ]);
 
-    // サイドバー
+    // Sidebar
     ui.tabNav = bind(h('button', { class: 'mdv-side-tab', type: 'button', role: 'tab', id: 'mdv-tab-nav', 'aria-controls': 'mdv-sidenav', 'data-tab': 'nav' }), (el) => { el.textContent = t('tabNav'); });
     ui.tabFiles = bind(h('button', { class: 'mdv-side-tab', type: 'button', role: 'tab', id: 'mdv-tab-files', 'aria-controls': 'mdv-side-tree', 'data-tab': 'files' }), (el) => { el.textContent = t('tabFiles'); });
     ui.sideTabs = h('div', { class: 'mdv-side-tabs', role: 'tablist', hidden: true }, [ui.tabNav, ui.tabFiles]);
@@ -319,7 +319,7 @@
       (el) => { el.setAttribute('aria-label', t('sidebarLabel')); });
     ui.scrim = h('div', { class: 'mdv-scrim', hidden: true });
 
-    // 本文
+    // Main content
     ui.welcome = buildWelcome();
     ui.docPath = h('span', { class: 'mdv-doc-path' });
     ui.docDate = h('span', { class: 'mdv-doc-date' });
@@ -341,12 +341,12 @@
     ui.sheet = h('div', { class: 'mdv-sheet' }, [ui.main, ui.toc]);
     const body = h('div', { class: 'mdv-body' }, [ui.sidebar, ui.sheet]);
 
-    // その他の常設部品
+    // Other permanent parts
     ui.toasts = h('div', { class: 'mdv-toasts', 'aria-live': 'polite' });
     ui.dirInput = h('input', { class: 'mdv-hidden-input mdv-input-dir', type: 'file', webkitdirectory: true, multiple: true, tabindex: '-1', 'aria-hidden': 'true' });
-    // スマートフォン・タブレットでは、種類での絞り込み（accept）を付けない。
-    // .md の種類の扱いは端末や保存先のアプリによって異なり、絞り込むと Markdown のファイルを選べないことがあるため。
-    // Markdown 以外を選んだ場合は、読み込みの段階で知らせる
+    // On phones and tablets, do not filter by type (accept).
+    // How the .md type is handled varies by device and storage app, and filtering can make Markdown files unselectable.
+    // If something other than Markdown is chosen, report it at load time
     const fileAttrs = { class: 'mdv-hidden-input mdv-input-files', type: 'file', multiple: true, tabindex: '-1', 'aria-hidden': 'true' };
     if (!coarsePointer()) fileAttrs.accept = core.DOC_EXTS.map((x) => '.' + x).join(',') + ',text/markdown';
     ui.fileInput = h('input', fileAttrs);
@@ -393,7 +393,7 @@
     bind(label, (el) => { el.textContent = t(key); });
     btn.addEventListener('click', guard(() => {
       closeMenu();
-      ui.menuBtn.focus(); // 項目は隠れるので、フォーカスをメニューのボタンへ戻す（ダイアログを閉じたときの戻り先にもなる）
+      ui.menuBtn.focus(); // The items get hidden, so move focus back to the menu button (also the return target when a dialog closes)
       return action();
     }));
     return btn;
@@ -447,7 +447,7 @@
   function toggleExternalImages() {
     if (state.config.lockExternalImages) return;
     if (externalAllowed()) {
-      // 許可 → 遮断は、その場で反映できる
+      // Allowed -> blocked can take effect immediately
       state.settings.externalImages = false;
       saveSettings();
       lockExternalMedia();
@@ -463,7 +463,7 @@
     openExternalDialog();
   }
 
-  /** 遮断 → 許可は再読み込みが必要なので、接続先が増えることと合わせて確認する。 */
+  /** Blocked -> allowed requires a reload, so confirm it together with the fact that more hosts will be contacted. */
   function openExternalDialog() {
     const losesFolder = state.mode !== 'site' && !!state.set;
     const d = dialogShell('mdv-dialog-external', 'externalTitle', t('externalLead'));
@@ -475,7 +475,7 @@
       const before = state.settings.externalImages;
       state.settings.externalImages = true;
       if (!saveSettings()) {
-        // 設定を保存できないと、再読み込みしても許可の状態にならない
+        // If settings cannot be saved, the allowed state will not survive the reload
         state.settings.externalImages = before;
         d.dialog.close();
         toast(t('externalNoStorage'), { error: true });
@@ -508,18 +508,18 @@
     updateMenu();
   }
 
-  // ------------------------------------------------------------------ サイドバーの開閉
+  // ------------------------------------------------------------------ Opening and closing the sidebar
 
   function isNarrow() {
     return window.matchMedia('(max-width: 799px)').matches;
   }
 
-  /** 開始画面の説明。指で操作する端末ではドロップの案内を省き、お試し用の公開ページではその旨を伝える。 */
+  /** Start screen description. Omit the drop hint on touch devices, and mention it on the hosted trial page. */
   function welcomeLeadKey() {
     return 'welcomeLead' + (state.config.hosted ? 'Hosted' : '') + (coarsePointer() ? 'Touch' : '');
   }
 
-  /** 主な操作が指（タッチ）の端末か。 */
+  /** Whether the primary input is touch (fingers). */
   function coarsePointer() {
     try { return window.matchMedia('(pointer: coarse)').matches; } catch (e) { return false; }
   }
@@ -550,14 +550,14 @@
     applySidebarState();
   }
 
-  // ------------------------------------------------------------------ 文書セット
+  // ------------------------------------------------------------------ Document set
 
   function newSet(name, source) {
     return {
       id: ++state.setSeq,
       name: name || '',
       source: source,          // handles | files | embedded
-      single: false,           // フォルダではなくファイルだけを開いた
+      single: false,           // Only files were opened, not a folder
       rootHandle: null,
       entries: new Map(),
       docCount: 0,
@@ -613,11 +613,11 @@
 
   function disposeSet(set) {
     if (!set) return;
-    set.urls.forEach((url) => { try { URL.revokeObjectURL(url); } catch (e) { /* 無視 */ } });
+    set.urls.forEach((url) => { try { URL.revokeObjectURL(url); } catch (e) { /* ignore */ } });
     set.urls.clear();
   }
 
-  /** 文書セットを画面に反映する。Markdown 文書がなければ通知だけして何も変えない（FR-902）。 */
+  /** Apply the document set to the UI. If it has no Markdown documents, only notify and change nothing (FR-902). */
   function installSet(set, opts) {
     opts = opts || {};
     finalizeSet(set);
@@ -653,7 +653,7 @@
     return true;
   }
 
-  // ---- フォルダ・ファイルの選択
+  // ---- Choosing folders and files
 
   async function openFolder() {
     if (typeof window.showDirectoryPicker === 'function') {
@@ -661,8 +661,8 @@
       try {
         handle = await window.showDirectoryPicker({ mode: 'read' });
       } catch (e) {
-        if (e && e.name === 'AbortError') return; // 利用者がキャンセルした
-        handle = null; // 利用できない・拒否された場合は従来の方式に切り替える
+        if (e && e.name === 'AbortError') return; // The user cancelled
+        handle = null; // If unavailable or denied, fall back to the traditional method
       }
       if (handle) {
         await openDirHandle(handle);
@@ -709,7 +709,7 @@
     set.scanCount = count;
   }
 
-  /** <input> やドロップで得た File の一覧から文書セットを作る。 */
+  /** Build a document set from a list of Files obtained from <input> or a drop. */
   function setFromFileList(files, stripRoot) {
     const set = newSet('', 'files');
     let name = '';
@@ -730,7 +730,7 @@
     return set;
   }
 
-  // ---- ドラッグ＆ドロップ
+  // ---- Drag and drop
 
   function readAllEntries(reader) {
     return new Promise((resolve, reject) => {
@@ -749,7 +749,7 @@
     return new Promise((resolve, reject) => entry.file(resolve, reject));
   }
 
-  /** webkitGetAsEntry で得たエントリ（Firefox / Safari のドロップ）を走査する。 */
+  /** Walk entries obtained via webkitGetAsEntry (drops in Firefox / Safari). */
   async function scanEntries(set, rootEntries, onProgress) {
     const queue = rootEntries.slice();
     let count = 0;
@@ -767,19 +767,19 @@
         try {
           const file = await entryToFile(entry);
           addEntry(set, item.prefix + entry.name, { file: file, size: file.size, mtime: file.lastModified });
-        } catch (e) { /* 読めないファイルは飛ばす */ }
+        } catch (e) { /* skip files that cannot be read */ }
       }
     }
   }
 
   async function openDataTransfer(dt) {
-    // ドロップイベントの中（最初の await より前）で、必要なものをすべて取り出しておく
+    // Extract everything needed while still inside the drop event (before the first await)
     const items = dt.items ? Array.prototype.filter.call(dt.items, (it) => it.kind === 'file') : [];
     const files = dt.files ? Array.prototype.slice.call(dt.files) : [];
     let handlePromises = null;
     let entries = null;
     if (items.length && typeof items[0].getAsFileSystemHandle === 'function') {
-      // ハンドルが得られない・応答がない場合に備えて、時間切れを設ける
+      // Set a timeout in case no handle is obtained or there is no response
       const timeout = new Promise((resolve) => setTimeout(() => resolve(null), 3000));
       handlePromises = items.map((it) => {
         try { return Promise.race([Promise.resolve(it.getAsFileSystemHandle()).catch(() => null), timeout]); } catch (e) { return Promise.resolve(null); }
@@ -829,7 +829,7 @@
     if (installSet(set) && remember) rememberFolder(remember);
   }
 
-  // ---- 埋め込みデータ（サイトモード）
+  // ---- Embedded data (site mode)
 
   function setFromSiteData(data) {
     const set = newSet(data.name, 'embedded');
@@ -840,7 +840,7 @@
     return set;
   }
 
-  // ---- 読み込み
+  // ---- Loading
 
   async function entryFile(entry) {
     if (entry.handle) return entry.handle.getFile();
@@ -848,7 +848,7 @@
     throw new Error('no source');
   }
 
-  /** 文書のテキストを返す。fresh が真でハンドルがあれば、ディスクから読み直す。 */
+  /** Return the document's text. If fresh is true and there is a handle, re-read it from disk. */
   async function readDocText(entry, fresh) {
     if (entry.text !== null && !(fresh && entry.handle)) return entry.text;
     const file = await entryFile(entry);
@@ -871,7 +871,7 @@
     if (set.urls.has(entry.path)) return Promise.resolve(set.urls.get(entry.path));
     return assetBlob(entry).then((blob) => {
       if (set.urls.has(entry.path)) return set.urls.get(entry.path);
-      // 種別が分からない場合は拡張子から補う（SVG などを <img> で表示できるようにする）
+      // If the type is unknown, infer it from the extension (so that SVG etc. can be shown in <img>)
       const typed = blob.type ? blob : new Blob([blob], { type: core.mimeOf(entry.path) });
       const url = URL.createObjectURL(typed);
       set.urls.set(entry.path, url);
@@ -896,7 +896,7 @@
     }
   }
 
-  // ------------------------------------------------------------------ 前回のフォルダ（FR-108）
+  // ------------------------------------------------------------------ Last folder (FR-108)
 
   function idbOpen() {
     return new Promise((resolve, reject) => {
@@ -931,7 +931,7 @@
   function rememberFolder(handle) {
     idbRun('readwrite', (store) => store.put({ handle: handle, name: handle.name }, lastKey()))
       .then(() => { state.lastFolder = { handle: handle, name: handle.name }; })
-      .catch(() => { /* 保存できなくても閲覧には影響しない */ });
+      .catch(() => { /* failing to save does not affect viewing */ });
   }
 
   function loadLastFolder() {
@@ -941,7 +941,7 @@
       state.lastFolder = { handle: rec.handle, name: rec.name || rec.handle.name };
       ui.lastBtn.textContent = t('reopenLast', state.lastFolder.name);
       ui.lastWrap.hidden = false;
-    }).catch(() => { /* 使えない環境では表示しない */ });
+    }).catch(() => { /* not shown in environments where it is unavailable */ });
   }
 
   async function openLastFolder() {
@@ -961,7 +961,7 @@
     }
   }
 
-  // ------------------------------------------------------------------ 再読み込み・自動更新（FR-109）
+  // ------------------------------------------------------------------ Reload / auto-update (FR-109)
 
   async function reloadSet() {
     const set = state.set;
@@ -1010,13 +1010,13 @@
       updateSearchEntry(set, entry, text);
       renderDoc(entry, text, '', { keepScroll: window.scrollY });
     } catch (e) {
-      // 削除・移動・権限の取り消しなど。次の操作まで何もしない
+      // Deleted, moved, permission revoked, etc. Do nothing until the next action
     } finally {
       state.refreshBusy = false;
     }
   }
 
-  // ------------------------------------------------------------------ レンダリング
+  // ------------------------------------------------------------------ Rendering
 
   const PURIFY_CONFIG = {
     USE_PROFILES: { html: true },
@@ -1030,12 +1030,12 @@
   function installSanitizerHook() {
     window.DOMPurify.addHook('afterSanitizeAttributes', (node) => {
       if (!node || node.nodeType !== 1) return;
-      // 画像・メディアの読み込み先は、ここでは読み込ませず、あとで解決する
+      // Do not load image/media sources here; resolve them later
       if (node.hasAttribute('src')) {
         node.setAttribute('data-mdv-src', node.getAttribute('src'));
         node.removeAttribute('src');
       }
-      // アプリ内部用のクラスを名乗らせない
+      // Do not let content claim the app's internal classes
       if (node.hasAttribute('class')) {
         const cls = node.getAttribute('class').split(/\s+/).filter((c) => c && !/^mdv-/i.test(c));
         if (cls.length) node.setAttribute('class', cls.join(' ')); else node.removeAttribute('class');
@@ -1044,7 +1044,7 @@
         const st = core.filterStyle(node.getAttribute('style'));
         if (st) node.setAttribute('style', st); else node.removeAttribute('style');
       }
-      // input はチェックボックスの表示専用
+      // input is only for displaying checkboxes
       if (node.nodeName === 'INPUT') {
         if ((node.getAttribute('type') || '').toLowerCase() !== 'checkbox') {
           if (node.parentNode) node.parentNode.removeChild(node);
@@ -1056,7 +1056,7 @@
   }
 
   function createRenderer() {
-    // コードの色分けは、サニタイズのあとで行う（highlightCode）。ここでは指定しない
+    // Syntax highlighting happens after sanitizing (highlightCode). Not specified here
     state.renderer = mdx.createRenderer({
       alertLabels: function () {
         return { note: t('alertNote'), tip: t('alertTip'), important: t('alertImportant'), warning: t('alertWarning'), caution: t('alertCaution') };
@@ -1064,9 +1064,9 @@
     });
   }
 
-  // ---- コードの色分け（FR-204）
-  // 色分けの結果（span と class だけの HTML）も、サニタイザーを通してから差し込む。
-  // 大きな文書で表示を待たせないよう、一定量を超えた分は表示のあとで少しずつ処理する。
+  // ---- Syntax highlighting (FR-204)
+  // The highlighting result (HTML with only span and class) is also passed through the sanitizer before insertion.
+  // To avoid delaying display of large documents, anything beyond a set amount is processed bit by bit after display.
 
   const HIGHLIGHT_PURIFY = { ALLOWED_TAGS: ['span'], ALLOWED_ATTR: ['class'], RETURN_DOM_FRAGMENT: true };
 
@@ -1081,7 +1081,7 @@
     return !!hljs && !!lang && text.length > 0 && text.length <= HIGHLIGHT_MAX_CHARS && !!hljs.getLanguage(lang.toLowerCase());
   }
 
-  /** code 要素の中身を色分けしたものに置き換える。文字が 1 文字でも変わるなら置き換えない。 */
+  /** Replace the contents of a code element with the highlighted version. Do not replace if even one character would change. */
   function highlightCode(code, lang) {
     const text = code.textContent;
     try {
@@ -1091,7 +1091,7 @@
       code.replaceChildren(frag);
       return true;
     } catch (e) {
-      return false; // 色分けできなくても、コードはそのまま読める
+      return false; // Even without highlighting, the code remains readable as is
     }
   }
 
@@ -1106,7 +1106,7 @@
     if (highlightCode(item.code, item.lang) && hadHits && state.hitTerms) markHits(item.code, state.hitTerms, 500);
   }
 
-  /** 表示と同時に色分けしなかったコードブロックを、画面に近いものから順に処理する。 */
+  /** Process code blocks not highlighted at display time, starting with those nearest the viewport. */
   function scheduleHighlight(list, seq) {
     state.pendingCode = list && list.length ? list : null;
     if (!state.pendingCode) return;
@@ -1133,7 +1133,7 @@
     idle(step);
   }
 
-  /** 残っている色分けをまとめて済ませる（印刷の前など）。 */
+  /** Finish all remaining highlighting at once (e.g. before printing). */
   function flushHighlight() {
     const queue = state.pendingCode;
     state.pendingCode = null;
@@ -1162,7 +1162,7 @@
       if (/^data:image\//i.test(src) && isImg) { el.setAttribute('src', src); return; }
       if (/^(?:https?:)?\/\//i.test(src)) {
         if (!externalAllowed()) { replaceWithPlaceholder(el, isImg ? 'imgBlocked' : 'mediaBlocked', src); return; }
-        // スキームなし（//host/…）は https として扱う（file:// 上で UNC パスとして解釈させない）
+        // Scheme-less (//host/…) is treated as https (so it is not interpreted as a UNC path under file://)
         el.setAttribute('src', src.slice(0, 2) === '//' ? 'https:' + src : src);
         el.setAttribute('referrerpolicy', 'no-referrer');
         if (isImg) el.setAttribute('loading', 'lazy');
@@ -1186,7 +1186,7 @@
 
   const EXTERNAL_LINK_RE = /^(?:https?:|mailto:|tel:)/i;
 
-  /** 見出しの文字列。表示できなかった画像の説明（プレースホルダー）は含めない。 */
+  /** Heading text. Excludes the descriptions (placeholders) of images that could not be shown. */
   function headingText(hd) {
     if (!hd.querySelector('.mdv-ph')) return hd.textContent.trim();
     const copy = hd.cloneNode(true);
@@ -1194,9 +1194,9 @@
     return copy.textContent.replace(/\s+/g, ' ').trim();
   }
 
-  /** サニタイズ済みの断片に、リンク・画像の解決と部品の追加を行う。 */
+  /** Resolve links and images and add UI parts to a sanitized fragment. */
   function postProcess(frag, ctx) {
-    // リンク
+    // Links
     frag.querySelectorAll('a[href]').forEach((a) => {
       const href = a.getAttribute('href');
       let r;
@@ -1228,7 +1228,7 @@
       }
     });
 
-    // 画像・メディア
+    // Images and media
     frag.querySelectorAll('[data-mdv-src]').forEach((el) => {
       const src = el.getAttribute('data-mdv-src');
       el.removeAttribute('data-mdv-src');
@@ -1237,7 +1237,7 @@
       resolveMedia(el, src, ctx);
     });
 
-    // 見出し: 目次の材料を集め、アンカーリンクを付ける
+    // Headings: collect material for the table of contents and add anchor links
     const toc = [];
     frag.querySelectorAll('h1, h2, h3, h4, h5, h6').forEach((hd) => {
       const id = hd.getAttribute('id') || '';
@@ -1245,18 +1245,18 @@
       const slug = id.slice(ID_PREFIX.length);
       const level = Number(hd.nodeName.charAt(1));
       const text = headingText(hd);
-      if (ctx.nav) return; // サイドバーのナビには目次もアンカーも付けない
+      if (ctx.nav) return; // The sidebar nav gets no table of contents or anchors
       if (level <= 4) toc.push({ level: level, text: text, slug: slug });
       hd.appendChild(h('a', { class: 'mdv-anchor', href: routeFor(ctx, slug), 'aria-label': t('anchorLabel', text) }, '#'));
     });
     if (ctx.nav) return { toc: toc };
 
-    // タスクリストのチェックボックス: 状態を読み上げられるように名前を付ける
+    // Task list checkboxes: give them names so their state can be read aloud
     frag.querySelectorAll('input[type="checkbox"]').forEach((box) => {
       box.setAttribute('aria-label', t(box.hasAttribute('checked') ? 'taskDone' : 'taskTodo'));
     });
 
-    // コードブロック: 色分け、言語名とコピー用ボタン
+    // Code blocks: highlighting, language name and copy button
     const pendingCode = [];
     let syncBlocks = 0;
     let syncChars = 0;
@@ -1284,7 +1284,7 @@
       wrap.appendChild(pre);
     });
 
-    // 表: 横スクロールできる枠で包む
+    // Tables: wrap in a horizontally scrollable box
     frag.querySelectorAll('table').forEach((table) => {
       if (table.parentNode && table.parentNode.nodeName === 'TD') return;
       const wrap = h('div', { class: 'mdv-table-wrap' });
@@ -1302,18 +1302,18 @@
     return { frag: frag, toc: info.toc, pendingCode: info.pendingCode || null };
   }
 
-  // ---- 遅延読み込みライブラリ（KaTeX / Mermaid）
+  // ---- Lazily loaded libraries (KaTeX / Mermaid)
 
   /**
-   * あとから追加する script / style に、ページの nonce を引き継ぐ。
-   * 配布用の HTML はハッシュ方式の CSP なので何もしない。nonce 方式の CSP を付けて配信する環境に置いた場合のためのもの。
+   * Carry the page's nonce over to script / style elements added later.
+   * The distributed HTML uses a hash-based CSP, so this does nothing there. It is for environments that serve it with a nonce-based CSP.
    */
   function inheritNonce(el) {
     try {
       const src = document.querySelector('script[nonce]');
       const nonce = src ? (src.nonce || src.getAttribute('nonce')) : '';
       if (nonce) el.nonce = nonce;
-    } catch (e) { /* 無視 */ }
+    } catch (e) { /* ignore */ }
     return el;
   }
 
@@ -1326,7 +1326,7 @@
         const s = inheritNonce(document.createElement('script'));
         s.setAttribute('data-mdv-dyn', name);
         s.textContent = JSON.parse(block.textContent);
-        document.head.appendChild(s); // CSP が認めていれば（ハッシュの一致など）、ここで同期的に実行される
+        document.head.appendChild(s); // If the CSP allows it (e.g. matching hash), it runs synchronously here
         ok = !!window[globalName];
       }
     } catch (e) {
@@ -1340,7 +1340,7 @@
     return ok;
   }
 
-  /** ライブラリの CSS を、アプリの CSS より前に入れる。アプリと利用者の CSS（mdfolio.css など）の指定を優先させるため。 */
+  /** Insert library CSS before the app's CSS, so that the app's and the user's CSS (mdfolio.css etc.) take precedence. */
   function insertLibStyle(el) {
     const first = document.querySelector('#mdv-style');
     if (first && first.parentNode) first.parentNode.insertBefore(el, first);
@@ -1383,8 +1383,8 @@
   };
 
   /**
-   * 図の配色は、CSS（document.css）の配色の変数から取る。図だけ別の色にならないように（FD-4）。
-   * 図のライブラリが解釈できない書き方（color-mix() など）の値は使わず、既定の色のままにする。
+   * Diagram colors are taken from the color variables in the CSS (document.css), so diagrams do not end up with different colors (FD-4).
+   * Values the diagram library cannot parse (color-mix() etc.) are not used; the default colors are kept instead.
    */
   const MERMAID_FROM_CSS = {
     background: '--sheet', primaryColor: '--accent-soft', primaryTextColor: '--ink', primaryBorderColor: '--accent',
@@ -1452,7 +1452,7 @@
     }
   }
 
-  /** テーマを切り替えたとき、表示中の図を配色に合わせて描き直す（FR-501）。 */
+  /** When the theme changes, redraw the displayed diagrams to match the colors (FR-501). */
   async function rerenderMermaid() {
     if (!ui.prose || !state.libs.mermaid) return;
     const list = Array.prototype.slice.call(ui.prose.querySelectorAll('.mdv-mermaid, .mdv-mermaid-error')).filter((el) => typeof el.mdvSource === 'string');
@@ -1465,7 +1465,7 @@
     }
   }
 
-  // ------------------------------------------------------------------ 文書の表示
+  // ------------------------------------------------------------------ Displaying documents
 
   function renderToc(items, ctx) {
     ui.tocList.replaceChildren();
@@ -1494,7 +1494,7 @@
       else break;
     }
     if (!current && heads.length) current = heads[0].id.slice(ID_PREFIX.length);
-    // 末尾までスクロールしたら、上端に届かない最後の見出しを現在位置とする
+    // When scrolled to the bottom, treat the last heading that cannot reach the top as the current position
     if (heads.length && window.scrollY > 0 && window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2) {
       current = heads[heads.length - 1].id.slice(ID_PREFIX.length);
     }
@@ -1529,7 +1529,7 @@
     return null;
   }
 
-  /** 表示後のスクロール位置を決める。 */
+  /** Decide the scroll position after display. */
   function settleScroll(fragment, nav) {
     nav = nav || {};
     state.anchorEl = null;
@@ -1564,11 +1564,11 @@
     markScrollable();
     scheduleHighlight(opts.pendingCode, seq);
     renderMermaid(ui.prose, seq).then(() => { if (seq === state.renderSeq) markScrollable(); }).catch(reportError);
-    // 文書を切り替えたら本文領域にフォーカスを移す。ただし、入力中の欄からは奪わない
+    // When switching documents, move focus to the main content area, but do not steal it from a field being typed in
     const active = document.activeElement;
     const typing = !!active && /^(INPUT|TEXTAREA|SELECT)$/.test(active.nodeName);
     if (!typing && !(opts.nav && typeof opts.nav.keepScroll === 'number')) {
-      try { ui.main.focus({ preventScroll: true }); } catch (e) { /* 無視 */ }
+      try { ui.main.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
     }
     return seq;
   }
@@ -1611,7 +1611,7 @@
       showMessage(t('notFoundTitle'), t('readFailed', path), path);
       return;
     }
-    if (seq !== state.renderSeq || state.set !== set) return; // 読み込み中に別の場所へ移動した
+    if (seq !== state.renderSeq || state.set !== set) return; // Navigated elsewhere while loading
     renderDoc(entry, text, fragment, nav);
   }
 
@@ -1626,7 +1626,7 @@
 
   function showAsset(entry) {
     if (!state.config.allowDownloads) {
-      // 保存できない環境では、押しても何も起きないボタンを出さない
+      // Where saving is not possible, do not show a button that does nothing when pressed
       showMessage(t('assetTitle'), t('assetNoSave', entry.name), entry.path);
       return;
     }
@@ -1639,7 +1639,7 @@
     let text = readJsonBlock('mdv-res-help-' + state.lang);
     if (typeof text !== 'string') text = readJsonBlock('mdv-res-help-en');
     if (typeof text !== 'string') text = '# ' + t('helpTitle');
-    // お試し用の公開ページでは、使えない機能があることを先頭で伝える
+    // On the hosted trial page, say up front that some features are unavailable
     if (state.config.hosted) {
       const note = '> [!IMPORTANT]\n> ' + t('helpHostedNote') + '\n';
       const eol = text.indexOf('\n');
@@ -1650,7 +1650,7 @@
     mountView({ node: out.frag, toc: out.toc, ctx: ctx, title: t('helpTitle'), metaPath: t('helpTitle'), metaDate: 0, fragment: fragment, nav: nav, view: 'help', pendingCode: out.pendingCode });
   }
 
-  // ---- 横スクロールが必要な部分を、キーボードでも操作できるようにする（NFR-4）
+  // ---- Make areas that need horizontal scrolling operable by keyboard too (NFR-4)
 
   const SCROLLABLE = [
     ['.mdv-table-wrap', 'tableLabel'],
@@ -1668,7 +1668,7 @@
         if (scrolls !== el.hasAttribute('tabindex')) changes.push([el, scrolls, def[1]]);
       });
     });
-    // 計測と書き換えを分けて、レイアウトの計算が繰り返されないようにする
+    // Separate measuring from writing so layout is not recalculated repeatedly
     changes.forEach((c) => {
       const el = c[0];
       if (c[1]) {
@@ -1683,27 +1683,27 @@
     });
   }
 
-  /** 設定の変更後などに、いまの表示を作り直す。 */
+  /** Rebuild the current view, e.g. after a settings change. */
   function refreshView() {
     updateMenu();
     if (state.view === 'welcome') return;
     handleRoute({ keepScroll: window.scrollY, force: true });
   }
 
-  // ------------------------------------------------------------------ ルーティング（FR-304, FR-306）
+  // ------------------------------------------------------------------ Routing (FR-304, FR-306)
 
   function go(route, replace) {
-    // 「#」だけの移動は、ブラウザーによって hashchange の届き方が異なる。先頭のページを指す「#/」にそろえる
+    // How hashchange arrives for a bare "#" differs between browsers. Normalize to "#/", which points to the home page
     if (route === '#' || route === '') route = '#/';
     if (replace) {
       try {
         history.replaceState(null, '', route);
         handleRoute();
         return;
-      } catch (e) { /* 置き換えられない環境では通常の移動にする */ }
+      } catch (e) { /* where replacing is not possible, do a normal navigation */ }
     }
-    // hashchange イベントは少し遅れて届く。その間の操作（検索欄へ戻るなど）と前後しないよう、
-    // 待たずにここで表示を切り替え、あとから届くイベントは 1 回だけ読み飛ばす
+    // The hashchange event arrives slightly late. To avoid it interleaving with actions in between (e.g. returning to the search box),
+    // switch the view here without waiting, and skip the event that arrives later exactly once
     const before = location.href;
     if (location.hash !== route) location.hash = route;
     if (location.href !== before) state.skipHashEvents++;
@@ -1717,7 +1717,7 @@
     state.pendingHits = null;
     if (!opts.force) state.hitTerms = hits;
 
-    // 履歴の位置を識別する番号を付ける。既に番号があれば「戻る／進む」での移動
+    // Number each history position. If it already has a number, this is a back/forward navigation
     let traversal = false;
     const st = history.state;
     if (st && typeof st.mdvIdx === 'number') {
@@ -1726,7 +1726,7 @@
       if (st.mdvIdx > state.navCounter) state.navCounter = st.mdvIdx;
     } else {
       state.navIdx = ++state.navCounter;
-      try { history.replaceState({ mdvIdx: state.navIdx }, ''); } catch (e) { /* 無視 */ }
+      try { history.replaceState({ mdvIdx: state.navIdx }, ''); } catch (e) { /* ignore */ }
     }
     const nav = { traversal: traversal, keepScroll: opts.keepScroll };
 
@@ -1752,10 +1752,10 @@
     else path = state.set.home;
 
     if (route.type === 'fragment') {
-      try { history.replaceState(history.state, '', core.buildRoute(path, fragment)); } catch (e) { /* 無視 */ }
+      try { history.replaceState(history.state, '', core.buildRoute(path, fragment)); } catch (e) { /* ignore */ }
     }
 
-    // 同じ文書の中での移動は、描き直さずに位置だけ変える
+    // Navigation within the same document only changes the position, without redrawing
     if (!opts.force && state.view === 'doc' && state.current === path && state.currentEntry) {
       settleScroll(fragment, nav);
       applyHits();
@@ -1776,7 +1776,7 @@
     });
   }
 
-  // ------------------------------------------------------------------ サイドバー
+  // ------------------------------------------------------------------ Sidebar
 
   function renderTreeNode(node, depth) {
     const ul = h('ul', depth === 0 ? { class: 'mdv-tree' } : null);
@@ -1809,13 +1809,13 @@
         ui.sideNav.replaceChildren(out.frag);
         markNavLabels();
         updateActiveLinks();
-      }).catch(() => { /* ナビを表示できない場合はファイル一覧だけにする */ });
+      }).catch(() => { /* if the nav cannot be shown, use only the file list */ });
     }
     applySideTab();
     updateActiveLinks();
   }
 
-  /** カスタムナビの中の、リンクではない項目（区切りの見出し）に印を付ける。 */
+  /** Mark items in the custom nav that are not links (section headings). */
   function markNavLabels() {
     ui.sideNav.querySelectorAll('li').forEach((li) => {
       Array.prototype.slice.call(li.childNodes).forEach((n) => {
@@ -1836,7 +1836,7 @@
     ui.sideTree.hidden = tab !== 'files';
     ui.tabNav.setAttribute('aria-selected', tab === 'nav' ? 'true' : 'false');
     ui.tabFiles.setAttribute('aria-selected', tab === 'files' ? 'true' : 'false');
-    // タブがあるときだけ、切り替え先をタブパネルとして伝える
+    // Only when there are tabs, expose the controlled element as a tab panel
     [[ui.sideNav, 'mdv-tab-nav'], [ui.sideTree, 'mdv-tab-files']].forEach((pair) => {
       if (hasNav) { pair[0].setAttribute('role', 'tabpanel'); pair[0].setAttribute('aria-labelledby', pair[1]); }
       else { pair[0].removeAttribute('role'); pair[0].removeAttribute('aria-labelledby'); }
@@ -1866,7 +1866,7 @@
     }
   }
 
-  // ------------------------------------------------------------------ 検索（FR-401〜405）
+  // ------------------------------------------------------------------ Search (FR-401 to 405)
 
   function analyze(entry, text) {
     const src = text.length > INDEX_TEXT_MAX ? text.slice(0, INDEX_TEXT_MAX) : text;
@@ -1954,7 +1954,7 @@
     state.search.terms = terms;
     if (!set || !terms.length) { closeSearchPanel(); return; }
 
-    // カスタムナビに使っているファイル（_sidebar.md など）は目次であって本文ではないので、結果に出さない
+    // Files used for the custom nav (_sidebar.md etc.) are tables of contents, not content, so leave them out of results
     const list = set.navPath ? set.searchList.filter((e) => e.path !== set.navPath) : set.searchList;
     const found = core.searchDocs(list, terms, SEARCH_LIMIT);
     state.search.results = found.results;
@@ -2002,7 +2002,7 @@
   }
 
   function onSearchKey(ev) {
-    if (ev.isComposing) return; // 日本語入力の変換中
+    if (ev.isComposing) return; // IME composition in progress (e.g. Japanese input)
     const n = state.search.results.length;
     if (ev.key === 'ArrowDown') {
       ev.preventDefault();
@@ -2019,7 +2019,7 @@
     }
   }
 
-  // ---- 本文中の一致語のハイライト（FR-403）
+  // ---- Highlighting matched terms in the document (FR-403)
 
   function clearHits() {
     const marks = ui.prose.querySelectorAll('mark.mdv-hit');
@@ -2030,7 +2030,7 @@
     });
   }
 
-  /** root の中の文字列のうち、検索語に一致する部分を mark で囲む。最初の mark を返す。 */
+  /** Wrap the parts of text inside root that match the search terms in mark. Returns the first mark. */
   function markHits(root, terms, limit) {
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
       acceptNode: function (node) {
@@ -2077,7 +2077,7 @@
     if (!terms || !terms.length) return;
     const first = markHits(ui.prose, terms, 2000);
     if (first) {
-      // 折りたたまれた details の中なら開く
+      // Open it if inside a collapsed details element
       let p = first.parentNode;
       while (p && p !== ui.prose) {
         if (p.nodeName === 'DETAILS') p.open = true;
@@ -2088,10 +2088,10 @@
     }
   }
 
-  // ------------------------------------------------------------------ 書き出し（FR-601〜603）
+  // ------------------------------------------------------------------ Export (FR-601 to 603)
 
   function partsFromDom() {
-    // 実行中に追加したポリシー（lockExternalMedia）は書き出しに含めない
+    // Do not include policies added at runtime (lockExternalMedia) in the export
     const csp = document.querySelector('meta[http-equiv="Content-Security-Policy"]:not([data-mdv-dyn])');
     const gen = document.querySelector('meta[name="generator"]');
     return {
@@ -2106,9 +2106,9 @@
   }
 
   /**
-   * 隣の mdfolio.css があるかを確かめる（SPEC 3.10）。<link> の load / error はこのスクリプトより前に起きていることがあり、
-   * ファイルがなくても空の style sheet ができる（Chromium）ので、同じファイルを画面に効かない形（media="not all"）で
-   * もう一度読み込み、その結果で判断する。
+   * Check whether an adjacent mdfolio.css exists (SPEC 3.10). The <link> load / error may fire before this script runs,
+   * and an empty style sheet is created even when the file is missing (Chromium), so load the same file again in a form that
+   * does not affect the page (media="not all") and decide based on that result.
    */
   function probeUserCss() {
     const link = document.getElementById('mdv-user-css');
@@ -2123,8 +2123,8 @@
   }
 
   /**
-   * 隣の mdfolio.css の状態。applied: 画面に効いているか。
-   * text: 中身（http(s) の同じ配信元で読めたときだけ。file:// ではブラウザーの制約で読めないので null）。
+   * State of the adjacent mdfolio.css. applied: whether it is in effect on the page.
+   * text: its contents (only when readable from the same http(s) origin; null under file://, where browser restrictions prevent reading it).
    */
   async function adjacentCss() {
     const applied = await (state.userCssProbe || Promise.resolve(false));
@@ -2172,7 +2172,7 @@
       plan.assets.push(entry);
       plan.bytes += Math.ceil(entry.size * 4 / 3);
     }
-    // ビューア本体の大きさ（除外するライブラリは数えない）
+    // Size of the viewer itself (excluding libraries that are dropped)
     plan.parts = partsFromDom();
     plan.parts.blocks.forEach((b) => {
       if (!plan.hasMath && (b.id === 'mdv-lib-katex' || b.id === 'mdv-res-katex-css')) return;
@@ -2190,14 +2190,14 @@
     for (const e of plan.assets) {
       const blob = await assetBlob(e);
       const bytes = new Uint8Array(await blob.arrayBuffer());
-      // 種別は拡張子から決める（OS の設定によってブラウザが返す種別が変わるため）。分からないときだけブラウザの値を使う
+      // Decide the type from the extension (the type the browser reports varies with OS settings). Use the browser's value only when unknown
       const known = core.mimeOf(e.path);
       const mime = known !== 'application/octet-stream' ? known : (blob.type || known);
       files.push({ path: e.path, kind: 'asset', mime: mime, base64: core.bytesToBase64(bytes), mtime: e.mtime });
       await yieldToBrowser();
     }
     const siteData = core.buildSiteData(set.name || title, files);
-    // 書き出した HTML は別の場所で使うものなので、「お試し用の公開ページ」の指定は引き継がない
+    // The exported HTML is meant for use elsewhere, so the "hosted trial page" flag is not carried over
     const config = Object.assign({}, state.config, { title: title, home: home, hosted: false });
     const dropLibs = [];
     if (!plan.hasMath) dropLibs.push('katex');
@@ -2237,7 +2237,7 @@
     const warn = h('p', { class: 'mdv-export-warn', hidden: true });
     const cancel = h('button', { class: 'mdv-btn mdv-export-cancel', type: 'button' }, t('cancel'));
     const run = h('button', { class: 'mdv-btn mdv-btn-primary mdv-export-run', type: 'submit', disabled: true }, t('exportDo'));
-    // 見た目（CSS）: 選んだファイル → 隣の mdfolio.css（読めるとき）→ この HTML に埋め込まれているもの の順に候補にする（FR-1002〜1005）
+    // Look (CSS): candidates in order are the chosen file -> the adjacent mdfolio.css (when readable) -> the CSS embedded in this HTML (FR-1002 to 1005)
     const inherited = (document.getElementById('mdv-user-style') || { textContent: '' }).textContent;
     let embed = adjacent.text !== null && adjacent.applied ? { text: adjacent.text, label: t('exportCssAdjacent') }
       : inherited ? { text: inherited, label: t('exportCssInherited') } : null;
@@ -2327,34 +2327,34 @@
     close.focus();
   }
 
-  // ------------------------------------------------------------------ イベント
+  // ------------------------------------------------------------------ Events
 
   /**
-   * 非同期のクリップボード API を使えるか。
-   * 別オリジンのフレームの中では、埋め込む側が許可していないと使えない（呼ぶとコンソールにエラーが出る）ので、
-   * 分かる場合は先に確かめて、従来の方式でコピーする。
+   * Whether the async Clipboard API can be used.
+   * Inside a cross-origin frame it cannot be used unless the embedding page allows it (calling it logs a console error),
+   * so when this can be determined, check first and copy using the traditional method.
    */
   function clipboardApiAllowed() {
     if (!navigator.clipboard || typeof navigator.clipboard.writeText !== 'function') return false;
     try {
       const policy = document.permissionsPolicy || document.featurePolicy;
       if (policy && typeof policy.allowsFeature === 'function' && !policy.allowsFeature('clipboard-write')) return false;
-    } catch (e) { /* 判定できなければ、API を試す */ }
+    } catch (e) { /* if it cannot be determined, try the API */ }
     return true;
   }
 
-  /** 別のページの中（フレーム）に表示されているか。 */
+  /** Whether the page is displayed inside another page (a frame). */
   function isFramed() {
     try { return window.top !== window.self; } catch (e) { return true; }
   }
 
   /**
-   * 従来の方式（見えない入力欄を選択してコピーする）でコピーする。できたら true。
-   * 押した操作の中で同期的に呼ぶ必要がある（あとから呼ぶと、ブラウザーによっては拒否される）。
+   * Copy using the traditional method (select a hidden input field and copy). Returns true on success.
+   * Must be called synchronously within the user's action (some browsers refuse if called later).
    */
   function copyWithSelection(text, btn) {
     const hadFocus = document.activeElement === btn;
-    // 画面に固定した見えない入力欄に入れて選択する（位置を固定しておくと、選択のときに画面が動かない）
+    // Put the text in a hidden input fixed to the viewport and select it (fixing its position keeps the page from moving on select)
     const ta = h('textarea', { class: 'mdv-copy-buffer', 'aria-hidden': 'true', tabindex: '-1', readonly: true });
     ta.value = text;
     document.body.appendChild(ta);
@@ -2362,7 +2362,7 @@
     try {
       try { ta.focus({ preventScroll: true }); } catch (e) { ta.focus(); }
       ta.select();
-      try { ta.setSelectionRange(0, text.length); } catch (e) { /* 無視 */ }
+      try { ta.setSelectionRange(0, text.length); } catch (e) { /* ignore */ }
       ok = document.execCommand('copy') === true;
     } catch (e) {
       ok = false;
@@ -2387,8 +2387,8 @@
       viaApi(() => show(copyWithSelection(text, btn) ? 'copied' : 'copyFailed'));
       return;
     }
-    // フレームの中では、非同期の API が拒否されることがある。拒否を待ってから従来の方式に切り替えると、
-    // 「押した操作の中」ではなくなって失敗するブラウザーがあるので、先に従来の方式を試す
+    // Inside a frame, the async API may be refused. Waiting for the refusal before falling back to the traditional method
+    // fails in some browsers because it is no longer "within the user's action", so try the traditional method first
     if (copyWithSelection(text, btn)) show('copied');
     else if (clipboardApiAllowed()) viaApi(() => show('copyFailed'));
     else show('copyFailed');
@@ -2406,7 +2406,7 @@
 
   function wireEvents() {
     window.addEventListener('hashchange', () => {
-      if (state.skipHashEvents > 0) { state.skipHashEvents--; return; } // go() で処理済み
+      if (state.skipHashEvents > 0) { state.skipHashEvents--; return; } // already handled by go()
       handleRoute();
     });
     window.addEventListener('scroll', onScroll, { passive: true });
@@ -2431,7 +2431,7 @@
     ui.menuBtn.addEventListener('keydown', (ev) => {
       if (ev.key === 'ArrowDown' && ui.menu.hidden) { ev.preventDefault(); openMenu(); }
     });
-    // メニューの中は、上下の矢印・Home・End で移動する。Tab で外へ出たら閉じる
+    // Inside the menu, move with the up/down arrows, Home and End. Close when Tab leaves it
     ui.menu.addEventListener('keydown', (ev) => {
       const items = Array.prototype.slice.call(ui.menu.querySelectorAll('.mdv-menu-item:not([hidden])'));
       const i = items.indexOf(document.activeElement);
@@ -2456,7 +2456,7 @@
 
     [ui.tabNav, ui.tabFiles].forEach((tab) => {
       tab.addEventListener('click', () => { state.sideTab = tab.getAttribute('data-tab'); applySideTab(); updateActiveLinks(); });
-      // 矢印キーでもタブを切り替えられるようにする
+      // Allow switching tabs with the arrow keys too
       tab.addEventListener('keydown', (ev) => {
         if (ev.key !== 'ArrowLeft' && ev.key !== 'ArrowRight' && ev.key !== 'Home' && ev.key !== 'End') return;
         ev.preventDefault();
@@ -2466,7 +2466,7 @@
       });
     });
 
-    // 検索
+    // Search
     ui.searchInput.addEventListener('input', () => {
       clearTimeout(state.search.timer);
       state.search.timer = setTimeout(() => { state.search.active = -1; runSearch(); }, 150);
@@ -2480,7 +2480,7 @@
       openResult(Number(item.getAttribute('data-index')));
     });
 
-    // 本文・サイドバー内のクリック
+    // Clicks in the main content and sidebar
     document.addEventListener('click', (ev) => {
       const target = ev.target;
       if (!target || !target.closest) return;
@@ -2489,21 +2489,21 @@
       const copy = target.closest('.mdv-copy');
       if (copy) { copyCode(copy); return; }
       const asset = target.closest('a[data-mdv-asset]');
-      // 保存を使わない設定のときは何もせず、リンク先（添付の説明のページ）へ移動させる
+      // When saving is disabled by configuration, do nothing and let the link navigate (to the page describing the attachment)
       if (asset && state.set && state.config.allowDownloads && !ev.ctrlKey && !ev.metaKey && !ev.shiftKey && ev.button === 0) {
         const entry = state.set.entries.get(asset.getAttribute('data-mdv-asset'));
         if (entry) { ev.preventDefault(); downloadEntry(entry); }
         return;
       }
-      // アプリ内のリンク（#…）は、ブラウザーに任せず、ここで移動する。
-      // 文書の URL と基準 URL が異なる環境（srcdoc で埋め込まれたフレームなど）では、
-      // ブラウザーに任せると別のページへの移動になり、表示が消えてしまう。
-      // 表示中の文書へのリンクをもう一度押したときは、先頭へ戻る（go() が同じ文書を表示し直す）
+      // In-app links (#…) are navigated here rather than left to the browser.
+      // In environments where the document URL and base URL differ (e.g. a frame embedded via srcdoc),
+      // leaving it to the browser would navigate to another page and the view would disappear.
+      // Clicking a link to the currently displayed document again returns to the top (go() re-displays the same document)
       const link = target.closest('a[href]');
       if (!link || ev.defaultPrevented) return;
       const href = link.getAttribute('href');
       if (href.charAt(0) !== '#') return;
-      // 新しいタブで開く・保存するなどの操作は、ブラウザーに任せる
+      // Leave actions like opening in a new tab or saving to the browser
       if (ev.button !== 0 || ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.altKey || link.hasAttribute('download')) return;
       ev.preventDefault();
       go(href);
@@ -2532,7 +2532,7 @@
       }
     });
 
-    // ドラッグ＆ドロップ（サイトモードでは受け付けない）
+    // Drag and drop (not accepted in site mode)
     window.addEventListener('dragenter', (ev) => {
       if (state.mode === 'site' || !hasFiles(ev)) return;
       ev.preventDefault();
@@ -2558,7 +2558,7 @@
       openDataTransfer(ev.dataTransfer).catch(reportError);
     });
 
-    // 印刷では、まだ色分けしていないコードブロックも済ませてから出力する
+    // When printing, finish highlighting code blocks not yet highlighted before output
     window.addEventListener('beforeprint', flushHighlight);
 
     window.addEventListener('unhandledrejection', (ev) => {
@@ -2567,18 +2567,18 @@
     });
   }
 
-  // ------------------------------------------------------------------ 起動
+  // ------------------------------------------------------------------ Startup
 
   function init() {
     state.config = core.normalizeConfig(readJsonBlock('mdv-config'));
     state.userCssProbe = probeUserCss();
     state.settings = loadSettings();
-    if (!externalAllowed()) lockExternalMedia(); // 文書を表示する前に行う
+    if (!externalAllowed()) lockExternalMedia(); // do this before displaying any document
     const langPref = state.settings.lang === 'ja' || state.settings.lang === 'en' ? state.settings.lang
       : state.config.lang !== 'auto' ? state.config.lang : i18n.detect(navigator);
     state.lang = langPref;
 
-    try { history.scrollRestoration = 'manual'; } catch (e) { /* 無視 */ }
+    try { history.scrollRestoration = 'manual'; } catch (e) { /* ignore */ }
     installSanitizerHook();
     createRenderer();
     buildChrome();
@@ -2602,7 +2602,7 @@
     handleRoute();
   }
 
-  // テストや利用者スクリプトから状態を参照できるようにする（読み取り用）
+  // Let tests and user scripts inspect the state (read-only)
   window.MDV.app = {
     get state() { return state; },
     version: core.VERSION

@@ -1,6 +1,6 @@
-# リリースを作る（SPEC 8.8 AU-2、AU-3）。次のどちらでも動く。
-#   - v で始まるタグ（例: v1.2.0）が送られたとき
-#   - GitHub の Actions の画面で「Run workflow」を押したとき（main の最新から、package.json の版のタグを作る）
+# Creates a release (SPEC 8.8 AU-2, AU-3). It runs in either of these cases:
+#   - When a tag starting with v (e.g. v1.2.0) is pushed
+#   - When "Run workflow" is pressed on the GitHub Actions page (creates a tag for the package.json version from the latest main)
 # Create a GitHub release when a tag such as v1.2.0 is pushed, or when started by hand from the Actions tab
 # (then the tag v<package.json version> is created on the latest main).
 name: Release
@@ -27,12 +27,12 @@ jobs:
         run: |
           v="$(node -p "require('./package.json').version")"
           if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
-            if [ "$GITHUB_REF_NAME" != "main" ]; then echo "main から実行してください / Run from main"; exit 1; fi
-            if gh release view "v$v" >/dev/null 2>&1; then echo "v$v のリリースはすでにあります / Release v$v already exists"; exit 1; fi
+            if [ "$GITHUB_REF_NAME" != "main" ]; then echo "Run this workflow from main"; exit 1; fi
+            if gh release view "v$v" >/dev/null 2>&1; then echo "Release v$v already exists"; exit 1; fi
             exit 0
           fi
           if [ "v$v" != "$GITHUB_REF_NAME" ]; then
-            echo "タグ $GITHUB_REF_NAME と package.json の版 $v が一致しません / Tag and package.json version differ"
+            echo "Tag $GITHUB_REF_NAME does not match the package.json version $v"
             exit 1
           fi
       - name: Build
@@ -47,7 +47,7 @@ jobs:
         run: |
           v="$(node -p "require('./package.json').version")"
           if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
-            # タグはここで作る（main の今の記録に付ける）
+            # The tag is created here (on the current commit of main)
             gh release create "v$v" tmp/release/mdfolio.html "tmp/release/mdfolio-$v.zip" \
               --title "mdfolio $v" --notes-file tmp/release/notes.md --target "$GITHUB_SHA"
           else
