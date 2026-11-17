@@ -59,7 +59,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     ja, '',
     '添付: `mdfolio.html`（これ 1 つで動きます）、`mdfolio-' + version + '.zip`（見本、見た目の CSS の例、説明書などの一式）。', '',
     '---', '',
-    'Assets: `mdfolio.html` (single-HTML version; this one file is all you need) and `mdfolio-' + version + '.zip` (samples, an example CSS for the look, documentation and more). The change history is in Japanese only (`CHANGELOG.md`); see `README.en.md` for an English overview.', ''
+    'Assets: `mdfolio.html` (single-HTML version; this one file is all you need) and `mdfolio-' + version + '.zip` (samples, an example CSS for the look, documentation and more). The change history is in Japanese only (`CHANGELOG.md`); see `README.md` for an English overview.', ''
   ].join('\n');
   fs.writeFileSync(path.join(out, 'notes.md'), notes);
   console.log(`${path.relative(ROOT, out) || out}: mdfolio.html, mdfolio-${version}.zip, notes.md`);
