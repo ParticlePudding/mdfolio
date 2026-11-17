@@ -39,7 +39,7 @@ export function sectionOf(text, ver) {
 export const CONTENTS = [
   'dist/mdfolio.html', 'examples/mdfolio.css',
   'sample-docs', 'sample-docs-en', 'sample.md', 'sample.en.md',
-  'README.md', 'README.en.md', 'CHANGELOG.md', 'LICENSE', 'THIRD-PARTY-NOTICES.txt'
+  'README.md', 'README.ja.md', 'CHANGELOG.md', 'LICENSE', 'THIRD-PARTY-NOTICES.txt'
 ];
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

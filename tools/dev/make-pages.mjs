@@ -10,11 +10,11 @@
  *   mdfolio.html          ビューア（dist/mdfolio.html。1 つだけ。画面の言語はブラウザーに合わせる）
  *   sample-site.html      書き出しの見本（sample-docs/。画面は日本語に固定）
  *   style/                見た目の見本（書き出しの見本と、隣に置いた mdfolio.css。examples/mdfolio.css の写し）
- *   mdfolio-docs.html     説明書（README.md と docs/ の 3 文書）
+ *   mdfolio-docs.html     説明書（README.ja.md と docs/ の 3 文書）
  *   en/index.html         案内（英語）
  *   en/sample-site.html   書き出しの見本（sample-docs-en/。画面は英語に固定）
  *   en/style/             見た目の見本（英語）
- *   en/mdfolio-docs.html  説明書（README.en.md）
+ *   en/mdfolio-docs.html  説明書（README.md）
  *   .nojekyll             GitHub Pages の変換（Jekyll）を止める（「_」で始まるファイルを公開しない、などの変換をさせない）
  *
  * 見本の画面の言語を固定するのは公開ページだけで、dist/ の見本（lang: auto）は変えない。

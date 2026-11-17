@@ -2,6 +2,12 @@
 
 mdfolio の版ごとの変更です。詳しい経緯は `docs/SPEC.md`（改訂履歴）、`docs/REVIEW.md`、`docs/TEST_REPORT.md` にあります。
 
+## 次の版（未リリース）
+
+### 変更
+
+- README を、英語を `README.md`（GitHub で最初に表示）、日本語を `README.ja.md` に入れ替えました。
+
 ## 1.3.0 — 2026-11-17
 
 ### 追加

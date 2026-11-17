@@ -51,7 +51,7 @@ describe('リリース', () => {
     assert.ok(names.every((n) => n.startsWith(top)), '最上位のフォルダは 1 つ');
     for (const p of ['dist/mdfolio.html', 'examples/mdfolio.css',
       'sample-docs/guide/基本操作.md', 'sample-docs-en/guide/basics.md', 'sample.md', 'sample.en.md',
-      'README.md', 'README.en.md', 'CHANGELOG.md', 'LICENSE', 'THIRD-PARTY-NOTICES.txt']) assert.ok(names.includes(top + p), p);
+      'README.md', 'README.ja.md', 'CHANGELOG.md', 'LICENSE', 'THIRD-PARTY-NOTICES.txt']) assert.ok(names.includes(top + p), p);
     assert.ok(!names.includes(top + 'CHANGELOG.en.md'));
     assert.ok(!names.some((n) => /node_modules|\/\.git\/|\/src\/|\/tests\//.test(n)), '開発用のファイルを含まない');
     assert.ok(!names.some((n) => n.startsWith(top + 'dist/mdfolio/')), 'フォルダ版（1.3.0 で廃止）を含まない');

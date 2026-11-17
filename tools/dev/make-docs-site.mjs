@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
- * 説明書（README.md と docs/ の文書）を、mdfolio 自身で 1 つのサイト HTML に書き出す。
+ * 説明書（README.ja.md と docs/ の文書）を、mdfolio 自身で 1 つのサイト HTML に書き出す。
  *
  *   node tools/dev/make-docs-site.mjs [出力.html] [--lang en]      既定: dist/mdfolio-docs.html
  *
- * --lang en を付けると、英語の README（README.en.md）だけの説明書を作る（仕様書などは日本語だけのため）。
+ * --lang en を付けると、英語の README（README.md）だけの説明書を作る（仕様書などは日本語だけのため）。
  * 画面の言語は、日本語版は ja、英語版は en に固定する。
- * README の先頭の言語の切り替えの行（「**日本語** | [English](README.en.md)」）は、説明書の中では
+ * README の先頭の言語の切り替えの行（「**English** | [日本語](README.ja.md)」など）は、説明書の中では
  * リンク先がないので取り除く。
  */
 import fs from 'node:fs';
@@ -22,8 +22,8 @@ const lang = langAt >= 0 ? argv.splice(langAt, 2)[1] : 'ja';
 if (lang !== 'ja' && lang !== 'en') { console.error('--lang は ja か en です'); process.exit(1); }
 const out = path.resolve(argv[0] || path.join(ROOT, 'dist/mdfolio-docs.html'));
 const work = fs.mkdtempSync(path.join(os.tmpdir(), 'mdfolio-docs-'));
-const readme = lang === 'en' ? 'README.en.md' : 'README.md';
-const dropLangLine = (text) => text.replace(/^(\*\*日本語\*\*|\[日本語\]\(README\.md\)) \| (\[English\]\(README\.en\.md\)|\*\*English\*\*)\n+/, '');
+const readme = lang === 'en' ? 'README.md' : 'README.ja.md';
+const dropLangLine = (text) => text.replace(/^(?:\*\*English\*\* \| \[日本語\]\(README\.ja\.md\)|\[English\]\(README\.md\) \| \*\*日本語\*\*)\n+/, '');
 
 fs.writeFileSync(path.join(work, 'README.md'), dropLangLine(fs.readFileSync(path.join(ROOT, readme), 'utf8')));
 if (lang === 'ja') {

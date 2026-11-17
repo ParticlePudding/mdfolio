@@ -431,7 +431,7 @@ form-action 'none'; base-uri 'none'
 | `CHANGELOG.md` | 変更履歴（日本語だけ） |
 | `src/` `vendor/` `tools/` `tests/` | ソース、同梱ライブラリ、ビルド・書き出しツール、テスト |
 | `docs/` | 仕様書・レビュー記録・テスト報告書 |
-| `README.md` `LICENSE` `THIRD-PARTY-NOTICES.txt` | 使い方、ライセンス |
+| `README.md`（英語）`README.ja.md`（日本語）`LICENSE` `THIRD-PARTY-NOTICES.txt` | 使い方、ライセンス |
 
 ### 8.2 HTML の内部構造
 
@@ -547,16 +547,16 @@ GitHub Pages の公開ページ（https://particlepudding.github.io/mdfolio/）�
   index.html              案内（日本語）
   sample-site.html        書き出しの見本（sample-docs/。画面は日本語）
   style/                  見た目の見本（書き出しの見本と、隣に置いた mdfolio.css）
-  mdfolio-docs.html       説明書（README.md と、仕様書・レビュー記録・テスト報告書）
+  mdfolio-docs.html       説明書（README.ja.md と、仕様書・レビュー記録・テスト報告書）
   mdfolio.html            ビューア（1 つだけ。画面の言語はブラウザーに合わせる）
   en/
     index.html            案内（英語）
     sample-site.html      書き出しの見本（sample-docs-en/。画面は英語）
     style/                見た目の見本（英語）
-    mdfolio-docs.html     説明書（README.en.md）
+    mdfolio-docs.html     説明書（README.md）
 ```
 
-リポジトリには、英語の見本文書 `sample-docs-en/` と英語の README `README.en.md` を置く。
+リポジトリには、英語の見本文書 `sample-docs-en/` を置く。README は、英語を `README.md`、日本語を `README.ja.md` とする（仕様 1.11。GitHub のリポジトリの画面で最初に英語が出るように）。
 
 #### 要件
 
@@ -567,7 +567,7 @@ GitHub Pages の公開ページ（https://particlepudding.github.io/mdfolio/）�
 | PG-3 | 必須 | 公開ページの見本（書き出し・見た目）と説明書は、画面の言語を文書の言語に合わせて固定する（設定 `lang` を `ja` / `en`）。利用者がメニューで切り替えた場合はそれに従う（5.6）。リポジトリの `dist/` にある見本（`sample-site.html`）は `auto` のまま変えない。説明書（`dist/mdfolio-docs.html`）は公開ページと同じものなので `ja` に固定する |
 | PG-4 | 必須 | `sample-docs-en/` は、`sample-docs/` と同じ構成（文書の数、サイドバー、画像、添付）と、同じ機能の見本（リンク、検索、表、アラート、コード、数式、図、脚注、折りたたみ、フロントマター）を持つ。ファイル名とフォルダ名は英語にする。日本語に固有の見本（全角の検索語など）は、英語で意味のある見本に置き換える |
 | PG-5 | 必須 | 英語の文書で画面の部品の名前を書くときは、アプリの英語の表示（`src/i18n.js` の `en`）と同じ言葉を使う |
-| PG-6 | 必須 | `README.md` と `README.en.md` の先頭に、互いへのリンクを置く。英語の説明書には、仕様書・レビュー記録・テスト報告書が日本語だけであることを書く |
+| PG-6 | 必須 | `README.md`（英語）と `README.ja.md`（日本語）の先頭に、互いへのリンクを置く。英語の説明書には、仕様書・レビュー記録・テスト報告書が日本語だけであることを書く |
 | PG-7 | 必須 | 案内のページはスクリプトを使わず、外部と通信しない（CSP で `default-src 'none'`）。ほかのページは、配布物と同じ安全の仕組みのままにする |
 | PG-8 | 必須 | 見本文書（日本語・英語）の中の相対リンクと画像は、すべて実在するファイルを指す。単体テストで確かめる |
 | PG-9 | 必須 | 公開ページのすべての HTML は、`LICENSE` と `THIRD-PARTY-NOTICES.txt` の全文を含む。アプリの HTML は従来どおり埋め込み（FR-802）、案内のページは折りたたみの欄に全文を載せる（スクリプトなしで読める）。単体テストで確かめる |
@@ -654,3 +654,4 @@ GitHub の自動実行の仕組み（GitHub Actions）で、公開ページの�
 | 1.8 | 2026-11-16 | 変更履歴を日本語の `CHANGELOG.md` 1 つにする（英語版をなくす。依頼者の指示。管理の手間を減らすため）（8.1、8.8） |
 | 1.9 | 2026-11-17 | アプリ 1.3.0。単一 HTML の隣の `mdfolio.css` で見た目を変えられるようにし、書き出しでは選んだ CSS を埋め込めるようにした（3.10）。CSP の `style-src` に `'self' file:` を加えた。フォルダ版を廃止（8.6。依頼者と合意）。1.7 で見送った「書き出す CSS の指定」は、フォルダ版の廃止にあわせて、選んで埋め込む形で取り入れた。コマンドライン版の書き出しの言語の要件を FR-605 に移した |
 | 1.10 | 2026-11-17 | 利用者は Node.js を使わないことを明確にした。コマンドライン版の書き出しは開発者・自動化向けとし、利用者向けの説明（README、見本、公開ページ）とリリースの zip から外した（FR-604、AU-3） |
+| 1.11 | 2026-11-17 | README を、英語を `README.md`、日本語を `README.ja.md` に入れ替えた（8.1、8.7）。アプリの画面の言語の既定（`auto`）は変えない |

@@ -57,7 +57,7 @@ GitHub Actions（`.github/workflows/pages.yml`）が、ビルド → 単体テ�
 「## <版> — 日付」の節 → ビルド・テスト → `main` に送る → 依頼者の了承を得て、依頼者が GitHub の Actions の画面で
 「Release」→「Run workflow」を押す（この開発環境からはタグを送れない。GitHub が 403 で拒む）。
 `.github/workflows/release.yml` がタグ `v<版>` とリリース（`mdfolio.html` と `mdfolio-<版>.zip`、説明は変更履歴から）を作る。
-日本語と英語の両対応（SPEC 8.7）: 見本文書は `sample-docs/` と `sample-docs-en/`、README は `README.md` と `README.en.md`。
+日本語と英語の両対応（SPEC 8.7）: 見本文書は `sample-docs/` と `sample-docs-en/`、README は英語が `README.md`、日本語が `README.ja.md`（GitHub で最初に出る README は英語。依頼者の指示）。
 片方を変えたらもう片方も直す（構成とリンクは `tests/unit/samples.test.mjs` が確かめる）。英語の文書で画面の部品を書くときは
 `src/i18n.js` の `en` の言葉を使う。仕様書・レビュー記録・テスト報告書は日本語だけ。
 著作権者名は「Particle Pudding」（`LICENSE`。HTML に埋め込まれるので、変えたら作り直す）。

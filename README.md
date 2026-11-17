@@ -1,67 +1,67 @@
-**日本語** | [English](README.en.md)
+**English** | [日本語](README.ja.md)
 
 # mdfolio
 
-ブラウザーだけで読める Markdown 文書ビューアです。サーバーもインストールも、Node.js などのツールも要りません。
+A Markdown document viewer that runs entirely in your browser. No server, installation, or tools such as Node.js needed.
 
-- バージョン: 1.3.0
-- 公開ページ: https://particlepudding.github.io/mdfolio/
-- 不具合・要望: [Issues](https://github.com/ParticlePudding/mdfolio/issues)
+- Version: 1.3.0
+- Public page: https://particlepudding.github.io/mdfolio/en/
+- Bugs, requests, and English corrections: [Issues](https://github.com/ParticlePudding/mdfolio/issues)
 
-## 使い方
+## How to use
 
-`mdfolio.html`（`dist/` の中）を開き、「フォルダを開く」でフォルダを選びます。試すなら `sample-docs` を開いてください。
+Open `mdfolio.html` (in `dist/`) and choose a folder with "Open folder". To try it, open `sample-docs-en`.
 
-**見た目を変える**: `mdfolio.html` と同じフォルダに `mdfolio.css` を置きます。例は `examples/mdfolio.css` です。
+**Change the look**: Place `mdfolio.css` in the same folder as `mdfolio.html`. See `examples/mdfolio.css` for an example.
 
-**人に渡す**: メニュー（⋯）の「サイトとして書き出す」で、文書を 1 つの HTML にまとめられます。見た目の CSS は、書き出しの画面の「CSS を選ぶ」で入れます。zip に入れて渡してください。
+**Share**: "Export as site" in the menu (⋯) packs your documents into a single HTML file. To include your CSS, use "Choose CSS" in the export dialog. Zip the file before sending.
 
-## できること
+## Features
 
-- 表、コードの色分け、数式、図（Mermaid）、脚注、アラート
-- ファイル一覧、目次、全文検索
-- ライト／ダーク、日本語／英語、印刷
-- ファイルを保存すると自動で再表示（Chrome / Edge）
+- Tables, syntax highlighting, math, diagrams (Mermaid), footnotes, alerts
+- File list, outline, full-text search
+- Light / dark theme, English / Japanese interface, printing
+- Automatic refresh when you save a file (Chrome / Edge)
 
-## 安全性
+## Security
 
-- 文書は外部に送信しません。
-- 文書の中のスクリプトは実行しません。
-- インターネット上の画像は、初期設定では読み込みません。
+- Documents are never sent anywhere.
+- Scripts in documents are not run.
+- Images on the internet are not loaded by default.
 
-## 主な制約
+## Main limitations
 
-- 文字コードは UTF-8、UTF-16（BOM 付き）、Shift_JIS だけです。
-- Mermaid のマインドマップとアーキテクチャ図は使えません。
-- Firefox / Safari では、「前回のフォルダを開く」と自動再表示は使えません。
-- スマートフォンの実機では確認していません。
+- Supported encodings: UTF-8, UTF-16 (with BOM), and Shift_JIS.
+- Mermaid mindmaps and architecture diagrams are not available.
+- In Firefox / Safari, "Reopen last folder" and automatic refresh are not available.
+- Not tested on real smartphones.
 
-## 設定
+## Settings
 
-HTML の中の `id="mdv-config"` の行で、タイトル、言語、テーマなどを変えられます。詳しくは `sample-docs/reference/設定.md` を見てください。
+Edit the line with `id="mdv-config"` in the HTML to change the title, language, theme, and more. See `sample-docs-en/reference/settings.md`.
 
-## 再配布について
+## Redistribution
 
-- `dist/mdfolio.html` と、そこから書き出したサイトの HTML は、そのまま再配布できます。必要な著作権表示と許諾表示は HTML の中に入っています。
+- `dist/mdfolio.html` and sites exported from it can be redistributed as-is. The required copyright and license notices are included in the HTML.
 
-## 開発者向け
+## For developers
 
-ビルドとテストには Node.js 20 以降を使います（利用者には要りません）。
-
-```
-npm run build        # dist/ を作る
-npm install          # テストの準備
-npm test             # ビルド → 単体テスト → ブラウザーでのテスト
-```
-
-書き出しを自動化したいときは、コマンドでも書き出せます。
+Building and testing use Node.js 20 or later (users do not need it).
 
 ```
-node tools/build-site.mjs <文書フォルダ> --out site.html --title "手順書" --css mdfolio.css
+npm run build        # build dist/
+npm install          # prepare for testing
+npm test             # build → unit tests → browser tests
 ```
 
-仕様は `docs/SPEC.md`、変更履歴は `CHANGELOG.md` にあります。
+To automate exports, you can also export from the command line:
 
-## ライセンス
+```
+node tools/build-site.mjs <document folder> --out site.html --title "Handbook" --css mdfolio.css
+```
 
-MIT（`LICENSE`）。同梱ライブラリは `THIRD-PARTY-NOTICES.txt`。
+The specification (`docs/SPEC.md`) and changelog (`CHANGELOG.md`) are in Japanese.
+
+## License
+
+MIT (`LICENSE`). Bundled libraries: `THIRD-PARTY-NOTICES.txt`.
