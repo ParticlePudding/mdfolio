@@ -105,6 +105,9 @@ const cspLine = '<meta http-equiv="Content-Security-Policy" content="' + core.es
 if (out.split(cspLine).length !== 2) fail('CSP の指定が見つかりません');
 out = out.replace(cspLine, '');
 if (/http-equiv="Content-Security-Policy"/.test(out.slice(0, out.indexOf('<style')))) fail('CSP の指定が残っています');
+
+// 4. 隣の mdfolio.css を読む指定を取り除く（公開先には隣のファイルを置けず、見つからない読み込みが起きるだけのため）
+out = out.replace('<link rel="stylesheet" href="' + core.USER_CSS_FILE + '" id="mdv-user-css">\n', '');
 if (out.indexOf(REPLACEMENT) >= 0) fail('置換文字（U+FFFD）が残っています（タイトルやスタイルに含まれていないか確認してください）');
 
 fs.mkdirSync(path.dirname(path.resolve(output)), { recursive: true });

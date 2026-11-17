@@ -281,3 +281,43 @@ describe('コマンドライン版の書き出しの英語の表示（FD-10）',
     assert.ok(r.out.includes('node tools/build-site.mjs <文書フォルダ> [オプション]'));
   });
 });
+
+describe('見た目の CSS を埋め込む（--css、SPEC FR-1006）', () => {
+  const docs = () => tree(tmp(), { 'README.md': '# home\n' });
+
+  test('指定した CSS を埋め込み、BOM は取り除く。書き出したものをもとにすると引き継ぐ', () => {
+    const dir = tmp();
+    const css = path.join(dir, 'look.css');
+    fs.writeFileSync(css, '\uFEFFh1 { color: rgb(1, 2, 3); }\n');
+    const out = path.join(dir, 'site.html');
+    let r = run([docs(), '--out', out, '--css', css]);
+    assert.equal(r.code, 0, r.err);
+    let site = readSite(out);
+    assert.equal(site.parts.userCss, 'h1 { color: rgb(1, 2, 3); }\n');
+    // 書き出した HTML をビューアにして、指定せずに書き出すと引き継ぐ
+    const again = path.join(dir, 'again.html');
+    r = run([docs(), '--out', again, '--viewer', out]);
+    assert.equal(r.code, 0, r.err);
+    assert.equal(readSite(again).parts.userCss, 'h1 { color: rgb(1, 2, 3); }\n');
+    // 指定しなければ埋め込まない（配布物のビューアには埋め込みがない）
+    r = run([docs(), '--out', path.join(dir, 'plain.html')]);
+    site = readSite(path.join(dir, 'plain.html'));
+    assert.equal(site.parts.userCss, '');
+    assert.ok(!site.html.slice(0, site.html.indexOf('</head>')).includes('<style id="mdv-user-style">'));
+  });
+
+  test('</style を含む CSS、大きすぎる CSS、ないファイルは、理由を示して止まり、何も書き出さない', () => {
+    const dir = tmp();
+    const bad = path.join(dir, 'bad.css');
+    fs.writeFileSync(bad, 'a { } </STYLE><script>x</script>');
+    const big = path.join(dir, 'big.css');
+    fs.writeFileSync(big, 'a{}'.padEnd(core.LIMITS.maxUserCssBytes + 1, ' '));
+    for (const [arg, message] of [[bad, '</style'], [big, '1MB'], [path.join(dir, 'none.css'), '見つかりません']]) {
+      const out = path.join(dir, 'out.html');
+      const r = run([docs(), '--out', out, '--css', arg]);
+      assert.equal(r.code, 1);
+      assert.ok(r.err.includes(message), r.err);
+      assert.ok(!fs.existsSync(out));
+    }
+  });
+});

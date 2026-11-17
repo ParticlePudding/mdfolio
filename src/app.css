@@ -575,7 +575,6 @@ body {
 .mdv-welcome-actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 0 0 16px; }
 .mdv-welcome-last { margin: 0 0 16px -10px; }
 .mdv-welcome-pending { margin: 0 0 16px; color: var(--muted); font-size: 0.875rem; }
-.mdv-welcome-hint { margin: 16px 0 0; max-width: 34em; color: var(--ink-soft); font-size: 0.875rem; }
 .mdv-welcome-foot { margin: 28px 0 0; font-size: 0.9375rem; }
 .mdv-welcome-foot a { color: var(--accent); text-underline-offset: 0.2em; }
 
@@ -627,6 +626,9 @@ body {
 
 .mdv-field { display: block; margin: 0 0 16px; }
 .mdv-field-label { display: block; margin: 0 0 6px; font-size: 0.875rem; font-weight: 700; }
+.mdv-export-css-status { margin: 0 0 8px; }
+.mdv-export-css-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.mdv-export-css .mdv-dialog-note { margin: 8px 0 0; }
 .mdv-input {
   width: 100%;
   height: 40px;

@@ -33,13 +33,11 @@ If you open files only, images in the same folder cannot be shown. Open the whol
 - If no document uses math or diagrams, the code for those features is left out to keep the file small.
 - An HTML file sent as-is by email or chat may be altered in transit and stop working. Zip it first to be safe.
 
-## Use the folder version
+## Change the look
 
-In the folder version, opening `index.html` displays the documents stored in the `docs` folder.
+Place `mdfolio.css` in the same folder as this HTML file to change its look with that CSS (reopen the file to apply it). Changing color variables such as `--accent` changes the colors of the text, the interface, and diagrams together.
 
-- After adding or changing documents, run `node tools/update.mjs` in the mdfolio folder (the one that contains `index.html`) and reload the page.
-- Change the look in `style/document.css`. It controls the document body and the colors, fonts and text width of the whole screen.
-- After opening another folder, use "Back to main documents" in the menu (⋯) to return.
+To include it in an exported site, choose the same file with "Choose CSS" in the "Export as site" dialog. The browser does not let the page read the contents of nearby files automatically.
 
 ## Control the sidebar order
 

@@ -9,14 +9,13 @@
  *   index.html            案内（日本語。スクリプトなし。ライセンス表記の全文を含む）
  *   mdfolio.html          ビューア（dist/mdfolio.html。1 つだけ。画面の言語はブラウザーに合わせる）
  *   sample-site.html      書き出しの見本（sample-docs/。画面は日本語に固定）
- *   folder/               フォルダ版の見本（sample-docs/。画面は日本語に固定）
+ *   style/                見た目の見本（書き出しの見本と、隣に置いた mdfolio.css。examples/mdfolio.css の写し）
  *   mdfolio-docs.html     説明書（README.md と docs/ の 3 文書）
  *   en/index.html         案内（英語）
  *   en/sample-site.html   書き出しの見本（sample-docs-en/。画面は英語に固定）
- *   en/folder/            フォルダ版の見本（sample-docs-en/。画面は英語に固定）
+ *   en/style/             見た目の見本（英語）
  *   en/mdfolio-docs.html  説明書（README.en.md）
- *   .nojekyll             GitHub Pages の変換（Jekyll）を止める。止めないと「_」で始まるファイル
- *                         （folder/docs/_sidebar.md）が公開されない
+ *   .nojekyll             GitHub Pages の変換（Jekyll）を止める（「_」で始まるファイルを公開しない、などの変換をさせない）
  *
  * 見本の画面の言語を固定するのは公開ページだけで、dist/ の見本（lang: auto）は変えない。
  */
@@ -56,12 +55,10 @@ for (const [lang, c] of Object.entries(LANGS)) {
   const at = (p) => path.join(out, c.dir, p);
   run('tools/build-site.mjs', [c.docs, '--out', at('sample-site.html'), '--title', c.title, '--lang', lang]);
   run('tools/dev/make-docs-site.mjs', [at('mdfolio-docs.html'), '--lang', lang]);
-  run('tools/build-folder.mjs', ['--out', at('folder'), '--docs', path.join(ROOT, c.docs), '--title', c.title]);
-  // フォルダ版の画面の言語を固定する（設定ブロックは利用者が編集してよい部分。SPEC 8.6）
-  const index = at('folder/index.html');
-  const html = fs.readFileSync(index, 'utf8');
-  if (html.split('"lang":"auto"').length !== 2) throw new Error('folder/index.html の設定ブロックに "lang":"auto" が 1 つだけあるはずです');
-  fs.writeFileSync(index, html.replace('"lang":"auto"', `"lang":"${lang}"`));
+  // 見た目の見本: 同じ書き出しの隣に mdfolio.css を置く（SPEC 3.10、8.7）
+  fs.mkdirSync(at('style'), { recursive: true });
+  fs.copyFileSync(at('sample-site.html'), at('style/sample-site.html'));
+  fs.copyFileSync(path.join(ROOT, 'examples/mdfolio.css'), at('style/mdfolio.css'));
 }
 
 const mb = (fs.statSync(viewer).size / 1048576).toFixed(1);
@@ -83,7 +80,7 @@ const TEXT = {
     cards: [
       ['sample-site.html', 'サンプル文書を読む', '文書を 1 つの HTML にまとめた「書き出し」の見本です。スマートフォンでも読めます。'],
       ['mdfolio.html', '自分のフォルダを開く', 'ビューア本体です。手元の Markdown のフォルダやファイルを選んで読めます。'],
-      ['folder/index.html', 'フォルダ版の見本', '決まった場所の文書を表示する形です。見た目を CSS で変えられます。'],
+      ['style/sample-site.html', '見た目を変えた見本', '同じ見本の隣に mdfolio.css を置いて、色や見出しを変えた例です。'],
       ['mdfolio-docs.html', '説明書', '使い方、仕様書、テストの記録です。mdfolio 自身で表示しています。']
     ],
     privacyTitle: '文書は外に送られません',
@@ -91,7 +88,8 @@ const TEXT = {
     localTitle: '手元で使う',
     local: [
       `<a href="mdfolio.html" download>mdfolio.html をダウンロード</a>（約 ${mb}MB）して、ダブルクリックで開きます。これ 1 つで動きます。`,
-      `フォルダ版やコマンドラインでの書き出しは、<a href="${REPO}">GitHub のリポジトリ</a>の「Code」→「Download ZIP」で一式を入手し、README の手順に従ってください。`
+      `見た目を変えるには、HTML と同じフォルダに <a href="style/mdfolio.css" download>mdfolio.css</a>（例）を置きます。`,
+      `見本の文書やコマンドラインでの書き出しは、<a href="${REPO}/releases/latest">リリース</a>の zip に入っています。`
     ],
     licenseTitle: 'ライセンス',
     license: 'mdfolio は MIT ライセンスです。同梱しているライブラリ（markdown-it、DOMPurify、highlight.js、KaTeX、Mermaid など）のライセンス表記を含む全文を、下に載せています。同じものが、各ページのメニュー（⋯）の「ライセンスとバージョン」でも見られます。',
@@ -109,7 +107,7 @@ const TEXT = {
     cards: [
       ['sample-site.html', 'Read the sample documents', 'Try an example of "Export as site": a collection of documents packaged into a single HTML file. It works on smartphones too.'],
       ['../mdfolio.html', 'Open your own folder', 'The viewer itself. Choose Markdown files or a folder on your device and read them.'],
-      ['folder/index.html', 'Folder version sample', 'Shows the documents stored in its docs folder. You can change the look with CSS.'],
+      ['style/sample-site.html', 'Custom look sample', 'The same sample with an mdfolio.css placed next to it, changing the colors and headings.'],
       ['mdfolio-docs.html', 'Documentation', 'How to use mdfolio, shown by mdfolio itself. The design records are in Japanese only.']
     ],
     privacyTitle: 'Your documents stay with you',
@@ -117,7 +115,8 @@ const TEXT = {
     localTitle: 'Use it on your device',
     local: [
       `<a href="../mdfolio.html" download>Download mdfolio.html</a> (about ${mb} MB) and double-click it. That one file is all you need.`,
-      `To use the folder version or command-line export, download <a href="${REPO}">the GitHub repository</a> as a ZIP file using "Code" → "Download ZIP", then follow the instructions in README.en.md.`
+      `To change the look, place <a href="style/mdfolio.css" download>mdfolio.css</a> (example) in the same folder as the HTML file.`,
+      `The sample documents and the command-line export are in the zip file of the <a href="${REPO}/releases/latest">latest release</a>.`
     ],
     licenseTitle: 'License',
     license: 'mdfolio is released under the MIT License. The full text, including the license notices of the bundled libraries (markdown-it, DOMPurify, highlight.js, KaTeX, Mermaid and others), is below. The same text is under "Licenses and version" in the menu (⋯) of each page.',

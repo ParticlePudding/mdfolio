@@ -383,7 +383,9 @@ describe('コンテンツセキュリティポリシー（SEC-3, SEC-4）', () =
     assert.deepEqual(directive('base-uri'), ["'none'"]);
     assert.deepEqual(directive('font-src'), ['data:']);
     assert.deepEqual(directive('img-src'), ['data:', 'blob:', 'http:', 'https:']);
-    assert.ok(!/file:/.test(policy), 'file: は許可しない（ローカルのファイルや共有フォルダーを画像として読ませない）');
+    // file: は CSS（隣の mdfolio.css。SPEC 3.10）にだけ認める。画像・メディア・フォントには認めない（ローカルのファイルや共有フォルダーを読ませない）
+    assert.deepEqual(directive('style-src'), ["'self'", 'file:', "'unsafe-inline'"]);
+    for (const name of ['img-src', 'media-src', 'font-src', 'connect-src', 'script-src', 'default-src']) assert.ok(!directive(name).includes('file:'), name);
     assert.ok(html.includes('<meta name="referrer" content="no-referrer">'));
   });
 

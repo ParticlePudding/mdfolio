@@ -410,43 +410,29 @@ export async function runSmoke(d, engine, log = console.log, shots = null) {
       }
     });
 
-    // ------------------------------------------------------------ フォルダ版（SPEC 8.6）
-    await step('フォルダ版: index.html を開くと所定の文書を表示し、数式・図のライブラリを lib/ から読み込む', async () => {
-      const dir = path.join(work, 'folder');
-      fs.cpSync(path.join(ROOT, 'dist/mdfolio'), dir, { recursive: true });
-      // 利用者が document.css を編集した場合（配色の変数と本文の規則）
-      fs.appendFileSync(path.join(dir, 'style/document.css'), '\n:root { --accent: #8A1C14; }\n.mdv-prose h2 { color: #0B6E80; }\n');
+    // ------------------------------------------------------------ 隣の mdfolio.css（SPEC 3.10）
+    await step('隣の mdfolio.css: 書き出したサイトの隣に置くと、本文・図の見た目に反映される', async () => {
+      const dir = path.join(work, 'style');
+      fs.mkdirSync(dir, { recursive: true });
+      fs.copyFileSync(path.join(ROOT, 'dist/sample-site.html'), path.join(dir, 'site.html'));
+      // 利用者の CSS（配色の変数と本文の規則）
+      fs.writeFileSync(path.join(dir, 'mdfolio.css'), ':root { --accent: #8A1C14; }\n.mdv-prose h2 { color: #0B6E80; }\n');
       await d.goto('about:blank');
-      await d.goto(pathToFileURL(path.join(dir, 'index.html')).href);
+      await d.goto(pathToFileURL(path.join(dir, 'site.html')).href + '#/guide/' + encodeURIComponent('Markdown記法') + '.md');
       await d.wait(appReady, [], 20000, 'アプリ');
-      await d.wait(headingIs, ['mdfolio サンプル文書'], 20000, '所定の文書');
-      const start = await d.exec(() => ({ mode: window.MDV.app.state.mode, title: document.querySelector('.mdv-title').textContent }));
-      assert.deepEqual(start, { mode: 'library', title: 'mdfolio サンプル文書' });
-      await d.exec(() => { location.hash = '#/guide/' + encodeURIComponent('Markdown記法') + '.md'; });
       await d.wait(headingIs, ['Markdown 記法'], 20000, '記法の文書');
-      await d.wait(() => document.querySelectorAll('.mdv-mermaid svg').length === 2 && document.querySelectorAll('.katex').length >= 2, [], 40000, '数式と図');
+      await d.wait(() => document.querySelectorAll('.mdv-mermaid svg').length === 2, [], 20000, '図');
       const r = await d.exec(() => ({
-        libs: Array.from(document.querySelectorAll('script[src], link[rel="stylesheet"]')).map((e) => e.getAttribute('src') || e.getAttribute('href')).filter((x) => /katex|mermaid/.test(x)).sort(),
         link: getComputedStyle(document.querySelector('.mdv-prose a')).color,
         h2: getComputedStyle(document.querySelector('.mdv-prose h2')).color,
-        katexSize: getComputedStyle(document.querySelector('.katex')).fontSize,
         diagram: /#8A1C14|rgb\(138, ?28, ?20\)/i.test(document.querySelector('.mdv-mermaid svg').outerHTML)
       }));
-      assert.deepEqual(r, { libs: ['lib/katex.css', 'lib/katex.js', 'lib/mermaid.js'], link: 'rgb(138, 28, 20)', h2: 'rgb(11, 110, 128)', katexSize: '17.6px', diagram: true });
-      // インラインのスクリプトは実行されない（CSP）
-      await d.exec(() => { const el = document.createElement('script'); el.textContent = 'window.__folderInjected = 1'; document.body.appendChild(el); });
+      assert.deepEqual(r, { link: 'rgb(138, 28, 20)', h2: 'rgb(11, 110, 128)', diagram: true });
+      // インラインのスクリプトは実行されない（CSP。style-src を広げてもスクリプトの許可は変わらない）
+      await d.exec(() => { const el = document.createElement('script'); el.textContent = 'window.__styleInjected = 1'; document.body.appendChild(el); });
       await new Promise((res) => setTimeout(res, 200));
-      assert.equal(await d.exec(() => window.__folderInjected === undefined), true);
+      assert.equal(await d.exec(() => window.__styleInjected === undefined), true);
       return 'CSS の変更が本文・図に反映される';
-    });
-
-    await step('フォルダ版: 別のフォルダを開き、メニューから所定の文書に戻れる', async () => {
-      await d.sendKeys('.mdv-input-files', path.join(ROOT, 'tests/fixtures/site/README.md'));
-      await d.wait(headingIs, ['テスト用サイト'], 20000, '開いた文書');
-      await d.click('.mdv-btn-menu');
-      await d.wait(() => !document.querySelector('.mdv-menu').hidden, [], 5000, 'メニュー');
-      await d.click('.mdv-menu-item[data-action="menuLibrary"]');
-      await d.wait(headingIs, ['mdfolio サンプル文書'], 20000, '所定の文書');
     });
 
     await step('狭い画面: 横にはみ出さず、サイドバーはドロワーになる', async () => {

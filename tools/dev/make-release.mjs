@@ -37,7 +37,7 @@ export function sectionOf(text, ver) {
 
 // 配布用の zip に入れるもの（リポジトリと同じ並び）
 export const CONTENTS = [
-  'dist/mdfolio.html', 'dist/mdfolio', 'tools/build-site.mjs',
+  'dist/mdfolio.html', 'examples/mdfolio.css', 'tools/build-site.mjs',
   'sample-docs', 'sample-docs-en', 'sample.md', 'sample.en.md',
   'README.md', 'README.en.md', 'CHANGELOG.md', 'LICENSE', 'THIRD-PARTY-NOTICES.txt'
 ];
@@ -57,9 +57,9 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
 
   const notes = [
     ja, '',
-    '添付: `mdfolio.html`（単一 HTML 版。これ 1 つで動きます）、`mdfolio-' + version + '.zip`（フォルダ版、見本、説明書などの一式）。', '',
+    '添付: `mdfolio.html`（これ 1 つで動きます）、`mdfolio-' + version + '.zip`（見本、見た目の CSS の例、説明書などの一式）。', '',
     '---', '',
-    'Assets: `mdfolio.html` (single-HTML version; this one file is all you need) and `mdfolio-' + version + '.zip` (folder version, samples, documentation and more). The change history is in Japanese only (`CHANGELOG.md`); see `README.en.md` for an English overview.', ''
+    'Assets: `mdfolio.html` (single-HTML version; this one file is all you need) and `mdfolio-' + version + '.zip` (samples, an example CSS for the look, documentation and more). The change history is in Japanese only (`CHANGELOG.md`); see `README.en.md` for an English overview.', ''
   ].join('\n');
   fs.writeFileSync(path.join(out, 'notes.md'), notes);
   console.log(`${path.relative(ROOT, out) || out}: mdfolio.html, mdfolio-${version}.zip, notes.md`);

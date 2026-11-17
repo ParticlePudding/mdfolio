@@ -721,6 +721,7 @@ describe('サイトデータ・HTML の組み立て', () => {
     csp: "default-src 'none'; script-src 'sha256-abc='",
     generator: 'mdfolio 1.0.0',
     css: 'body { color: red; }\n/* <b> */',
+    userCss: '',
     blocks: [
       { id: 'mdv-config', type: 'application/json', text: '{"title":""}' },
       { id: 'mdv-site', type: 'application/json', text: 'null' },
@@ -763,6 +764,31 @@ describe('サイトデータ・HTML の組み立て', () => {
     assert.throws(bad({ id: 'other', type: '', text: 'x' }));
     assert.throws(bad({ id: 'mdv-x" onload="y', type: '', text: 'x' }));
     assert.throws(() => core.composeHtml({ ...parts, css: 'a </style> b' }));
+    assert.throws(() => core.composeHtml({ ...parts, userCss: 'a </STYLE> b' }));
+  });
+
+  test('利用者の CSS（SPEC 3.10）: 内蔵の CSS → 埋め込んだ CSS → 隣の mdfolio.css の順に置き、分解しても戻る', () => {
+    const withUser = { ...parts, userCss: 'h1 { color: blue; }' };
+    const html = core.composeHtml(withUser);
+    const head = html.slice(0, html.indexOf('</head>'));
+    const i = head.indexOf('<style id="mdv-style">'), j = head.indexOf('<style id="mdv-user-style">h1 { color: blue; }</style>'), k = head.indexOf('<link rel="stylesheet" href="mdfolio.css" id="mdv-user-css">');
+    assert.ok(i >= 0 && i < j && j < k, '順序');
+    assert.deepEqual(core.extractParts(html), withUser);
+    // 埋め込みがなければ <style id="mdv-user-style"> は出さない。隣の CSS を読む指定は常にある
+    const plain = core.composeHtml(parts);
+    assert.ok(!plain.includes('<style id="mdv-user-style">'));
+    assert.ok(plain.includes('<link rel="stylesheet" href="mdfolio.css" id="mdv-user-css">'));
+    // スクリプトの本文に同じ文字列があっても、<head> の中だけを読む
+    const tricky = { ...parts, blocks: parts.blocks.concat([{ id: 'mdv-js-x', type: '', text: 'var s = \'<style id="mdv-user-style">x</style>\';' }]) };
+    assert.equal(core.extractParts(core.composeHtml(tricky)).userCss, '');
+  });
+
+  test('applySite: 利用者の CSS は、指定があれば置き換え、なければ引き継ぐ', () => {
+    const base = { ...parts, userCss: 'p { color: green; }' };
+    const opts = { config: {}, siteData: null, title: 't', dropLibs: [] };
+    assert.equal(core.applySite(base, opts).userCss, 'p { color: green; }');
+    assert.equal(core.applySite(base, { ...opts, userCss: 'a {}' }).userCss, 'a {}');
+    assert.equal(core.applySite(base, { ...opts, userCss: '' }).userCss, '');
   });
 
   test('extractParts: mdfolio の HTML でなければ例外', () => {

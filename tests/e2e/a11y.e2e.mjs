@@ -21,7 +21,9 @@ const axeSource = fs.readFileSync(path.join(ROOT, 'node_modules/axe-core/axe.min
 async function audit(page) {
   await page.evaluate(axeSource);
   const result = await page.evaluate(async () => {
-    const r = await window.axe.run({ exclude: [['.mdv-prose [style*="color"]']] }, { resultTypes: ['violations'] });
+    // preload: false … axe-core が検査のためにスタイルシートを取りに行くのを止める（隣の mdfolio.css を読もうとして CSP の connect-src に止められ、
+    // それがエラーとして記録されるため。アプリの動作ではない）
+    const r = await window.axe.run({ exclude: [['.mdv-prose [style*="color"]']] }, { resultTypes: ['violations'], preload: false });
     return { violations: r.violations.map((v) => v.id + ': ' + v.nodes.map((n) => n.target.join(' ')).join(' | ')), passes: r.passes.length };
   });
   return result;

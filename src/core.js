@@ -12,7 +12,7 @@
   'use strict';
 
   var NAME = 'mdfolio';
-  var VERSION = '1.2.0';
+  var VERSION = '1.3.0';
   var SITE_FORMAT = 1;
 
   var DOC_EXTS = ['md', 'markdown', 'mdown', 'mkd', 'mkdn', 'mdwn', 'mdtxt', 'mdtext'];
@@ -23,6 +23,7 @@
     maxEntries: 50000,                  // 走査するファイル・フォルダ数の上限
     maxDocBytes: 10 * 1024 * 1024,      // これを超える文書はプレーンテキスト表示
     maxAssetBytes: 20 * 1024 * 1024,    // 書き出し時に埋め込む添付 1 件の上限
+    maxUserCssBytes: 1024 * 1024,       // 書き出しに埋め込む CSS の上限（FR-1005）
     warnTotalBytes: 100 * 1024 * 1024   // 書き出し合計サイズの警告しきい値
   };
 
@@ -998,9 +999,14 @@
     + '%3Cpath d=%27M12 15h9M12 19h9M12 23h5%27 stroke=%27%231D4F91%27 stroke-width=%271.8%27/%3E'
     + '%3C/svg%3E';
 
+  /** 隣に置いて見た目を上書きする CSS のファイル名（SPEC 3.10） */
+  var USER_CSS_FILE = 'mdfolio.css';
+
   function composeHtml(parts) {
     var css = String(parts.css || '');
+    var userCss = String(parts.userCss || '');
     if (/<\/style/i.test(css)) throw new Error('composeHtml: CSS contains "</style"');
+    if (/<\/style/i.test(userCss)) throw new Error('composeHtml: user CSS contains "</style"');
     var out = [];
     out.push('<!DOCTYPE html>');
     out.push('<html lang="' + escapeHtml(parts.lang || 'ja') + '">');
@@ -1014,6 +1020,9 @@
     out.push('<link rel="icon" href="' + FAVICON + '">');
     out.push('<title>' + escapeHtml(parts.title || NAME) + '</title>');
     out.push('<style id="mdv-style">' + css + '</style>');
+    // 利用者の CSS: 埋め込んだもの（書き出しで選んだもの）→ 隣の mdfolio.css の順。あとのものが勝つ（FR-1001、FR-1002）
+    if (userCss) out.push('<style id="mdv-user-style">' + userCss + '</style>');
+    out.push('<link rel="stylesheet" href="' + USER_CSS_FILE + '" id="mdv-user-css">');
     out.push('</head>');
     out.push('<body>');
     out.push(NOSCRIPT);
@@ -1047,6 +1056,10 @@
     m = /<style id="mdv-style">([\s\S]*?)<\/style>/.exec(src);
     if (!m) throw new Error('extractParts: style block not found');
     parts.css = m[1];
+    // <head> の中だけを探す（スクリプトの本文にも同じ文字列があるため）
+    var headEnd = src.indexOf('</head>');
+    m = /<style id="mdv-user-style">([\s\S]*?)<\/style>/.exec(headEnd >= 0 ? src.slice(0, headEnd) : src);
+    parts.userCss = m ? m[1] : '';
     var re = /<script(?: type="([^"]*)")? id="(mdv-[a-z0-9-]+)">([\s\S]*?)<\/script>/g;
     while ((m = re.exec(src))) {
       parts.blocks.push({ type: m[1] ? unescapeHtml(m[1]) : '', id: m[2], text: m[3] });
@@ -1095,6 +1108,7 @@
       csp: pruneScriptHashes(parts, drop),
       generator: parts.generator,
       css: parts.css,
+      userCss: options.userCss !== undefined ? String(options.userCss || '') : (parts.userCss || ''),
       title: options.title || parts.title,
       blocks: []
     };
@@ -1115,6 +1129,7 @@
     LIMITS: LIMITS,
     DEFAULT_CONFIG: DEFAULT_CONFIG,
     FAVICON: FAVICON,
+    USER_CSS_FILE: USER_CSS_FILE,
     NOSCRIPT: NOSCRIPT,
     // 文字列
     nfc: nfc, escapeHtml: escapeHtml, unescapeHtml: unescapeHtml, safeDecode: safeDecode,

@@ -26,7 +26,7 @@ You can change the default behavior by editing the settings block with the ID `m
 The last three are for places where saving files or loading external content is not possible, such as when the page is embedded in another page. When you open the file on your own device, keep the defaults.
 
 > [!WARNING]
-> In the single-HTML version, edit only this settings block. If you change any other part, a security mechanism (CSP) stops the page from working. In the folder version, you can edit the settings block in `index.html` and `style/document.css`.
+> Edit only this settings block in the HTML file. If you change any other part, a security mechanism (CSP) stops the page from working. To change the look, do not edit the HTML; place `mdfolio.css` next to it instead.
 
 ## Per-user settings
 

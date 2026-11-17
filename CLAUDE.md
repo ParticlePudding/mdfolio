@@ -1,6 +1,6 @@
 # mdfolio — Claude Code 向けの引き継ぎメモ
 
-ローカルの HTML / JavaScript だけで動く Markdown 文書ビューア。現在の版は 1.2.0。変更の一覧は `CHANGELOG.md`（日本語だけ。英語版は作らない。依頼者の指示）。
+ローカルの HTML / JavaScript だけで動く Markdown 文書ビューア。現在の版は 1.3.0。変更の一覧は `CHANGELOG.md`（日本語だけ。英語版は作らない。依頼者の指示）。
 詳しい仕様は `docs/SPEC.md`、設計判断の経緯は `docs/REVIEW.md`、テスト結果は `docs/TEST_REPORT.md`。
 
 ## 依頼者について・進め方
@@ -10,21 +10,30 @@
   `docs/SPEC.md`（改訂履歴も）、`docs/REVIEW.md`、`docs/TEST_REPORT.md` を合わせて更新する。
 - 確認できていないことは、確認できていないとはっきり書く（実機・実環境で未確認の範囲など）。
 
-## 2 つの形
+## 形と見た目の変え方
 
-| 形 | 出力 | 用途 |
-|---|---|---|
-| 単一 HTML 版 | `dist/mdfolio.html` | 1 ファイルを開いてフォルダを選ぶ。書き出し（「サイトとして書き出す」）の出力形式でもある |
-| フォルダ版（1.1.0〜） | `dist/mdfolio/` | 所定の場所に置き、`docs/` の文書を表示。見た目を `style/document.css` で変える |
+配布物は単一 HTML の `dist/mdfolio.html` だけ。1 ファイルを開いてフォルダを選ぶ。書き出し（「サイトとして書き出す」）の出力も同じ形の HTML。
 
-どちらも同じソース（`src/`）から作る。フォルダ版のスクリプトは単一 HTML から取り出すので中身は常に同じ。
+- **フォルダ版は 1.3.0 で廃止した**（依頼者と合意。理由と経緯は SPEC 8.6、REVIEW 10 章）。`tools/build-folder.mjs`、`tools/folder/`、
+  `dist/mdfolio/`、`library` モード、`window.MDV_DATA` はすべて消した。戻さないこと。
+- **見た目は、HTML の隣に置く `mdfolio.css` で変える**（SPEC 3.10）。HTML は常に `<link rel="stylesheet" href="mdfolio.css" id="mdv-user-css">` を持ち、
+  内蔵の CSS（`#mdv-style`）→ 埋め込んだ利用者の CSS（`#mdv-user-style`。書き出しで選んだもの）→ 隣の `mdfolio.css` の順に効く。
+  例は `examples/mdfolio.css`（公開ページの見た目の見本と、リリースの zip にも入る）。
+- **ブラウザーの制約**: `file://` のページは、隣のファイルを「使う」（CSS を効かせる）ことはできるが、中身を読めない（`cssRules` は SecurityError、
+  `fetch` は失敗。Chromium で確認）。だから隣の CSS は書き出しに自動では入らない。書き出しの画面の「CSS を選ぶ」で、利用者に選んでもらう
+  （選んだファイルは読める）。`http(s)://` で開いて同じ配信元なら読めるので、自動で候補にする。
+- **隣の CSS があるかの判定**: ファイルがなくても Chromium は空の style sheet を作り、`<link>` の load / error はアプリのスクリプトより前に
+  起きていることがある。そこで起動時に同じファイルを `media="not all"` でもう一度読み込み、その load / error で判断する（`probeUserCss`）。
+  このため、隣の `mdfolio.css` への読み込みは最大 2 回起きる。
+- CSP の `style-src` は `'self' file: 'unsafe-inline'`（隣の CSS のため）。スクリプトはハッシュだけのまま。img / media / font には file: を入れない。
+- テストの道具（`tests/helpers/e2e.mjs` の `watch`）は、隣の `mdfolio.css` への読み込みと、その「見つからない」エラーだけを除外する
+  （`record.userCss` に入る）。axe-core は `preload: false` で動かす（スタイルシートを取りに行って CSP に止められるため）。
 
 ## コマンド
 
 ```
 node tools/build.mjs             # dist/mdfolio.html（決定的: 同じソースからは同じバイト列）
-node tools/build-folder.mjs      # dist/mdfolio/（先に build.mjs）
-npm run build                    # 上の 2 つ
+npm run build                    # 上と同じ
 npm install && npx playwright install chromium   # テストの準備
 npm run test:unit                # 単体（node --test）
 LANG=C.UTF-8 npm run test:e2e    # Playwright（Chromium）。LANG を付けないと日本語の入力・表示が崩れる
@@ -57,20 +66,20 @@ GitHub Actions（`.github/workflows/pages.yml`）が、ビルド → 単体テ�
 
 - `src/core.js` 画面に依存しない処理（パス、リンク解決、設定、サイトデータ、HTML の組み立て `composeHtml` / `extractParts`）
 - `src/md.js` Markdown の拡張、`src/i18n.js` 文言（ja / en のキーは一致させる。テストで検査）
-- `src/app.js` 画面。`src/app.css` 画面の部品、`src/document.css` 本文と配色（利用者が編集するファイル）
+- `src/app.js` 画面。`src/app.css` 画面の部品、`src/document.css` 本文と配色（内蔵の見た目。利用者は編集せず、隣の `mdfolio.css` で上書きする）
 - 単一 HTML は、スクリプトを CSP のハッシュで限定している。HTML のスクリプト部分を手で書き換えると動かない
-- データの受け渡し: 単一 HTML は `<script type="application/json" id="mdv-…">`、フォルダ版は `window.MDV_DATA[id]`（`readJsonBlock` が両方を見る）
-- 動作モード: `viewer`（フォルダを選ぶ）/ `site`（書き出した HTML）/ `library`（フォルダ版で所定の文書を表示）
+- データの受け渡し: `<script type="application/json" id="mdv-…">`（`readJsonBlock`）
+- 動作モード: `viewer`（フォルダを選ぶ）/ `site`（書き出した HTML）
+- `core.extractParts` は `<head>` の中だけで `#mdv-user-style` を探す（スクリプトの本文にも同じ文字列があるため）
 - 設定（`mdv-config`）: `allowDownloads` / `lockExternalImages` / `hosted` は埋め込み・公開ページ用
-- 数式（KaTeX）と図（Mermaid）は必要になったときに読み込む（単一 HTML は埋め込みから同期、フォルダ版は `lib/` から非同期）
+- 数式（KaTeX）と図（Mermaid）は必要になったときに、埋め込みから同期的に読み込む（`ensureLib`）
 - 図の配色は CSS の変数（`--accent` など）から取る
 
 ## はまりどころ
 
 - 編集ツールが `\uXXXX` を実際の文字に変えてしまうことがある。編集のたびに `tools/check-source.py` を実行する。
   置換文字 U+FFFD はソースに直接書かない（公開先が受け付けない。必要なら `String.fromCharCode(0xFFFD)`）
-- `file://` のページは、隣のファイルを `fetch()` で読めず、`<link>` の CSS の中身も読めない。
-  フォルダ版で `tools/update.mjs` が `data/site.js` と CSS の写し `data/styles.js` を作るのはこのため
+- `file://` のページは、隣のファイルを `fetch()` で読めず、`<link>` の CSS の中身も読めない（上の「ブラウザーの制約」）
 - Playwright の `request` イベントは CSP で止められた通信でも発生する。「外部に通信しない」の確認は
   `tests/helpers/e2e.mjs` の `startSink()`（実際に届いたかを見るサーバー）で行う
 - ヘッドレスの Chromium はスクロールバーを描かない。画像は `loading="lazy"` なので、画面外の画像は
@@ -83,11 +92,13 @@ GitHub Actions（`.github/workflows/pages.yml`）が、ビルド → 単体テ�
 
 ## 未確認・残っていること
 
-- Windows / macOS の実機、Edge、製品版の Firefox / Safari（特に、共有フォルダに置いたフォルダ版）
+- Windows / macOS の実機、Edge、製品版の Firefox / Safari（隣の `mdfolio.css` の読み込みを含む）
 - スマートフォンの実機
 - 公開したページ（Claude のアーティファクト 2 件、1.0.1 のお試し用変換）を、公開先の画面で操作した確認
 - GitHub Actions の 2 つの自動実行は、どちらも GitHub 上で成功を確認済み（公開ページの更新、1.2.0 のリリース）。
   この開発環境からは動かせないので、結果は GitHub の API（`/repos/ParticlePudding/mdfolio/actions/runs`。認証なしで読める）で確かめる
 - 利用者が配色を変えた場合のコントラスト（自動検査は既定の配色だけ）
-- 依頼者と相談して行わないと決めたもの（1.2.0）: 更新コマンドの Node.js 以外の版、書き出す CSS の指定、配色のコントラストの検査
+- 依頼者と相談して行わないと決めたもの: 配色のコントラストの検査（1.2.0）。「書き出す CSS の指定」は 1.2.0 で見送ったが、1.3.0 で
+  フォルダ版の廃止にあわせて「CSS を選んで埋め込む」形で入れた。「更新コマンドの Node.js 以外の版」はフォルダ版の廃止で不要になった
+- 別エンジン（WebKit / Gecko）の確認（`tests/cross/smoke.mjs`）は、1.3.0 で `mdfolio.css` の項目に書き換えたが、この開発環境では動かしていない
 - 編集機能は入れない（依頼者と合意。書くのは別のエディター、mdfolio は読む・配る専用。保存すると自動で再表示する既存の機能で連携する）

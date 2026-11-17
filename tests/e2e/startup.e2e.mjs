@@ -34,14 +34,14 @@ describe('起動', () => {
       assert.equal(await page.getAttribute('html', 'lang'), 'ja');
       const info = await page.evaluate(() => ({
         externalScripts: document.querySelectorAll('script[src]').length,
-        // <link> はタブのアイコン（HTML の中に持つ data: URL）だけ。外部のファイルは参照しない
-        links: Array.from(document.querySelectorAll('link')).map((l) => l.rel + ' ' + l.getAttribute('href').slice(0, 19)),
+        // <link> はタブのアイコン（HTML の中に持つ data: URL）と、隣の mdfolio.css（SPEC 3.10）だけ。外部のファイルは参照しない
+        links: Array.from(document.querySelectorAll('link:not([data-mdv-dyn])')).map((l) => l.rel + ' ' + l.getAttribute('href').slice(0, 19)),
         externalRefs: document.querySelectorAll('link[href^="http"], link[href^="/"], script[src], img[src^="http"], iframe').length,
         version: window.MDV.app.version,
         mode: window.MDV.app.state.mode,
         mediaLocked: window.MDV.app.state.mediaLocked
       }));
-      assert.deepEqual(info, { externalScripts: 0, links: ['icon data:image/svg+xml,'], externalRefs: 0, version: core.VERSION, mode: 'viewer', mediaLocked: true });
+      assert.deepEqual(info, { externalScripts: 0, links: ['icon data:image/svg+xml,', 'stylesheet mdfolio.css'], externalRefs: 0, version: core.VERSION, mode: 'viewer', mediaLocked: true });
     });
   });
 

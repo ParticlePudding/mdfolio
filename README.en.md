@@ -4,27 +4,20 @@
 
 A Markdown document viewer that runs entirely in your browser. No server or installation needed.
 
-- Version: 1.2.0
+- Version: 1.3.0
 - Public page: https://particlepudding.github.io/mdfolio/en/
 - Bugs, requests, and English corrections: [Issues](https://github.com/ParticlePudding/mdfolio/issues)
 
-## Two forms
-
-| Form | How it works |
-|---|---|
-| Single-HTML version (`dist/mdfolio.html`) | Open it and choose a folder to read |
-| Folder version (`dist/mdfolio/`) | Place it in a shared folder; opening `index.html` shows the documents in `docs/`. Change the look in `style/document.css` |
-
 ## How to use
 
-**Single-HTML version**: Open `mdfolio.html` and choose a folder with "Open folder". To try it, open `sample-docs-en`.
+Open `mdfolio.html` (in `dist/`) and choose a folder with "Open folder". To try it, open `sample-docs-en`.
 
-**Folder version**: Put your documents in `docs/`, run `node tools/update.mjs`, then open `index.html`. Run the command again after changing documents or CSS (Node.js 20 or later).
+**Change the look**: Place `mdfolio.css` in the same folder as `mdfolio.html`. See `examples/mdfolio.css` for an example.
 
-**Share**: "Export as site" in the menu (⋯) packs your documents into a single HTML file. Zip it before sending. You can also export from the command line:
+**Share**: "Export as site" in the menu (⋯) packs your documents into a single HTML file. To include your CSS, use "Choose CSS" in the export dialog. Zip the file before sending. You can also export from the command line (Node.js 20 or later):
 
 ```
-node tools/build-site.mjs <document folder> --out site.html --title "Handbook"
+node tools/build-site.mjs <document folder> --out site.html --title "Handbook" --css mdfolio.css
 ```
 
 ## Features

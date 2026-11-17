@@ -17,6 +17,7 @@
  *   --allow-external-images      外部の画像を最初から表示する
  *   --lock-external-images       外部の画像を常に読み込まない（利用者が切り替えられないようにする）
  *   --no-downloads               ファイルの保存を伴う操作を出さない（保存できない環境に置く場合）
+ *   --css <ファイル>             見た目の CSS を埋め込む（1MB まで。既定: ビューアに埋め込まれているもの）
  *
  * アプリ内の「サイトとして書き出す」と同じ結果になるよう、ビューアの HTML に入っているスクリプト
  *（文書の解析・リンクの解決・HTML の組み立て）をそのまま使う。Node.js の標準機能だけで動く。
@@ -28,7 +29,7 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-/** 表示の言語（tools/folder/update.mjs の detectLang と同じ決め方。SPEC FD-10） */
+/** 表示の言語（SPEC FR-605） */
 function detectLang(env = process.env) {
   const pick = [env.MDFOLIO_LANG, env.LC_ALL, env.LC_MESSAGES, env.LANG].find((v) => v && v !== '');
   const value = pick || (() => { try { return Intl.DateTimeFormat().resolvedOptions().locale; } catch (e) { return ''; } })();
@@ -48,6 +49,8 @@ const MESSAGES = {
     tooManyDocs: '文書が {0} 件を超えたため、超えた分は含めません',
     noDocs: 'Markdown 文書が見つかりませんでした: {0}', bigAssets: '20MB を超える添付 {0} 件は含めません',
     homeMissing: '--home の文書が見つかりません: {0}',
+    cssMissing: 'CSS のファイルが見つかりません: {0}', cssTooLarge: 'CSS のファイルが大きすぎます（1MB まで）: {0}',
+    cssBad: 'CSS に "</style" という文字列があるため、埋め込めません: {0}',
     wrote: '{0} を書き出しました', counts: '  文書 {0} 件、添付 {1} 件、{2}', home: '  ホーム: {0}',
     libs: '  数式ライブラリ: {0}、図のライブラリ: {1}', included: '含む', excluded: '除外',
     note: '  注意: ', tooBig: 'ファイルサイズが 100MB を超えています'
@@ -64,6 +67,8 @@ const MESSAGES = {
     tooManyDocs: 'Only the first {0} documents are included; the rest are skipped',
     noDocs: 'No Markdown documents found in {0}', bigAssets: '{0} attachment(s) larger than 20 MB are left out',
     homeMissing: 'The document given with --home was not found: {0}',
+    cssMissing: 'CSS file not found: {0}', cssTooLarge: 'The CSS file is too large (1 MB maximum): {0}',
+    cssBad: 'The CSS contains "</style", so it cannot be embedded: {0}',
     wrote: 'Wrote {0}', counts: '  {0} document(s), {1} attachment(s), {2}', home: '  Home: {0}',
     libs: '  Math library: {0}, diagram library: {1}', included: 'included', excluded: 'left out',
     note: '  Note: ', tooBig: 'The file is larger than 100 MB'
@@ -83,6 +88,7 @@ const HELP_EN = `Export a site as one HTML file (command-line version)
   --allow-external-images      Show external images from the start
   --lock-external-images       Never load external images (users cannot change this)
   --no-downloads               Hide actions that save files (for environments where saving files is not possible)
+  --css <file>                 Embed a CSS file for the appearance (1 MB maximum; default: the one embedded in the viewer)
 
 It produces the same result as "Export as site" in the app, using the scripts inside the viewer HTML
 (parsing documents, resolving links, assembling the HTML). It needs only Node.js, with no extra packages.
@@ -95,7 +101,7 @@ function fail(message) {
 }
 
 function parseArgs(argv) {
-  const args = { dir: null, out: null, title: null, home: '', viewer: path.join(ROOT, 'dist/mdfolio.html'), lang: 'auto', theme: 'auto', allowExternalImages: false, allowDownloads: true, lockExternalImages: false };
+  const args = { dir: null, out: null, title: null, home: '', viewer: path.join(ROOT, 'dist/mdfolio.html'), lang: 'auto', theme: 'auto', allowExternalImages: false, allowDownloads: true, lockExternalImages: false, css: null };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     const next = () => {
@@ -111,6 +117,7 @@ function parseArgs(argv) {
     else if (a === '--allow-external-images') args.allowExternalImages = true;
     else if (a === '--lock-external-images') args.lockExternalImages = true;
     else if (a === '--no-downloads') args.allowDownloads = false;
+    else if (a === '--css') args.css = next();
     else if (a === '--help' || a === '-h') { console.log(LANG === 'en' ? HELP_EN : fs.readFileSync(fileURLToPath(import.meta.url), 'utf8').split('*/')[0].replace(/^#!.*\n\/\*\*\n?/, '').replace(/^ \* ?/gm, '').replace(/^[\s\S]*?\n\n(?=  node tools)/, 'サイト HTML の書き出し（コマンドライン版）\n\n')); process.exit(0); }
     else if (a.startsWith('-')) fail(t('unknownOption', a));
     else if (args.dir === null) args.dir = a;
@@ -235,7 +242,15 @@ if (!hasMermaid) dropLibs.push('mermaid');
 
 const siteData = core.buildSiteData(name, files);
 const config = { title, lang: args.lang, theme: args.theme, home, allowExternalImages: args.allowExternalImages, allowDownloads: args.allowDownloads, lockExternalImages: args.lockExternalImages };
-const outParts = core.applySite(parts, { config, siteData, title, dropLibs });
+// 見た目の CSS（SPEC FR-1006）。指定がなければ、ビューアに埋め込まれているものを引き継ぐ
+let userCss;
+if (args.css !== null) {
+  if (!fs.existsSync(args.css) || !fs.statSync(args.css).isFile()) fail(t('cssMissing', args.css));
+  if (fs.statSync(args.css).size > core.LIMITS.maxUserCssBytes) fail(t('cssTooLarge', args.css));
+  userCss = fs.readFileSync(args.css, 'utf8').replace(/^\uFEFF/, '');
+  if (/<\/style/i.test(userCss)) fail(t('cssBad', args.css));
+}
+const outParts = core.applySite(parts, { config, siteData, title, dropLibs, userCss });
 if (args.lang !== 'auto') outParts.lang = args.lang;
 const outHtml = core.composeHtml(outParts);
 

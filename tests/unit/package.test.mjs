@@ -85,7 +85,10 @@ describe('外部のホスティング環境に置くための変換（tools/dev/
     // 設定のブロックと CSP の行、置換文字の書き方（下のテスト）のほかは、1 文字も変わらない
     const cspLine = before.split('\n').find((l) => l.startsWith('<meta http-equiv="Content-Security-Policy"')) + '\n';
     const configRe = /<script type="application\/json" id="mdv-config">[^\n]*<\/script>/;
-    assert.equal(after.replace(configRe, ''), before.replace(cspLine, '').replace(configRe, '').split(REPLACEMENT).join(ESCAPED));
+    // 隣の mdfolio.css を読む指定も取り除く（公開先には隣のファイルを置けないため）
+    const userCssLine = '<link rel="stylesheet" href="mdfolio.css" id="mdv-user-css">\n';
+    assert.ok(before.includes(userCssLine) && !after.includes(userCssLine));
+    assert.equal(after.replace(configRe, ''), before.replace(cspLine, '').replace(userCssLine, '').replace(configRe, '').split(REPLACEMENT).join(ESCAPED));
     const config = JSON.parse(after.match(/<script type="application\/json" id="mdv-config">([^\n]*)<\/script>/)[1]);
     assert.deepEqual(config, { title: '', lang: 'auto', theme: 'auto', home: '', allowExternalImages: false, allowDownloads: false, lockExternalImages: true, hosted: true });
   });

@@ -4,27 +4,20 @@
 
 ブラウザーだけで読める Markdown 文書ビューアです。サーバーもインストールも要りません。
 
-- バージョン: 1.2.0
+- バージョン: 1.3.0
 - 公開ページ: https://particlepudding.github.io/mdfolio/
 - 不具合・要望: [Issues](https://github.com/ParticlePudding/mdfolio/issues)
 
-## 2 つの形
-
-| 形 | 使い方 |
-|---|---|
-| 単一 HTML 版（`dist/mdfolio.html`） | 開いて、読みたいフォルダを選ぶ |
-| フォルダ版（`dist/mdfolio/`） | 共有フォルダなどに置き、`index.html` を開くと `docs/` の文書が出る。見た目は `style/document.css` で変える |
-
 ## 使い方
 
-**単一 HTML 版**: `mdfolio.html` を開き、「フォルダを開く」でフォルダを選びます。試すなら `sample-docs` を開いてください。
+`mdfolio.html`（`dist/` の中）を開き、「フォルダを開く」でフォルダを選びます。試すなら `sample-docs` を開いてください。
 
-**フォルダ版**: `docs/` に文書を置き、`node tools/update.mjs` を実行してから `index.html` を開きます。文書や CSS を変えたら、もう一度実行します（Node.js 20 以降）。
+**見た目を変える**: `mdfolio.html` と同じフォルダに `mdfolio.css` を置きます。例は `examples/mdfolio.css` です。
 
-**人に渡す**: メニュー（⋯）の「サイトとして書き出す」で、文書を 1 つの HTML にまとめられます。zip に入れて渡してください。コマンドでも書き出せます。
+**人に渡す**: メニュー（⋯）の「サイトとして書き出す」で、文書を 1 つの HTML にまとめられます。見た目の CSS は、書き出しの画面の「CSS を選ぶ」で入れます。zip に入れて渡してください。コマンドでも書き出せます（Node.js 20 以降）。
 
 ```
-node tools/build-site.mjs <文書フォルダ> --out site.html --title "手順書"
+node tools/build-site.mjs <文書フォルダ> --out site.html --title "手順書" --css mdfolio.css
 ```
 
 ## できること

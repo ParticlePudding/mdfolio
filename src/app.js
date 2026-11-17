@@ -28,9 +28,7 @@
     config: core.normalizeConfig(null),
     settings: {},
     lang: 'en',
-    mode: 'viewer',        // viewer（閲覧モード）| site（サイトモード）| library（フォルダ版の所定の文書を表示できる閲覧モード）
-    librarySet: null,      // フォルダ版の所定の文書（data/site.js）。別のフォルダを開いても戻れるように持っておく
-    libLoads: {},          // フォルダ版で読み込み中のライブラリ（loadLib）
+    mode: 'viewer',        // viewer（閲覧モード）| site（サイトモード）
     set: null,             // 開いている文書セット
     view: 'welcome',       // welcome | doc | help | message
     current: null,         // 表示中の文書のパス
@@ -47,6 +45,7 @@
     lastFolder: null,
     mermaidSeq: 0,
     setSeq: 0,
+    userCssProbe: null,    // 隣の mdfolio.css があるか（Promise<boolean>。probeUserCss）
     renderer: null,
     sideTab: 'nav',
     search: { timer: null, results: [], active: -1, query: '', terms: [] },
@@ -132,21 +131,7 @@
     return /Mac|iPhone|iPad/.test(navigator.platform || '');
   }
 
-  /** フォルダ版で、lib/ と data/ のスクリプトが window.MDV_DATA に置いたデータ。 */
-  function externalData(id) {
-    const d = window.MDV_DATA;
-    return d && typeof d === 'object' && Object.prototype.hasOwnProperty.call(d, id) ? d[id] : undefined;
-  }
-
-  /** フォルダ版で、あとから読み込むファイル（lib/ の中）の場所。単一 HTML では空。 */
-  function libFile(name) {
-    const files = externalData('mdv-lib-files');
-    return files && typeof files[name] === 'string' ? files[name] : '';
-  }
-
   function readJsonBlock(id) {
-    const ext = externalData(id);
-    if (ext !== undefined) return ext;
     const el = document.getElementById(id);
     if (!el) return undefined;
     try { return JSON.parse(el.textContent); } catch (e) { return undefined; }
@@ -157,7 +142,7 @@
   }
 
   function siteTitle() {
-    return state.config.title || (state.set && (state.set.title || state.set.name)) || core.NAME;
+    return state.config.title || (state.set && state.set.name) || core.NAME;
   }
 
   function reportError(err) {
@@ -392,7 +377,6 @@
         h('div', { class: 'mdv-welcome-actions' }, [ui.openFolderBtn, ui.openFilesBtn]),
         ui.lastWrap,
         ui.pending,
-        libFile('export') ? bind(h('p', { class: 'mdv-welcome-hint' }), (el) => { el.textContent = t('welcomeFolderHint'); }) : null,
         h('p', { class: 'mdv-welcome-foot' }, bind(h('a', { href: core.buildHelpRoute() }), (el) => { el.textContent = t('howTo'); }))
       ])
     ]);
@@ -417,7 +401,6 @@
 
   function buildMenu() {
     ui.menuItems = {
-      library: menuItem('menuLibrary', 'home', showLibrary),
       openFolder: menuItem('menuOpenFolder', 'folder', openFolder),
       openFiles: menuItem('menuOpenFiles', 'file', openFiles),
       reload: menuItem('menuReload', 'reload', reloadSet),
@@ -429,7 +412,7 @@
     };
     ui.menuSepFile = h('div', { class: 'mdv-menu-sep', role: 'separator' });
     append(ui.menu, [
-      ui.menuItems.library, ui.menuItems.openFolder, ui.menuItems.openFiles, ui.menuItems.reload, ui.menuItems.exportSite, ui.menuSepFile,
+      ui.menuItems.openFolder, ui.menuItems.openFiles, ui.menuItems.reload, ui.menuItems.exportSite, ui.menuSepFile,
       ui.menuItems.external, ui.menuItems.language, h('div', { class: 'mdv-menu-sep', role: 'separator' }),
       ui.menuItems.help, ui.menuItems.about
     ]);
@@ -438,11 +421,9 @@
   function updateMenu() {
     const site = state.mode === 'site';
     const hasSet = !!state.set;
-    const onLibrary = hasSet && state.set.isLibrary;
-    ui.menuItems.library.hidden = state.mode !== 'library' || onLibrary;
     ui.menuItems.openFolder.hidden = site;
     ui.menuItems.openFiles.hidden = site;
-    ui.menuItems.reload.hidden = site || !hasSet || onLibrary;
+    ui.menuItems.reload.hidden = site || !hasSet;
     ui.menuItems.exportSite.hidden = site || !hasSet || !state.config.allowDownloads;
     ui.menuSepFile.hidden = site;
     ui.menuItems.external.hidden = state.config.lockExternalImages;
@@ -484,7 +465,7 @@
 
   /** 遮断 → 許可は再読み込みが必要なので、接続先が増えることと合わせて確認する。 */
   function openExternalDialog() {
-    const losesFolder = state.mode !== 'site' && !!state.set && !state.set.isLibrary;
+    const losesFolder = state.mode !== 'site' && !!state.set;
     const d = dialogShell('mdv-dialog-external', 'externalTitle', t('externalLead'));
     if (losesFolder) d.body.appendChild(h('p', { class: 'mdv-dialog-note' }, t('externalLeadFolder')));
     const cancel = h('button', { class: 'mdv-btn mdv-external-cancel', type: 'button' }, t('cancel'));
@@ -576,9 +557,6 @@
       id: ++state.setSeq,
       name: name || '',
       source: source,          // handles | files | embedded
-      isLibrary: false,        // フォルダ版の所定の文書
-      title: '',               // フォルダ版の所定の文書のタイトル（data/site.js）
-      preferredHome: '',       // フォルダ版の所定の文書のホーム（data/site.js）
       single: false,           // フォルダではなくファイルだけを開いた
       rootHandle: null,
       entries: new Map(),
@@ -630,7 +608,7 @@
     set.tree = core.buildTree(docPaths);
     set.docs = core.flattenTree(set.tree);
     set.navPath = set.index.lower.get('_sidebar.md') || set.index.lower.get('summary.md') || null;
-    set.home = core.pickHome(set.index, set.docs, set.preferredHome || state.config.home);
+    set.home = core.pickHome(set.index, set.docs, state.config.home);
   }
 
   function disposeSet(set) {
@@ -852,22 +830,6 @@
   }
 
   // ---- 埋め込みデータ（サイトモード）
-
-  /** フォルダ版の所定の文書（data/site.js）から文書セットを作る。 */
-  function librarySetFromData() {
-    const set = setFromSiteData(state.librarySet);
-    const meta = externalData('mdv-site-meta') || {};
-    set.isLibrary = true;
-    set.title = typeof meta.title === 'string' ? meta.title : '';
-    set.preferredHome = typeof meta.home === 'string' ? meta.home : '';
-    return set;
-  }
-
-  /** 所定の文書に戻る（FD-2）。 */
-  function showLibrary() {
-    if (!state.librarySet) return;
-    installSet(librarySetFromData());
-  }
 
   function setFromSiteData(data) {
     const set = newSet(data.name, 'embedded');
@@ -1378,64 +1340,18 @@
     return ok;
   }
 
-  /** ライブラリの CSS を、アプリの CSS より前に入れる。アプリと利用者の CSS（document.css）の指定を優先させるため。 */
+  /** ライブラリの CSS を、アプリの CSS より前に入れる。アプリと利用者の CSS（mdfolio.css など）の指定を優先させるため。 */
   function insertLibStyle(el) {
-    const first = document.querySelector('#mdv-style, link[rel="stylesheet"][data-mdv-style]');
+    const first = document.querySelector('#mdv-style');
     if (first && first.parentNode) first.parentNode.insertBefore(el, first);
     else document.head.appendChild(el);
   }
 
-  /**
-   * ライブラリを読み込む（Promise で、使えるかどうかを返す）。
-   * フォルダ版では lib/ のファイルを <script src> で読み込む。単一 HTML では埋め込みから同期的に読み込む（ensureLib）。
-   */
-  function loadLib(name, globalName) {
-    if (name in state.libs) return Promise.resolve(state.libs[name]);
-    const src = libFile(name);
-    if (!src) return Promise.resolve(ensureLib(name, globalName));
-    if (!state.libLoads[name]) {
-      const css = name === 'katex' ? libFile('katex-css') : '';
-      if (css) insertLibStyle(h('link', { rel: 'stylesheet', href: css, 'data-mdv-dyn': 'katex-css' }));
-      state.libLoads[name] = loadScript(src, name).then((loaded) => loaded && !!window[globalName]).then((ok) => {
-        state.libs[name] = ok;
-        return ok;
-      });
-    }
-    return state.libLoads[name];
-  }
 
-  /** <script src> でファイルを読み込む。読み込めたら true。 */
-  function loadScript(src, name) {
-    return new Promise((resolve) => {
-      const el = inheritNonce(document.createElement('script'));
-      el.setAttribute('data-mdv-dyn', name);
-      el.addEventListener('load', () => resolve(true));
-      el.addEventListener('error', () => resolve(false));
-      el.src = src;
-      document.head.appendChild(el);
-    });
-  }
-
-  /** 遅れて描画した部品（数式・図）で本文の高さが変わったとき、見出しへの移動の位置を合わせ直す。 */
-  function keepAnchor(seq) {
-    if (seq === state.renderSeq && state.anchorEl && !state.userScrolled && state.anchorEl.isConnected) {
-      state.anchorEl.scrollIntoView();
-    }
-  }
 
   function renderMath(root, seq) {
     const nodes = root.querySelectorAll('.math-inline, .math-display');
     if (!nodes.length) return;
-    if (!('katex' in state.libs) && libFile('katex')) {
-      // フォルダ版: 読み込みが終わってから描く
-      loadLib('katex', 'katex').then(() => {
-        if (seq !== state.renderSeq || !root.isConnected) return;
-        renderMath(root, seq);
-        markScrollable();
-        keepAnchor(seq);
-      }).catch(reportError);
-      return;
-    }
     const ok = ensureLib('katex', 'katex');
     nodes.forEach((el) => {
       const tex = el.textContent;
@@ -1516,7 +1432,7 @@
   async function renderMermaid(root, seq) {
     const blocks = Array.prototype.slice.call(root.querySelectorAll('pre.mermaid-src'));
     if (!blocks.length) return;
-    const ok = await loadLib('mermaid', 'mermaid');
+    const ok = ensureLib('mermaid', 'mermaid');
     if (seq !== state.renderSeq) return;
     if (!ok) {
       blocks.forEach((pre) => pre.setAttribute('title', t('mermaidUnavailable')));
@@ -2184,31 +2100,41 @@
       csp: csp ? csp.getAttribute('content') : '',
       generator: gen ? gen.getAttribute('content') : core.NAME + ' ' + core.VERSION,
       css: document.getElementById('mdv-style').textContent,
+      userCss: (document.getElementById('mdv-user-style') || { textContent: '' }).textContent,
       blocks: Array.prototype.map.call(document.querySelectorAll('script[id^="mdv-"]'), (s) => ({ id: s.id, type: s.getAttribute('type') || '', text: s.textContent }))
     };
   }
 
   /**
-   * 書き出しのもとになる部品。単一 HTML では自分自身から取る。
-   * フォルダ版ではスクリプトの中身を読めない（file:// の制約）ので、lib/export.js の写しと、
-   * 更新コマンドが作った CSS の写し（data/styles.js）を使う（FD-6）。
+   * 隣の mdfolio.css があるかを確かめる（SPEC 3.10）。<link> の load / error はこのスクリプトより前に起きていることがあり、
+   * ファイルがなくても空の style sheet ができる（Chromium）ので、同じファイルを画面に効かない形（media="not all"）で
+   * もう一度読み込み、その結果で判断する。
    */
-  async function exportParts() {
-    if (document.getElementById('mdv-js-app')) return partsFromDom();
-    if (externalData('mdv-export') === undefined) await loadScript(libFile('export'), 'export');
-    const tpl = externalData('mdv-export');
-    if (!tpl || !Array.isArray(tpl.blocks) || typeof tpl.csp !== 'string') throw new Error(t('exportNoTemplate'));
-    const styles = externalData('mdv-styles');
-    const css = styles && typeof styles.app === 'string' && typeof styles.document === 'string'
-      ? styles.app + (styles.app.endsWith('\n') ? '' : '\n') + '\n' + styles.document : tpl.css;
-    return {
-      lang: state.lang,
-      title: siteTitle(),
-      csp: tpl.csp,
-      generator: tpl.generator,
-      css: css,
-      blocks: tpl.blocks.map((b) => ({ id: b.id, type: b.type, text: b.text }))
-    };
+  function probeUserCss() {
+    const link = document.getElementById('mdv-user-css');
+    if (!link) return Promise.resolve(false);
+    return new Promise((resolve) => {
+      const probe = h('link', { rel: 'stylesheet', media: 'not all', href: link.getAttribute('href'), 'data-mdv-dyn': 'user-css-probe' });
+      const done = (ok) => { probe.remove(); resolve(ok); };
+      probe.addEventListener('load', () => done(true));
+      probe.addEventListener('error', () => done(false));
+      document.head.appendChild(probe);
+    });
+  }
+
+  /**
+   * 隣の mdfolio.css の状態。applied: 画面に効いているか。
+   * text: 中身（http(s) の同じ配信元で読めたときだけ。file:// ではブラウザーの制約で読めないので null）。
+   */
+  async function adjacentCss() {
+    const applied = await (state.userCssProbe || Promise.resolve(false));
+    const link = document.getElementById('mdv-user-css');
+    if (!applied || !link || !link.sheet) return { applied: false, text: null };
+    try {
+      return { applied: true, text: Array.prototype.map.call(link.sheet.cssRules, (r) => r.cssText).join('\n') };
+    } catch (e) {
+      return { applied: true, text: null };
+    }
   }
 
   async function prepareExport(set) {
@@ -2247,7 +2173,7 @@
       plan.bytes += Math.ceil(entry.size * 4 / 3);
     }
     // ビューア本体の大きさ（除外するライブラリは数えない）
-    plan.parts = await exportParts();
+    plan.parts = partsFromDom();
     plan.parts.blocks.forEach((b) => {
       if (!plan.hasMath && (b.id === 'mdv-lib-katex' || b.id === 'mdv-res-katex-css')) return;
       if (!plan.hasMermaid && b.id === 'mdv-lib-mermaid') return;
@@ -2258,7 +2184,7 @@
     return plan;
   }
 
-  async function buildSiteHtml(set, plan, title, home) {
+  async function buildSiteHtml(set, plan, title, home, userCss) {
     const files = [];
     plan.docs.forEach((e) => files.push({ path: e.path, kind: 'doc', text: e.text, mtime: e.mtime }));
     for (const e of plan.assets) {
@@ -2277,7 +2203,7 @@
     if (!plan.hasMath) dropLibs.push('katex');
     if (!plan.hasMermaid) dropLibs.push('mermaid');
     const parts = Object.assign({}, plan.parts, { lang: state.lang });
-    return core.composeHtml(core.applySite(parts, { config: config, siteData: siteData, title: title, dropLibs: dropLibs }));
+    return core.composeHtml(core.applySite(parts, { config: config, siteData: siteData, title: title, dropLibs: dropLibs, userCss: userCss || '' }));
   }
 
   let dialogSeq = 0;
@@ -2302,6 +2228,8 @@
   async function openExportDialog() {
     const set = state.set;
     if (!set) return;
+    const adjacent = await adjacentCss();
+    if (state.set !== set) return;
     const d = dialogShell('mdv-dialog-export', 'exportTitle', t('exportLead'));
     const titleInput = h('input', { class: 'mdv-input mdv-export-title', type: 'text', value: siteTitle(), maxlength: '120' });
     const homeSelect = h('select', { class: 'mdv-input mdv-export-home' });
@@ -2309,11 +2237,41 @@
     const warn = h('p', { class: 'mdv-export-warn', hidden: true });
     const cancel = h('button', { class: 'mdv-btn mdv-export-cancel', type: 'button' }, t('cancel'));
     const run = h('button', { class: 'mdv-btn mdv-btn-primary mdv-export-run', type: 'submit', disabled: true }, t('exportDo'));
+    // 見た目（CSS）: 選んだファイル → 隣の mdfolio.css（読めるとき）→ この HTML に埋め込まれているもの の順に候補にする（FR-1002〜1005）
+    const inherited = (document.getElementById('mdv-user-style') || { textContent: '' }).textContent;
+    let embed = adjacent.text !== null && adjacent.applied ? { text: adjacent.text, label: t('exportCssAdjacent') }
+      : inherited ? { text: inherited, label: t('exportCssInherited') } : null;
+    const cssStatus = h('p', { class: 'mdv-export-css-status' });
+    const cssNote = h('p', { class: 'mdv-dialog-note mdv-export-css-note', hidden: true }, t('exportCssAdjacentNote'));
+    const cssInput = h('input', { class: 'mdv-export-css-input', type: 'file', accept: '.css,text/css', hidden: true });
+    const cssPick = h('button', { class: 'mdv-btn mdv-export-css-pick', type: 'button' }, t('exportCssPick'));
+    const cssClear = h('button', { class: 'mdv-btn mdv-export-css-clear', type: 'button' }, t('exportCssClear'));
+    const showCss = () => {
+      cssStatus.textContent = embed ? t('exportCssStatus', embed.label) : t('exportCssNone');
+      cssClear.hidden = !embed;
+      cssNote.hidden = !(adjacent.applied && adjacent.text === null && !(embed && embed.picked));
+    };
+    cssPick.addEventListener('click', () => cssInput.click());
+    cssClear.addEventListener('click', () => { embed = null; showCss(); });
+    cssInput.addEventListener('change', guard(async () => {
+      const file = cssInput.files && cssInput.files[0];
+      cssInput.value = '';
+      if (!file) return;
+      if (file.size > core.LIMITS.maxUserCssBytes) { toast(t('exportCssTooLarge', file.name), { error: true }); return; }
+      const text = (await file.text()).replace(/^\uFEFF/, '');
+      if (/<\/style/i.test(text)) { toast(t('exportCssBad', file.name), { error: true }); return; }
+      embed = { text: text, label: t('exportCssPicked', file.name), picked: true };
+      showCss();
+    }));
+    showCss();
     append(d.body, [
       h('label', { class: 'mdv-field' }, [h('span', { class: 'mdv-field-label' }, t('exportSiteTitle')), titleInput]),
       h('label', { class: 'mdv-field' }, [h('span', { class: 'mdv-field-label' }, t('exportHome')), homeSelect]),
-      summary, warn,
-      libFile('export') ? h('p', { class: 'mdv-dialog-note mdv-export-css-note' }, t('exportCssNote')) : null
+      h('div', { class: 'mdv-field mdv-export-css' }, [
+        h('span', { class: 'mdv-field-label' }, t('exportCssLabel')),
+        cssStatus, h('div', { class: 'mdv-export-css-actions' }, [cssPick, cssClear]), cssInput, cssNote
+      ]),
+      summary, warn
     ]);
     append(d.foot, [cancel, run]);
     cancel.addEventListener('click', () => d.dialog.close());
@@ -2326,7 +2284,7 @@
       run.disabled = true;
       const title = titleInput.value.trim() || siteTitle();
       const name = core.sanitizeFileName(title, 'site') + '.html';
-      buildSiteHtml(set, plan, title, homeSelect.value).then((html) => {
+      buildSiteHtml(set, plan, title, homeSelect.value, embed ? embed.text : '').then((html) => {
         downloadBlob(new Blob([html], { type: 'text/html' }), name);
         d.dialog.close();
         toast(t('exported', name));
@@ -2613,6 +2571,7 @@
 
   function init() {
     state.config = core.normalizeConfig(readJsonBlock('mdv-config'));
+    state.userCssProbe = probeUserCss();
     state.settings = loadSettings();
     if (!externalAllowed()) lockExternalMedia(); // 文書を表示する前に行う
     const langPref = state.settings.lang === 'ja' || state.settings.lang === 'en' ? state.settings.lang
@@ -2630,15 +2589,7 @@
 
     const raw = readJsonBlock('mdv-site');
     const check = core.validateSiteData(raw);
-    if (check.ok && externalData('mdv-site') !== undefined) {
-      // フォルダ版: 所定の文書を表示する。別のフォルダも開ける
-      state.mode = 'library';
-      state.librarySet = raw;
-      updateMenu();
-      if (installSet(librarySetFromData(), { keepRoute: true })) return;
-      state.mode = 'viewer';
-      state.librarySet = null;
-    } else if (check.ok) {
+    if (check.ok) {
       state.mode = 'site';
       updateMenu();
       if (installSet(setFromSiteData(raw), { keepRoute: true })) return;

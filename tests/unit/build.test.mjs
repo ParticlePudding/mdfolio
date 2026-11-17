@@ -22,6 +22,14 @@ const manifest = JSON.parse(read('vendor/manifest.json'));
 const pkg = JSON.parse(read('package.json'));
 
 describe('成果物の構造（仕様 8.2）', () => {
+  test('CSP: CSS は内蔵と隣の mdfolio.css だけ、スクリプトはハッシュだけを許す（SEC-4、SPEC 3.10）', () => {
+    const csp = parts.csp;
+    assert.match(csp, /(?:^|; )style-src 'self' file: 'unsafe-inline'(?:;|$)/);
+    assert.match(csp, /(?:^|; )script-src 'sha256-[^;]+(?:;|$)/);
+    assert.ok(!/script-src[^;]*(?:'unsafe-inline'|'self'|file:)/.test(csp), 'スクリプトの許可は広げない');
+    assert.match(csp, /(?:^|; )connect-src 'none'(?:;|$)/);
+  });
+
   test('単一の HTML で、外部のファイルを参照しない（NFR-1）', () => {
     assert.ok(html.startsWith('<!DOCTYPE html>\n<html lang="ja">\n<head>\n<meta charset="utf-8">'));
     assert.ok(html.endsWith('</body>\n</html>\n'));
@@ -29,6 +37,10 @@ describe('成果物の構造（仕様 8.2）', () => {
     let skeleton = html;
     for (const b of parts.blocks) skeleton = skeleton.replace(b.text, '');
     skeleton = skeleton.replace(parts.css, '').replace(parts.csp.replace(/&/g, '&amp;'), '');
+    // 隣の mdfolio.css を読む指定（SPEC 3.10）だけは、相対パスの参照として認める
+    const userCssLink = '<link rel="stylesheet" href="mdfolio.css" id="mdv-user-css">';
+    assert.equal(skeleton.split(userCssLink).length, 2, '隣の CSS を読む指定が 1 つある');
+    skeleton = skeleton.replace(userCssLink, '');
     assert.ok(skeleton.length < 3000, '骨組みは小さい');
     assert.ok(!/(?:src|href|action|data|poster)="(?!data:)[^"]/i.test(skeleton), `外部参照がある: ${skeleton}`);
     assert.ok(!/https?:\/\/(?!www\.w3\.org\/2000\/svg)/.test(skeleton));

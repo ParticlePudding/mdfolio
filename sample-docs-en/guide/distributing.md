@@ -1,6 +1,6 @@
 # Distributing documents
 
-There are three ways to share documents with other people.
+There are two ways to share documents with other people.
 
 ## 1. Export as a site
 
@@ -21,17 +21,17 @@ Images and attachments referenced by the documents (up to 20 MB each) are also i
 
 Put `mdfolio.html` and the document folder in a zip file. Recipients open `mdfolio.html` and choose the document folder. This option is best for documents that are still being updated.
 
-## 3. Put the folder version in a shared location
-
-The folder version consists of `index.html` and folders such as `style`, `docs` and `lib`. Put it in a permanent location, such as a shared folder. Put your documents in the `docs` folder and run `node tools/update.mjs`; after that, opening `index.html` is all it takes to read them. You can change the look to match your organization by editing `style/document.css`.
-
 ## Which to choose
 
-| | Export as site | Viewer and folder | Folder version |
-|---|---|---|---|
-| What recipients do | Just open the file | Choose the folder | Just open `index.html` |
-| Updating documents | Export again | Replace the files | Run the update command |
-| Best for | Finished documents | Documents in progress | Documents shared in one place |
+| | Export as site | Viewer and folder |
+|---|---|---|
+| What recipients do | Just open the file | Choose the folder |
+| Updating documents | Export again | Replace the files |
+| Best for | Finished documents | Documents in progress |
+
+## Change the look
+
+Place `mdfolio.css` in the same folder as the HTML file to change its look with that CSS. To include it in an export, choose the same file with "Choose CSS" in the export dialog.
 
 ## Export from the command line
 

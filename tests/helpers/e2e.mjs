@@ -34,9 +34,13 @@ export function launchPersistent(userDataDir, options = {}) {
  * コンソールエラー（CSP 違反を含む）・ページの例外・通信を記録する。
  * requests は実際に送ろうとした通信、blocked は CSP が送信前に止めたもの。
  */
+/** 隣の mdfolio.css（SPEC 3.10）。HTML は常にこれを読みに行き、なければ見つからないと記録される。仕様どおりの動きなので除外する */
+export const isUserCssUrl = (u) => /\/mdfolio\.css(?:[?#]|$)/.test(String(u || ''));
+
 export function watch(page) {
-  const record = { errors: [], warnings: [], requests: [], blocked: [] };
+  const record = { errors: [], warnings: [], requests: [], blocked: [], userCss: [] };
   page.on('console', (m) => {
+    if (m.type() === 'error' && isUserCssUrl(m.location() && m.location().url) && /Failed to load resource/.test(m.text())) return;
     if (m.type() === 'error') record.errors.push(m.text());
     else if (m.type() === 'warning') record.warnings.push(m.text());
   });
@@ -46,6 +50,7 @@ export function watch(page) {
     const u = r.url();
     if (u.startsWith('blob:') || u.startsWith('data:')) return;
     if (r.isNavigationRequest() && r.frame() === page.mainFrame()) return; // HTML 自身の読み込み
+    if (isUserCssUrl(u) && r.resourceType() === 'stylesheet') { record.userCss.push(u); return; }
     record.requests.push(u);
   });
   page.on('requestfailed', (r) => {

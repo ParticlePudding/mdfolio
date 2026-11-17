@@ -4,7 +4,6 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import vm from 'node:vm';
 import { execFileSync } from 'node:child_process';
 import { ROOT, core } from '../helpers/load.mjs';
 
@@ -25,13 +24,6 @@ const unescapeHtml = (t) => t.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replac
 function licensesOf(rel) {
   const file = path.join(out, rel);
   const html = fs.readFileSync(file, 'utf8');
-  if (rel.endsWith('folder/index.html')) {
-    // フォルダ版は lib/resources.js に持つ（index.html が読み込む）
-    assert.ok(html.includes('<script src="lib/resources.js"></script>'), rel);
-    const sandbox = { window: {} };
-    vm.runInNewContext(fs.readFileSync(path.join(path.dirname(file), 'lib/resources.js'), 'utf8'), sandbox);
-    return sandbox.window.MDV_DATA['mdv-res-licenses'];
-  }
   const pre = /<pre class="licenses"[^>]*>([\s\S]*?)<\/pre>/.exec(html);
   if (pre) return unescapeHtml(pre[1]);
   const block = core.findBlock(core.extractParts(html), 'mdv-res-licenses');
@@ -47,10 +39,11 @@ describe('公開ページ', () => {
   });
   after(() => fs.rmSync(path.dirname(out), { recursive: true, force: true }));
 
-  test('日本語と英語の案内・見本・説明書と、ビューア、.nojekyll がそろっている（PG-1）', () => {
+  test('日本語と英語の案内・見本・見た目の見本・説明書と、ビューア、.nojekyll がそろっている（PG-1）', () => {
     const files = walk(out);
     for (const dir of ['', 'en/']) {
-      for (const f of ['index.html', 'sample-site.html', 'mdfolio-docs.html', 'folder/index.html', 'folder/docs/_sidebar.md']) assert.ok(files.includes(dir + f), dir + f);
+      for (const f of ['index.html', 'sample-site.html', 'mdfolio-docs.html', 'style/sample-site.html', 'style/mdfolio.css']) assert.ok(files.includes(dir + f), dir + f);
+      assert.ok(!files.some((f) => f.startsWith(dir + 'folder/')), 'フォルダ版の見本（1.3.0 で廃止）はない');
     }
     assert.ok(files.includes('mdfolio.html'));
     assert.ok(files.includes('.nojekyll'));
@@ -60,6 +53,8 @@ describe('公開ページ', () => {
   test('すべての HTML に、LICENSE と同梱ライブラリのライセンス表記の全文が入っている', () => {
     const pages = walk(out).filter((f) => f.endsWith('.html'));
     assert.equal(pages.length, 9);
+    // 見た目の見本の CSS は examples/mdfolio.css の写し
+    for (const dir of ['', 'en/']) assert.equal(fs.readFileSync(path.join(out, dir, 'style/mdfolio.css'), 'utf8'), fs.readFileSync(path.join(ROOT, 'examples/mdfolio.css'), 'utf8'));
     for (const rel of pages) {
       const text = licensesOf(rel);
       assert.ok(text.includes(LICENSE), rel + ': LICENSE');
@@ -80,9 +75,9 @@ describe('公開ページ', () => {
   });
 
   test('見本の画面の言語は文書の言語に固定されている（PG-3）', () => {
-    for (const [rel, lang] of [['folder/index.html', 'ja'], ['en/folder/index.html', 'en'], ['sample-site.html', 'ja'], ['en/sample-site.html', 'en'], ['mdfolio-docs.html', 'ja'], ['en/mdfolio-docs.html', 'en']]) {
+    for (const [rel, lang] of [['style/sample-site.html', 'ja'], ['en/style/sample-site.html', 'en'], ['sample-site.html', 'ja'], ['en/sample-site.html', 'en'], ['mdfolio-docs.html', 'ja'], ['en/mdfolio-docs.html', 'en']]) {
       const html = fs.readFileSync(path.join(out, rel), 'utf8');
-      const text = rel.includes('folder/') ? /id="mdv-config">([^<]*)</.exec(html)[1] : core.findBlock(core.extractParts(html), 'mdv-config').text;
+      const text = core.findBlock(core.extractParts(html), 'mdv-config').text;
       assert.equal(JSON.parse(text).lang, lang, rel);
     }
   });

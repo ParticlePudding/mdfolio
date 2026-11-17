@@ -145,7 +145,7 @@ function inlineKatexCss() {
   return css;
 }
 
-// 画面の部品（app.css）のあとに、本文と配色（document.css）を置く。フォルダ版と同じ順序
+// 画面の部品（app.css）のあとに、本文と配色（document.css）を置く。利用者の mdfolio.css はさらにそのあと（SPEC 3.10）
 const cssParts = ['src/app.css', 'src/document.css'].map((f) => {
   const text = read(f).replace(/\r\n?/g, '\n');
   assertCleanSource(f, text);
@@ -178,7 +178,8 @@ if (useMermaid) scriptHashes.push({ id: 'mdv-lib-mermaid', hash: sha256Base64(me
 const csp = [
   "default-src 'none'",
   'script-src ' + scriptHashes.map((h) => `'sha256-${h.hash}'`).join(' '),
-  "style-src 'unsafe-inline'",
+  // 'self' file: は、隣に置いた mdfolio.css を読むため（SPEC 3.10）
+  "style-src 'self' file: 'unsafe-inline'",
   'img-src data: blob: http: https:',
   'media-src data: blob: http: https:',
   'font-src data:',

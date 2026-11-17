@@ -23,7 +23,7 @@ jobs:
         with:
           node-version: 22
       - name: Build
-        run: node tools/build.mjs && node tools/build-folder.mjs
+        run: node tools/build.mjs
       - name: Unit tests
         run: npm run test:unit
       - name: Assemble pages

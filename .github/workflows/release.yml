@@ -36,7 +36,7 @@ jobs:
             exit 1
           fi
       - name: Build
-        run: node tools/build.mjs && node tools/build-folder.mjs
+        run: node tools/build.mjs
       - name: Unit tests
         run: npm run test:unit
       - name: Make release files
