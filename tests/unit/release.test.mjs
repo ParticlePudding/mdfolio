@@ -59,6 +59,7 @@ describe('リリース', () => {
     assert.ok(!names.some((n) => n.startsWith(top + 'tools/')), '利用者向けなので、Node.js で動かす道具は入れない');
     const notes = fs.readFileSync(path.join(out, 'notes.md'), 'utf8');
     assert.ok(notes.includes('### ') && notes.includes('Assets:'));
+    assert.ok(!/[\u3040-\u30ff]/.test(notes), 'リリースの説明は英語（仮名を含まない）');
     assert.ok(!notes.includes(`## ${version}`), '節の見出しは入れない');
     fs.rmSync(out, { recursive: true, force: true });
   });

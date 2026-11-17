@@ -5,7 +5,7 @@
 ブラウザーだけで読める Markdown 文書ビューアです。サーバーもインストールも、Node.js などのツールも要りません。
 
 - バージョン: 1.3.0
-- 公開ページ: https://particlepudding.github.io/mdfolio/
+- 公開ページ: https://particlepudding.github.io/mdfolio/ja/
 - 不具合・要望: [Issues](https://github.com/ParticlePudding/mdfolio/issues)
 
 ## 使い方
@@ -60,7 +60,7 @@ npm test             # ビルド → 単体テスト → ブラウザーでの�
 node tools/build-site.mjs <文書フォルダ> --out site.html --title "手順書" --css mdfolio.css
 ```
 
-仕様は `docs/SPEC.md`、変更履歴は `CHANGELOG.md` にあります。
+仕様は `docs/SPEC.md`、変更履歴は `CHANGELOG.md` にあります（どちらも英語）。
 
 ## ライセンス
 

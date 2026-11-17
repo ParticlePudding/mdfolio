@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 /**
- * 説明書（README.ja.md と docs/ の文書）を、mdfolio 自身で 1 つのサイト HTML に書き出す。
+ * 説明書を、mdfolio 自身で 1 つのサイト HTML に書き出す。
  *
- *   node tools/dev/make-docs-site.mjs [出力.html] [--lang en]      既定: dist/mdfolio-docs.html
+ *   node tools/dev/make-docs-site.mjs [出力.html] [--lang ja]      既定: 英語、dist/mdfolio-docs.html
  *
- * --lang en を付けると、英語の README（README.md）だけの説明書を作る（仕様書などは日本語だけのため）。
- * 画面の言語は、日本語版は ja、英語版は en に固定する。
- * README の先頭の言語の切り替えの行（「**English** | [日本語](README.ja.md)」など）は、説明書の中では
- * リンク先がないので取り除く。
+ * 英語（既定）は README.md と docs/ の 3 文書（仕様書・レビュー記録・テスト報告書）。
+ * --lang ja は日本語の README（README.ja.md）だけ（3 文書は英語のため）。
+ * 画面の言語は、英語版は en、日本語版は ja に固定する。
+ * README の先頭の言語の切り替えの行は、説明書の中ではリンク先がないので取り除く。
  */
 import fs from 'node:fs';
 import os from 'node:os';
@@ -18,7 +18,7 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const argv = process.argv.slice(2);
 const langAt = argv.indexOf('--lang');
-const lang = langAt >= 0 ? argv.splice(langAt, 2)[1] : 'ja';
+const lang = langAt >= 0 ? argv.splice(langAt, 2)[1] : 'en';
 if (lang !== 'ja' && lang !== 'en') { console.error('--lang は ja か en です'); process.exit(1); }
 const out = path.resolve(argv[0] || path.join(ROOT, 'dist/mdfolio-docs.html'));
 const work = fs.mkdtempSync(path.join(os.tmpdir(), 'mdfolio-docs-'));
@@ -26,14 +26,15 @@ const readme = lang === 'en' ? 'README.md' : 'README.ja.md';
 const dropLangLine = (text) => text.replace(/^(?:\*\*English\*\* \| \[日本語\]\(README\.ja\.md\)|\[English\]\(README\.md\) \| \*\*日本語\*\*)\n+/, '');
 
 fs.writeFileSync(path.join(work, 'README.md'), dropLangLine(fs.readFileSync(path.join(ROOT, readme), 'utf8')));
-if (lang === 'ja') {
+// 仕様書・レビュー記録・テスト報告書は英語なので、英語の説明書にだけ入れる
+if (lang === 'en') {
   for (const name of ['SPEC.md', 'REVIEW.md', 'TEST_REPORT.md']) fs.copyFileSync(path.join(ROOT, 'docs', name), path.join(work, name));
   fs.writeFileSync(path.join(work, '_sidebar.md'), [
-    '- [はじめに（README）](README.md)',
-    '- 作成の記録',
-    '  - [仕様書](SPEC.md)',
-    '  - [仕様レビュー記録](REVIEW.md)',
-    '  - [テスト報告書](TEST_REPORT.md)',
+    '- [Introduction (README)](README.md)',
+    '- Design records',
+    '  - [Specification](SPEC.md)',
+    '  - [Spec review record](REVIEW.md)',
+    '  - [Test report](TEST_REPORT.md)',
     ''
   ].join('\n'));
 }

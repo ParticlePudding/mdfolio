@@ -39,22 +39,27 @@ describe('公開ページ', () => {
   });
   after(() => fs.rmSync(path.dirname(out), { recursive: true, force: true }));
 
-  test('日本語と英語の案内・見本・見た目の見本・説明書と、ビューア、.nojekyll がそろっている（PG-1）', () => {
+  test('英語（トップ）と日本語（ja/）の案内・見本・見た目の見本・説明書と、ビューア、.nojekyll がそろっている（PG-1）', () => {
     const files = walk(out);
-    for (const dir of ['', 'en/']) {
+    for (const dir of ['', 'ja/']) {
       for (const f of ['index.html', 'sample-site.html', 'mdfolio-docs.html', 'style/sample-site.html', 'style/mdfolio.css']) assert.ok(files.includes(dir + f), dir + f);
       assert.ok(!files.some((f) => f.startsWith(dir + 'folder/')), 'フォルダ版の見本（1.3.0 で廃止）はない');
     }
     assert.ok(files.includes('mdfolio.html'));
     assert.ok(files.includes('.nojekyll'));
-    assert.ok(!files.includes('en/mdfolio.html'), 'ビューアは 1 つだけ');
+    assert.ok(!files.includes('ja/mdfolio.html'), 'ビューアは 1 つだけ');
+    // 以前の英語の案内（en/）は、トップへ移動するページだけ（SPEC PG-1）
+    assert.deepEqual(files.filter((f) => f.startsWith('en/')), ['en/index.html']);
+    const moved = fs.readFileSync(path.join(out, 'en/index.html'), 'utf8');
+    assert.ok(moved.includes('<meta http-equiv="refresh" content="0; url=../">') && moved.includes('<a href="../">'));
+    assert.ok(!/<script\b/i.test(moved));
   });
 
   test('すべての HTML に、LICENSE と同梱ライブラリのライセンス表記の全文が入っている', () => {
-    const pages = walk(out).filter((f) => f.endsWith('.html'));
+    const pages = walk(out).filter((f) => f.endsWith('.html') && f !== 'en/index.html');
     assert.equal(pages.length, 9);
     // 見た目の見本の CSS は examples/mdfolio.css の写し
-    for (const dir of ['', 'en/']) assert.equal(fs.readFileSync(path.join(out, dir, 'style/mdfolio.css'), 'utf8'), fs.readFileSync(path.join(ROOT, 'examples/mdfolio.css'), 'utf8'));
+    for (const dir of ['', 'ja/']) assert.equal(fs.readFileSync(path.join(out, dir, 'style/mdfolio.css'), 'utf8'), fs.readFileSync(path.join(ROOT, 'examples/mdfolio.css'), 'utf8'));
     for (const rel of pages) {
       const text = licensesOf(rel);
       assert.ok(text.includes(LICENSE), rel + ': LICENSE');
@@ -64,8 +69,9 @@ describe('公開ページ', () => {
   });
 
   test('案内のページはスクリプトを使わず、外部への読み込みがない（PG-7）', () => {
-    for (const rel of ['index.html', 'en/index.html']) {
+    for (const rel of ['index.html', 'ja/index.html']) {
       const html = fs.readFileSync(path.join(out, rel), 'utf8');
+      assert.equal(/<html lang="([a-z]+)">/.exec(html)[1], rel === 'index.html' ? 'en' : 'ja', rel + ': トップは英語（仕様 1.11）');
       assert.ok(!/<script\b/i.test(html), rel + ': <script>');
       assert.ok(/<meta http-equiv="Content-Security-Policy" content="default-src 'none';/.test(html), rel + ': CSP');
       const srcs = [...html.matchAll(/\b(?:src|href)="([^"]+)"/g)].map((m) => m[1]);
@@ -75,7 +81,7 @@ describe('公開ページ', () => {
   });
 
   test('見本の画面の言語は文書の言語に固定されている（PG-3）', () => {
-    for (const [rel, lang] of [['style/sample-site.html', 'ja'], ['en/style/sample-site.html', 'en'], ['sample-site.html', 'ja'], ['en/sample-site.html', 'en'], ['mdfolio-docs.html', 'ja'], ['en/mdfolio-docs.html', 'en']]) {
+    for (const [rel, lang] of [['style/sample-site.html', 'en'], ['ja/style/sample-site.html', 'ja'], ['sample-site.html', 'en'], ['ja/sample-site.html', 'ja'], ['mdfolio-docs.html', 'en'], ['ja/mdfolio-docs.html', 'ja']]) {
       const html = fs.readFileSync(path.join(out, rel), 'utf8');
       const text = core.findBlock(core.extractParts(html), 'mdv-config').text;
       assert.equal(JSON.parse(text).lang, lang, rel);

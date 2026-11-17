@@ -1,11 +1,14 @@
 # mdfolio — Claude Code 向けの引き継ぎメモ
 
-ローカルの HTML / JavaScript だけで動く Markdown 文書ビューア。現在の版は 1.3.0。変更の一覧は `CHANGELOG.md`（日本語だけ。英語版は作らない。依頼者の指示）。
+ローカルの HTML / JavaScript だけで動く Markdown 文書ビューア。現在の版は 1.3.0。変更の一覧は `CHANGELOG.md`（英語だけ。日本語版は作らない。依頼者の指示）。
 詳しい仕様は `docs/SPEC.md`、設計判断の経緯は `docs/REVIEW.md`、テスト結果は `docs/TEST_REPORT.md`。
 
 ## 依頼者について・進め方
 
-- やり取り、画面の文言、文書はすべて日本語。言い回しは平易に（専門用語は避けるか説明する）。
+- 依頼者とのやり取りと、この引き継ぎメモは日本語。言い回しは平易に（専門用語は避けるか説明する）。
+- **mdfolio は日本語の利用者に限らず広く使ってもらうもの**（依頼者の方針）。外から見えるもの（README、公開ページ、変更履歴、
+  リリースの説明、About）は**英語が先**。仕様書・レビュー記録・テスト報告書とソースコードのコメントも英語で書く。
+  アプリの画面の文言と見本・README・使い方は英語と日本語の両方を保つ。依頼者のほかのプロジェクト（自分用）は日本語でよい。
 - 依頼者は「仕様作成 → レビュー → 実装 → テスト」の順で進めることを求めている。動作を変える変更では、
   `docs/SPEC.md`（改訂履歴も）、`docs/REVIEW.md`、`docs/TEST_REPORT.md` を合わせて更新する。
 - 確認できていないことは、確認できていないとはっきり書く（実機・実環境で未確認の範囲など）。
@@ -44,7 +47,7 @@ npm run test:webkit / test:gecko # 別エンジン（WebKitGTK + Xvfb、geckodri
 python3 tools/check-source.py <ファイル…>   # ソースの文字の検査（必ず実行する。下記）
 node tools/dev/make-hosted.mjs   # 外部のホスティング環境（Claude のアーティファクト）向けの変換
 python3 tools/dev/make-zip.py    # 配布用 zip（日本語のファイル名に UTF-8 の印を付ける。zip コマンドは使わない）
-node tools/dev/make-docs-site.mjs  # README と docs/ を dist/mdfolio-docs.html に書き出す
+node tools/dev/make-docs-site.mjs  # 説明書（README.md と docs/。英語）を dist/mdfolio-docs.html に書き出す
 node tools/dev/make-pages.mjs     # GitHub Pages に置く一式（日本語と英語）を tmp/pages/ に作る。先に npm run build
 node tools/dev/make-release.mjs   # リリースの添付（mdfolio.html、zip）と説明を tmp/release/ に作る
 ```
@@ -59,7 +62,7 @@ GitHub Actions（`.github/workflows/pages.yml`）が、ビルド → 単体テ�
 `.github/workflows/release.yml` がタグ `v<版>` とリリース（`mdfolio.html` と `mdfolio-<版>.zip`、説明は変更履歴から）を作る。
 日本語と英語の両対応（SPEC 8.7）: 見本文書は `sample-docs/` と `sample-docs-en/`、README は英語が `README.md`、日本語が `README.ja.md`（GitHub で最初に出る README は英語。依頼者の指示）。
 片方を変えたらもう片方も直す（構成とリンクは `tests/unit/samples.test.mjs` が確かめる）。英語の文書で画面の部品を書くときは
-`src/i18n.js` の `en` の言葉を使う。仕様書・レビュー記録・テスト報告書は日本語だけ。
+`src/i18n.js` の `en` の言葉を使う。仕様書・レビュー記録・テスト報告書は英語だけ。
 著作権者名は「Particle Pudding」（`LICENSE`。HTML に埋め込まれるので、変えたら作り直す）。
 
 テストは `dist/` を読むので、`src/` を変えたら必ずビルドし直してから実行する。

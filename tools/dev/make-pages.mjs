@@ -1,20 +1,21 @@
 #!/usr/bin/env node
 /**
- * GitHub Pages に置くファイル一式を、日本語と英語で作る（SPEC 8.7）。
+ * GitHub Pages に置くファイル一式を、英語と日本語で作る（SPEC 8.7）。英語をトップ（ルート）に、日本語を ja/ に置く。
  *
  *   node tools/dev/make-pages.mjs [出力フォルダ]      既定: tmp/pages
  *
  * 先に npm run build を実行しておくこと（dist/mdfolio.html を使う）。出力フォルダの中身は毎回消してから作り直す。
  *
- *   index.html            案内（日本語。スクリプトなし。ライセンス表記の全文を含む）
+ *   index.html            案内（英語。スクリプトなし。ライセンス表記の全文を含む）
  *   mdfolio.html          ビューア（dist/mdfolio.html。1 つだけ。画面の言語はブラウザーに合わせる）
- *   sample-site.html      書き出しの見本（sample-docs/。画面は日本語に固定）
+ *   sample-site.html      書き出しの見本（sample-docs-en/。画面は英語に固定）
  *   style/                見た目の見本（書き出しの見本と、隣に置いた mdfolio.css。examples/mdfolio.css の写し）
- *   mdfolio-docs.html     説明書（README.ja.md と docs/ の 3 文書）
- *   en/index.html         案内（英語）
- *   en/sample-site.html   書き出しの見本（sample-docs-en/。画面は英語に固定）
- *   en/style/             見た目の見本（英語）
- *   en/mdfolio-docs.html  説明書（README.md）
+ *   mdfolio-docs.html     説明書（README.md と docs/ の 3 文書）
+ *   ja/index.html         案内（日本語）
+ *   ja/sample-site.html   書き出しの見本（sample-docs/。画面は日本語に固定）
+ *   ja/style/             見た目の見本（日本語）
+ *   ja/mdfolio-docs.html  説明書（README.ja.md）
+ *   en/index.html         以前の英語の案内の場所。トップへ移動する（古いリンクのため。スクリプトなし）
  *   .nojekyll             GitHub Pages の変換（Jekyll）を止める（「_」で始まるファイルを公開しない、などの変換をさせない）
  *
  * 見本の画面の言語を固定するのは公開ページだけで、dist/ の見本（lang: auto）は変えない。
@@ -43,13 +44,14 @@ if (out === ROOT || out === path.join(ROOT, 'dist') || ROOT.startsWith(out + pat
 const run = (script, args) => execFileSync(process.execPath, [path.join(ROOT, script), ...args], { cwd: ROOT, stdio: ['ignore', 'ignore', 'inherit'] });
 
 fs.rmSync(out, { recursive: true, force: true });
+fs.mkdirSync(path.join(out, 'ja'), { recursive: true });
 fs.mkdirSync(path.join(out, 'en'), { recursive: true });
 fs.copyFileSync(viewer, path.join(out, 'mdfolio.html'));
 fs.writeFileSync(path.join(out, '.nojekyll'), '');
 
 const LANGS = {
-  ja: { dir: '', docs: 'sample-docs', title: 'mdfolio サンプル文書' },
-  en: { dir: 'en', docs: 'sample-docs-en', title: 'mdfolio sample documents' }
+  en: { dir: '', docs: 'sample-docs-en', title: 'mdfolio sample documents' },
+  ja: { dir: 'ja', docs: 'sample-docs', title: 'mdfolio サンプル文書' }
 };
 for (const [lang, c] of Object.entries(LANGS)) {
   const at = (p) => path.join(out, c.dir, p);
@@ -72,22 +74,22 @@ const TEXT = {
   ja: {
     description: 'サーバーもインストールも要らない、Markdown 文書の表示サイト',
     switchLabel: 'English',
-    switchHref: 'en/',
+    switchHref: '../',
     switchLang: 'en',
     version: 'バージョン',
     lead: 'Markdown で書いた文書を、ブラウザーだけで読めるサイトにします。サーバー、インストール、ネット接続は要りません。HTML のファイルを開くだけで動きます。',
     tryTitle: '試してみる',
     cards: [
       ['sample-site.html', 'サンプル文書を読む', '文書を 1 つの HTML にまとめた「書き出し」の見本です。スマートフォンでも読めます。'],
-      ['mdfolio.html', '自分のフォルダを開く', 'ビューア本体です。手元の Markdown のフォルダやファイルを選んで読めます。'],
+      ['../mdfolio.html', '自分のフォルダを開く', 'ビューア本体です。手元の Markdown のフォルダやファイルを選んで読めます。'],
       ['style/sample-site.html', '見た目を変えた見本', '同じ見本の隣に mdfolio.css を置いて、色や見出しを変えた例です。'],
-      ['mdfolio-docs.html', '説明書', '使い方、仕様書、テストの記録です。mdfolio 自身で表示しています。']
+      ['mdfolio-docs.html', '説明書', '使い方の説明です。mdfolio 自身で表示しています。仕様書やテストの記録は英語版の説明書にあります。']
     ],
     privacyTitle: '文書は外に送られません',
     privacy: '「自分のフォルダを開く」で選んだ文書は、あなたのブラウザーの中だけで読み込みます。このサイトやほかの場所へ送ることはありません（ページの設定で、外部との通信そのものを止めています）。',
     localTitle: '手元で使う',
     local: [
-      `<a href="mdfolio.html" download>mdfolio.html をダウンロード</a>（約 ${mb}MB）して、ダブルクリックで開きます。これ 1 つで動きます。`,
+      `<a href="../mdfolio.html" download>mdfolio.html をダウンロード</a>（約 ${mb}MB）して、ダブルクリックで開きます。これ 1 つで動きます。`,
       `見た目を変えるには、HTML と同じフォルダに <a href="style/mdfolio.css" download>mdfolio.css</a>（例）を置きます。`,
       `見本の文書は、<a href="${REPO}/releases/latest">リリース</a>の zip に入っています。`
     ],
@@ -99,22 +101,22 @@ const TEXT = {
   en: {
     description: 'A Markdown document viewer that needs no server and no installation',
     switchLabel: '日本語',
-    switchHref: '../',
+    switchHref: 'ja/',
     switchLang: 'ja',
     version: 'Version',
     lead: 'mdfolio turns Markdown documents into a website you can browse using any modern web browser. It needs no server, no installation and no network connection. Just open the HTML file.',
     tryTitle: 'Try it',
     cards: [
       ['sample-site.html', 'Read the sample documents', 'Try an example of "Export as site": a collection of documents packaged into a single HTML file. It works on smartphones too.'],
-      ['../mdfolio.html', 'Open your own folder', 'The viewer itself. Choose Markdown files or a folder on your device and read them.'],
+      ['mdfolio.html', 'Open your own folder', 'The viewer itself. Choose Markdown files or a folder on your device and read them.'],
       ['style/sample-site.html', 'Custom look sample', 'The same sample with an mdfolio.css placed next to it, changing the colors and headings.'],
-      ['mdfolio-docs.html', 'Documentation', 'How to use mdfolio, shown by mdfolio itself. The design records are in Japanese only.']
+      ['mdfolio-docs.html', 'Documentation', 'How to use mdfolio, the specification, and the test records, shown by mdfolio itself.']
     ],
     privacyTitle: 'Your documents stay with you',
     privacy: 'Documents you open using "Open your own folder" are processed entirely within your browser. They are never sent to this site or anywhere else (the page\'s security settings block all network access).',
     localTitle: 'Use it on your device',
     local: [
-      `<a href="../mdfolio.html" download>Download mdfolio.html</a> (about ${mb} MB) and double-click it. That one file is all you need.`,
+      `<a href="mdfolio.html" download>Download mdfolio.html</a> (about ${mb} MB) and double-click it. That one file is all you need.`,
       `To change the look, place <a href="style/mdfolio.css" download>mdfolio.css</a> (example) in the same folder as the HTML file.`,
       `The sample documents are in the zip file of the <a href="${REPO}/releases/latest">latest release</a>.`
     ],
@@ -140,8 +142,8 @@ const page = (lang) => {
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <meta name="description" content="${t.description}">
-<link rel="alternate" hreflang="ja" href="${SITE}">
-<link rel="alternate" hreflang="en" href="${SITE}en/">
+<link rel="alternate" hreflang="en" href="${SITE}">
+<link rel="alternate" hreflang="ja" href="${SITE}ja/">
 <link rel="alternate" hreflang="x-default" href="${SITE}">
 <link rel="icon" href="${ICON}">
 <title>mdfolio</title>
@@ -211,8 +213,24 @@ ${t.local.map((li) => `  <li>${li}</li>`).join('\n')}
 </html>
 `;
 };
-fs.writeFileSync(path.join(out, 'index.html'), page('ja'));
-fs.writeFileSync(path.join(out, 'en/index.html'), page('en'));
+fs.writeFileSync(path.join(out, 'index.html'), page('en'));
+fs.writeFileSync(path.join(out, 'ja/index.html'), page('ja'));
+// 以前の英語の案内（en/）は、トップへ移動する。スクリプトを使わず、meta refresh と通常のリンクで移動する（SPEC PG-1）
+fs.writeFileSync(path.join(out, 'en/index.html'), `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="refresh" content="0; url=../">
+<link rel="canonical" href="${SITE}">
+<title>mdfolio</title>
+</head>
+<body>
+<p>This page has moved to <a href="../">the mdfolio top page</a>.</p>
+</body>
+</html>
+`);
 
 const count = (dir) => fs.readdirSync(dir, { withFileTypes: true }).reduce((n, e) => n + (e.isDirectory() ? count(path.join(dir, e.name)) : 1), 0);
 console.log(`${path.relative(ROOT, out) || out}: ${count(out)} ファイル（日本語と英語）`);

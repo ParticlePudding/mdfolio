@@ -7,7 +7,7 @@
  * 先に npm run build を実行しておくこと。作るもの:
  *   mdfolio.html            単一 HTML 版（dist/mdfolio.html の写し。これ 1 つで動く）
  *   mdfolio-<版>.zip        配布用の zip（中身はリポジトリと同じ並び。README の手順がそのまま使える）
- *   notes.md                リリースの説明（CHANGELOG.md の、その版の部分）
+ *   notes.md                リリースの説明（CHANGELOG.md の、その版の部分。英語）
  *
  * zip は tools/dev/make-zip.py で作る（日本語のファイル名に UTF-8 の印を付ける）。Python 3 が必要。
  */
@@ -46,8 +46,8 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   for (const p of CONTENTS) if (!fs.existsSync(path.join(ROOT, p))) fail(p + ' がありません（先に npm run build を実行してください）');
   const generator = /<meta name="generator" content="mdfolio ([^"]+)">/.exec(fs.readFileSync(path.join(ROOT, 'dist/mdfolio.html'), 'utf8'));
   if (!generator || generator[1] !== version) fail(`dist/mdfolio.html の版（${generator && generator[1]}）が package.json の版（${version}）と一致しません。npm run build を実行してください`);
-  const ja = sectionOf(fs.readFileSync(path.join(ROOT, 'CHANGELOG.md'), 'utf8'), version);
-  if (!ja) fail(`CHANGELOG.md に「## ${version}」の節が必要です`);
+  const changes = sectionOf(fs.readFileSync(path.join(ROOT, 'CHANGELOG.md'), 'utf8'), version);
+  if (!changes) fail(`CHANGELOG.md に「## ${version}」の節が必要です`);
 
   fs.rmSync(out, { recursive: true, force: true });
   fs.mkdirSync(out, { recursive: true });
@@ -56,10 +56,9 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   execFileSync('python3', [path.join(ROOT, 'tools/dev/make-zip.py'), zip, `mdfolio-${version}`, ...CONTENTS.map((p) => path.join(ROOT, p) + '=' + p)], { stdio: ['ignore', 'inherit', 'inherit'] });
 
   const notes = [
-    ja, '',
-    '添付: `mdfolio.html`（これ 1 つで動きます）、`mdfolio-' + version + '.zip`（見本、見た目の CSS の例、説明書などの一式）。', '',
+    changes, '',
     '---', '',
-    'Assets: `mdfolio.html` (single-HTML version; this one file is all you need) and `mdfolio-' + version + '.zip` (samples, an example CSS for the look, documentation and more). The change history is in Japanese only (`CHANGELOG.md`); see `README.md` for an English overview.', ''
+    'Assets: `mdfolio.html` (this one file is all you need) and `mdfolio-' + version + '.zip` (samples, an example CSS for the look, documentation, and more). See `README.md` for an overview.', ''
   ].join('\n');
   fs.writeFileSync(path.join(out, 'notes.md'), notes);
   console.log(`${path.relative(ROOT, out) || out}: mdfolio.html, mdfolio-${version}.zip, notes.md`);

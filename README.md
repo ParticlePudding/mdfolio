@@ -5,7 +5,7 @@
 A Markdown document viewer that runs entirely in your browser. No server, installation, or tools such as Node.js needed.
 
 - Version: 1.3.0
-- Public page: https://particlepudding.github.io/mdfolio/en/
+- Public page: https://particlepudding.github.io/mdfolio/
 - Bugs, requests, and English corrections: [Issues](https://github.com/ParticlePudding/mdfolio/issues)
 
 ## How to use
@@ -60,7 +60,7 @@ To automate exports, you can also export from the command line:
 node tools/build-site.mjs <document folder> --out site.html --title "Handbook" --css mdfolio.css
 ```
 
-The specification (`docs/SPEC.md`) and changelog (`CHANGELOG.md`) are in Japanese.
+The specification is in `docs/SPEC.md`, and the changelog is in `CHANGELOG.md`.
 
 ## License
 

@@ -1,84 +1,88 @@
-# 変更履歴
+# Changelog
 
-mdfolio の版ごとの変更です。詳しい経緯は `docs/SPEC.md`（改訂履歴）、`docs/REVIEW.md`、`docs/TEST_REPORT.md` にあります。
+Changes in each version of mdfolio. The details are in `docs/SPEC.md` (revision history), `docs/REVIEW.md`, and `docs/TEST_REPORT.md`.
 
-## 次の版（未リリース）
+## Unreleased
 
-### 変更
+### Changed
 
-- README を、英語を `README.md`（GitHub で最初に表示）、日本語を `README.ja.md` に入れ替えました。
+- The project is now English-first, so that anyone can use it.
+  - `README.md` is now in English (shown first on GitHub); the Japanese README is `README.ja.md`.
+  - The public page shows English at the top (`/`); Japanese moved to `/ja/`. The old `/en/` address forwards to the top.
+  - This changelog and the release notes are in English.
+  - The specification, review record, test report, and source code comments are in English.
 
 ## 1.3.0 — 2026-11-17
 
-### 追加
+### Added
 
-- `mdfolio.html`（書き出したサイトも）と同じフォルダに `mdfolio.css` を置くと、その CSS で見た目を変えられるようにしました。例は `examples/mdfolio.css` です。
-- 書き出しの画面に「CSS を選ぶ」を加え、選んだ CSS を書き出す HTML に埋め込めるようにしました。
-- 公開ページに「見た目を変えた見本」を加えました。
+- Place `mdfolio.css` in the same folder as `mdfolio.html` (or an exported site) to change the look. See `examples/mdfolio.css` for an example.
+- "Choose CSS" in the export dialog embeds the chosen CSS in the exported HTML file.
+- A "Custom look sample" on the public page.
 
-### 削除
+### Removed
 
-- フォルダ版（`dist/mdfolio/`、更新コマンド `tools/update.mjs`）をやめました。見た目を変えるには、上の `mdfolio.css` を使ってください。文書や CSS を変えるたびにコマンドを実行する必要がなくなり、Node.js も要りません。1.2.0 までのフォルダ版は、GitHub のリリースから引き続き入手できます。
+- The folder version (`dist/mdfolio/` and its update command `tools/update.mjs`). To change the look, use `mdfolio.css` instead. You no longer need to run a command after changing documents or CSS, and you do not need Node.js. The folder version up to 1.2.0 is still available from the Releases page.
 
-### 変更
+### Changed
 
-- 英語の変更履歴（`CHANGELOG.en.md`）をなくし、変更履歴をこのファイル（日本語）だけにしました。
-- ページの安全のための設定（CSP）で、隣の `mdfolio.css` を読めるようにしました。スクリプトの制限は変えていません。
-- 利用者は Node.js を使いません。コマンドラインでの書き出しは開発者向けとして README の「開発者向け」に移し、見本の文書・公開ページ・リリースの zip から外しました。
+- The English changelog (`CHANGELOG.en.md`) was removed; the change history was kept in Japanese only. (Reversed in the next version: this changelog is now in English.)
+- The page's security settings (CSP) now allow loading `mdfolio.css` from the same folder. Script restrictions are unchanged.
+- The command-line export is now documented as a developer tool; users do not need Node.js.
 
 ## 1.2.0 — 2026-11-16
 
-### 追加
+### Added
 
-- 英語への対応を広げました（アプリの画面は 1.0.0 から日本語と英語に対応しています）。
-  - 英語の README（`README.en.md`）、英語の見本の文書（`sample-docs-en/`、`sample.en.md`）。
-  - フォルダ版: 英語の説明（`README.txt`）。`index.html` と `style/document.css` の説明を日本語と英語の併記に。
-  - フォルダ版の更新コマンド（`tools/update.mjs`）と、コマンドライン版の書き出し（`tools/build-site.mjs`）の表示を日本語と英語に。パソコンの言語設定に合わせて切り替わり、環境変数 `MDFOLIO_LANG`（`ja` / `en`）で固定できます。
-- 公開ページ（https://particlepudding.github.io/mdfolio/ 、英語は `/en/`）。見本、ビューア、フォルダ版の見本、説明書を日本語と英語で置いています。ライセンス表記の全文も載せています。
-- `main` を更新すると公開ページが、`v1.2.0` のようなタグを付けるとリリースが、自動で作られるようにしました（GitHub Actions）。
-- 変更履歴（このファイル）。
+- Wider English support (the app's interface has supported English and Japanese since 1.0.0).
+  - English README and English sample documents (`sample-docs-en/`, `sample.en.md`).
+  - Folder version: an English guide (`README.txt`), and English alongside Japanese in the notes in `index.html` and `style/document.css`.
+  - The folder version's update command (`tools/update.mjs`) and the command-line export (`tools/build-site.mjs`) print messages in English or Japanese, based on the system language. Set the environment variable `MDFOLIO_LANG` (`ja` / `en`) to choose.
+- The public page (https://particlepudding.github.io/mdfolio/), with samples, the viewer, the folder version sample, and the documentation in English and Japanese, including the full license text.
+- GitHub Actions rebuilds the public page whenever `main` is updated and creates a release when started from the Actions tab or when a tag such as `v1.2.0` is pushed.
+- This changelog.
 
-### 変更
+### Changed
 
-- 名前を「mdfolio」に確定しました（これまでは仮の名前としていました）。
-- `LICENSE` の著作権者名を「Particle Pudding」にしました。
-- 使い方（ヘルプ）と見本に、使えない図の種類（Mermaid のマインドマップとアーキテクチャ図）を書きました。
-- 英語の文章（画面の表示、使い方、README、見本）を見直しました。画面の英語は、件数が 1 のときに単数形（"1 result" など）で表示します。
-- 見本「配布方法」の比べる表に、フォルダ版を加えました。
+- The name "mdfolio" has been finalized (it was previously a working name).
+- The copyright holder in `LICENSE` is now "Particle Pudding".
+- The help and the samples now say which diagram types are not available (Mermaid mindmaps and architecture diagrams).
+- The English text (interface, help, README, samples) was revised. The interface uses the singular for a count of 1 (such as "1 result").
+- The comparison table in the sample on distributing documents now includes the folder version.
 
-### 修正
+### Fixed
 
-- 日本語の見本「配布方法」で、「方法は 2 つ」と書いてあったのを「3 つ」に直しました。
-- 外部の画像を表示する側に切り替えるとページは自動で再読み込みされるのに、説明では利用者が再読み込みするように読めた点を直しました。
+- The Japanese sample on distributing documents said there were two ways; there were three.
+- The docs said to reload the page after turning on external images; the page actually reloads automatically.
 
-### 削除
+### Removed
 
-- 1.0.1 のお試し用に変換した HTML の写し（`dist/hosted/`）。変換の道具（`tools/dev/make-hosted.mjs`）は残しています。
+- The pre-converted trial HTML files added in 1.0.1 (`dist/hosted/`). The conversion tool (`tools/dev/make-hosted.mjs`) remains.
 
 ## 1.1.0 — 2026-11-15
 
-### 追加
+### Added
 
-- フォルダ版（`dist/mdfolio/`）。決まった場所に置き、`docs/` の文書を `index.html` を開くだけで読めるようにする形です。見た目を `style/document.css` で変えられます。
-- 図（Mermaid）の配色を CSS の変数から取るようにしました。
+- The folder version (`dist/mdfolio/`): place it in a fixed location, and anyone can read the documents in `docs/` just by opening `index.html`. The look can be changed with `style/document.css`.
+- Diagram (Mermaid) colors are taken from CSS variables.
 
-### 変更
+### Changed
 
-- CSS を、本文と配色（`document.css`）と画面の部品（`app.css`）に分けました。
+- The CSS is split into the document body and colors (`document.css`) and the parts of the interface (`app.css`).
 
 ## 1.0.1 — 2026-11-13
 
-### 追加
+### Added
 
-- 別のページの中（`<iframe>`）に埋め込んで表示できるようにしました。
-- 設定 `allowDownloads`、`lockExternalImages`、`hosted`。外部のホスティング環境に置くための変換（`tools/dev/make-hosted.mjs`）。
+- Display inside another page (`<iframe>`).
+- Settings `allowDownloads`, `lockExternalImages`, and `hosted`, and a conversion for external hosting services (`tools/dev/make-hosted.mjs`).
 
-### 修正
+### Fixed
 
-- コピーできなかったときに「コピーしました」と表示していた問題。
-- 指で操作する端末で、ファイルの選択を拡張子で絞り込んでいたため `.md` を選べないことがある問題。
-- 配布用の zip で、日本語のファイル名に UTF-8 の印がなく、Windows で文字化けすることがある問題（`tools/dev/make-zip.py`）。
+- "Copied" was shown even when copying failed.
+- On touch devices, filtering the file dialog by extension could make `.md` files impossible to choose.
+- In the distribution zip, Japanese file names lacked the UTF-8 flag and could be garbled on Windows (`tools/dev/make-zip.py`).
 
 ## 1.0.0 — 2026-11-13
 
-- 最初の版。単一 HTML のビューア（`mdfolio.html`）、フォルダとファイルの読み込み、全文検索、数式・図・コードの色分け、サイトとしての書き出し、日本語と英語の画面。
+- Initial release: the single-HTML viewer (`mdfolio.html`), with folder and file opening, full-text search, math, diagrams, code highlighting, site export, and an English and Japanese interface.
