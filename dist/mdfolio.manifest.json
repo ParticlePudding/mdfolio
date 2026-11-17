@@ -1,11 +1,11 @@
 {
   "name": "mdfolio",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "file": "mdfolio.html",
   "bytes": 4332916,
-  "sha256": "7af20145699a5e9dfccb8c34f0ede1a6c3e3aba1d8cecae5ba3eaeb119cb2749",
+  "sha256": "f190f19d96c3671575531a056f1f5805507879fab17c16b27762b5c7d02807b5",
   "without": [],
-  "csp": "default-src 'none'; script-src 'sha256-dcRAgsEz4TeMASNSI+H+F8tGUTG9gCWKHlzB47z8uMs=' 'sha256-2qE4xUCDfWpNS7E1RA/TnxHbQhY3mOS3zTcFEDQWQZI=' 'sha256-+hQEmLjPyDAsvl58sb28H5Urw4s/oljt4J5z7b+adLw=' 'sha256-xB9SNgkbg/UkxJQPl6FrKxSnbyH/hK6k/WtmQh2KKpo='; style-src 'self' file: 'unsafe-inline'; img-src data: blob: http: https:; media-src data: blob: http: https:; font-src data:; connect-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; form-action 'none'; base-uri 'none'",
+  "csp": "default-src 'none'; script-src 'sha256-dcRAgsEz4TeMASNSI+H+F8tGUTG9gCWKHlzB47z8uMs=' 'sha256-FknxZi6qldpmGZ6O55MfdeISmTu+ebj3c8s4obKcohM=' 'sha256-+hQEmLjPyDAsvl58sb28H5Urw4s/oljt4J5z7b+adLw=' 'sha256-xB9SNgkbg/UkxJQPl6FrKxSnbyH/hK6k/WtmQh2KKpo='; style-src 'self' file: 'unsafe-inline'; img-src data: blob: http: https:; media-src data: blob: http: https:; font-src data:; connect-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; form-action 'none'; base-uri 'none'",
   "blocks": [
     {
       "id": "mdv-config",
@@ -65,7 +65,7 @@
     },
     {
       "id": "mdv-js-app",
-      "sha256Base64": "2qE4xUCDfWpNS7E1RA/TnxHbQhY3mOS3zTcFEDQWQZI="
+      "sha256Base64": "FknxZi6qldpmGZ6O55MfdeISmTu+ebj3c8s4obKcohM="
     },
     {
       "id": "mdv-lib-katex",

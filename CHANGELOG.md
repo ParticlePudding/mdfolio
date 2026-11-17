@@ -2,7 +2,7 @@
 
 Changes in each version of mdfolio. The details are in `docs/SPEC.md` (revision history), `docs/REVIEW.md`, and `docs/TEST_REPORT.md`.
 
-## Unreleased
+## 1.3.1 — 2026-11-17
 
 ### Changed
 
@@ -11,6 +11,10 @@ Changes in each version of mdfolio. The details are in `docs/SPEC.md` (revision 
   - The public page shows English at the top (`/`); Japanese moved to `/ja/`. The old `/en/` address forwards to the top.
   - This changelog and the release notes are in English.
   - The specification, review record, test report, and source code comments are in English.
+
+### Fixed
+
+- An unclosed comment in the built-in CSS had disabled the body text rule since 1.1.0. It is now active. The look does not change, because the same values were already applied elsewhere.
 
 ## 1.3.0 — 2026-11-17
 

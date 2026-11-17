@@ -4,7 +4,7 @@
 
 ブラウザーだけで読める Markdown 文書ビューアです。サーバーもインストールも、Node.js などのツールも要りません。
 
-- バージョン: 1.3.0
+- バージョン: 1.3.1
 - 公開ページ: https://particlepudding.github.io/mdfolio/ja/
 - 不具合・要望: [Issues](https://github.com/ParticlePudding/mdfolio/issues)
 
