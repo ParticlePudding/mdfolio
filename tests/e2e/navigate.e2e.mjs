@@ -14,18 +14,18 @@ before(async () => { browser = await launchBrowser(); });
 after(async () => { await browser.close(); });
 
 const link = (page, text) => page.locator('.mdv-prose a', { hasText: text }).first();
-const activeTreeItem = (page) => page.evaluate(() => { const a = document.querySelector('.mdv-side-tree a[aria-current="page"]'); return a ? a.textContent : null; });
+const activeTreeItem = (page) => page.evaluate(() => { const a = document.querySelector('.mdv-side-tree a[aria-current="page"]'); return a ? a.getAttribute('data-path') : null; });
 
 describe('Links between documents (FR-211, spec 5.3)', () => {
   test('relative links navigate within the app, and the title, URL and sidebar follow', async () => {
     await withPage(browser, async ({ page }) => {
       await loadFolder(page, fixture('site'));
-      assert.equal(await activeTreeItem(page), 'README');
+      assert.equal(await activeTreeItem(page), 'README.md');
       await link(page, 'イントロ').click();
       await waitHeading(page, 'イントロダクション');
       assert.equal(await hash(page), '#/guide/intro.md');
-      assert.equal(await page.title(), 'イントロダクション - site');
-      assert.equal(await activeTreeItem(page), 'intro');
+      assert.equal(await page.title(), 'イントロダクション - テスト用サイト');
+      assert.equal(await activeTreeItem(page), 'guide/intro.md');
       assert.equal(await page.evaluate(() => window.scrollY), 0);
       assert.equal(await page.evaluate(() => document.activeElement.id), 'mdv-main', 'focus moves to the main content area (NFR-4)');
     });
@@ -185,7 +185,7 @@ describe('Routing (FR-304, FR-306)', () => {
       await loadFolder(page, fixture('site'));
       await goTo(page, '#/nothing/here.md');
       await page.waitForSelector('.mdv-empty');
-      assert.equal(await page.title(), 'この文書は見つかりません - site');
+      assert.equal(await page.title(), 'この文書は見つかりません - テスト用サイト');
     });
   });
 
@@ -254,7 +254,7 @@ describe('Sidebar (FR-301)', () => {
       await goTo(page, '#/guide/sub/deep.md', '深い文書');
       assert.equal(await open('guide'), true);
       assert.equal(await open('guide/sub'), true);
-      assert.equal(await activeTreeItem(page), 'deep');
+      assert.equal(await activeTreeItem(page), 'guide/sub/deep.md');
       assert.equal(await page.locator('.mdv-side-tree a[aria-current="page"]').count(), 1);
       assert.equal(await page.getAttribute('.mdv-side-tree a[aria-current="page"]', 'title'), 'guide/sub/deep.md');
     });
@@ -297,7 +297,7 @@ describe('Custom navigation (FR-302)', () => {
       await page.click('.mdv-side-tab[data-tab="files"]');
       assert.ok(await page.isVisible('.mdv-side-tree'));
       assert.ok(await page.isHidden('.mdv-sidenav'));
-      await page.click('.mdv-side-tree a:has-text("unlisted")');
+      await page.click('.mdv-side-tree a[data-path="b/unlisted.md"]');
       await waitHeading(page, 'ナビにない文書');
     });
   });

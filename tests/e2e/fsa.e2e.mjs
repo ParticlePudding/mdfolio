@@ -38,7 +38,7 @@ describe('Auto-update (FR-109)', () => {
       await page.waitForFunction(() => document.querySelector('.mdv-prose').textContent.includes('新しい内容です'), null, { timeout: 6000 });
       assert.equal(await heading(page), 'メモ（改訂）');
       assert.ok(Math.abs((await page.evaluate(() => window.scrollY)) - 600) <= 2, 'scroll position is unchanged');
-      assert.equal(await page.title(), 'メモ（改訂） - notes');
+      assert.equal(await page.title(), 'メモ（改訂）');
       assert.deepEqual(await toasts(page), [], 'auto-update shows no notice');
       // The search index also gets the new content
       await page.fill('.mdv-search-input', 'ガンマ');
@@ -99,14 +99,14 @@ describe('Reload (FR-109)', () => {
     const spec = { name: 'notes', files: { 'README.md': '# ホーム\n\n[a](a.md)\n', 'a.md': '# 文書 A\n', 'old.md': '# 古い文書\n' } };
     await withPage(browser, mockOptions(spec), async ({ page }) => {
       await openMock(page);
-      assert.deepEqual(await treeLabels(page), ['README', 'a', 'old']);
+      assert.deepEqual(await treeLabels(page), ['ホーム', '文書 A', '古い文書'], 'labels are document titles (FR-1105)');
       await goTo(page, '#/a.md', '文書 A');
       await mutate(page, { 'new/added.md': '# 追加した文書\n\n検索語デルタ。\n', 'old.md': null, 'a.md': '# 文書 A（改訂）\n' });
       await clickMenu(page, 'menuReload');
       await waitHeading(page, '文書 A（改訂）');
       assert.deepEqual(await toasts(page), ['再読み込みしました']);
       assert.equal(await hash(page), '#/a.md');
-      assert.deepEqual(await treeLabels(page), ['README', 'a', 'added'], 'added files appear and deleted files disappear');
+      assert.deepEqual(await treeLabels(page), ['ホーム', '文書 A（改訂）', '追加した文書'], 'added files appear and deleted files disappear');
       await waitIndexed(page);
       await page.fill('.mdv-search-input', 'デルタ');
       await page.waitForSelector('.mdv-search-item');
@@ -134,7 +134,7 @@ describe('Reload (FR-109)', () => {
       await mutate(page, { 'README.md': null, 'memo.txt': 'text' });
       await clickMenu(page, 'menuReload');
       await page.waitForSelector('.mdv-toast-error');
-      assert.deepEqual(await toasts(page), ['Markdown 文書が見つかりませんでした']);
+      assert.deepEqual(await toasts(page), ['Markdown 文書が見つかりませんでした。名前が .md で終わるファイルの入ったフォルダを選んでください（作り方はメニューの「使い方」にあります）']);
       assert.equal(await heading(page), 'ホーム');
     });
   });

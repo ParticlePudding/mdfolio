@@ -590,7 +590,7 @@ describe('Reduced motion and screen reader information', () => {
         icons: Array.from(document.querySelectorAll('.mdv-header svg, .mdv-sidebar svg')).every((s) => s.getAttribute('aria-hidden') === 'true')
       }));
       assert.deepEqual(r, {
-        banner: 1, main: 1, navs: ['文書一覧', 'このページの目次'], h1: 1, lang: 'ja', title: 'テスト用サイト - site', live: 'polite',
+        banner: 1, main: 1, navs: ['文書一覧', 'このページの目次'], h1: 1, lang: 'ja', title: 'テスト用サイト', live: 'polite',
         search: ['combobox', '文書を検索', 'mdv-search-list', 'false', 'list'],
         current: ['location', 'page'], hiddenInputs: true, icons: true
       });

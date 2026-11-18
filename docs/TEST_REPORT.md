@@ -3,13 +3,20 @@
 | Item | Details |
 |---|---|
 | Target | mdfolio 1.3.0 (single-HTML version `dist/mdfolio.html`, 4,338,005 bytes, SHA-256 `80bfb828…11503d836`) |
-| Basis | [SPEC.md](SPEC.md) 1.9 |
-| Dates | 2026-11-13 (1.0.1), 2026-11-15 (1.1.0), 2026-11-16 (re-run after the copyright holder name change in 1.1.0; 1.2.0), 2026-11-17 (1.3.0) |
+| Basis | [SPEC.md](SPEC.md) 1.13 |
+| Dates | 2026-11-13 (1.0.1), 2026-11-15 (1.1.0), 2026-11-16 (re-run after the copyright holder name change in 1.1.0; 1.2.0), 2026-11-17 (1.3.0, 1.3.1), 2026-11-18 (fixes from the user evaluation) |
 | Tested by | The implementer (Claude). **Not tested by a third party** |
 
 ---
 
 ## 1. Conclusion
+
+### Unreleased (fixes from the user evaluation)
+
+- 20 evaluators with different jobs used 1.3.1 with their own sample documents (average 3.85 / 5, no critical problems). Each report was checked by reproducing it; the confirmed ones are listed in [REVIEW.md](REVIEW.md) section 11 (G-1 to G-14) and fixed as FR-1101 to FR-1113.
+- All **397 automated tests passed** (187 unit, 210 browser). 12 browser tests were added (`tests/e2e/fixes.e2e.mjs`). 18 existing browser tests were updated for the intended changes: the site title is now the home document's title, the file list shows titles (tests now find sidebar items by their path), the empty-folder message is longer, and the external image choice is stored per file.
+- **FR-1106 (bold next to Japanese text) is not implemented**: it needs a new library (markdown-it-cjk-friendly, MIT), and adding it waits for the requester's decision.
+- **Not verified**: Gecko and WebKit, real phones, and fonts on real Windows / macOS (FR-1112 was checked only by the order in the CSS).
 
 ### Unreleased (English-first project, translation of documents and comments)
 
@@ -159,6 +166,9 @@ These were not found in the specification review ([REVIEW.md](REVIEW.md)) but we
 | T-19 | Medium | **Distribution package problem**: Japanese file names in `mdfolio-1.0.0.zip` (such as `基本操作.md` in `sample-docs`) did not have the flag marking them as UTF-8. In some Windows environments, file names become garbled when extracted, breaking links between the sample documents | Inspection of the distribution package (the flags of each zip entry were checked programmatically). **Neither the problem nor the fix has been confirmed on a real Windows machine** | Changed the tool that creates the zip (`tools/dev/make-zip.py`), which verifies the flag on every entry after creation. Replaced the zip with the rebuilt one |
 | T-24 | Medium | The publishing site (Claude artifacts) did not accept the HTML converted for the public page. Files containing the replacement character (U+FFFD) cannot be published, and the script of a bundled library (markdown-it) uses that character literally in 11 places | **Actually publishing** (tests with imitation frames could not reveal this) | The conversion rewrites it to an escape with the same meaning (SPEC 6.1). If it appears in a place where the rewrite cannot be guaranteed to keep the meaning, the conversion stops. Confirmed that the display results for invalid input (NUL characters, `%XX` that cannot be read as characters) are the same before and after the rewrite |
 | T-25 | Medium | (Folder version) The print color settings lost to color settings that users add after `document.css`, so changing the dark color scheme also changed the print colors | Folder version E2E (printing) | Doubled the selectors of the print settings to raise their specificity |
+| T-28 | Medium | After opening a folder, the header could keep showing the folder name: when the indexer learned the home document's title before the first render, the render saw no change and did not update the header | E2E (opening a folder) | The header is updated on every render |
+| T-29 | Low | A shared "show external images" value saved by 1.3.1 was ignored but stayed in storage | E2E (FR-1107) | It is removed when the app starts |
+| T-30 | Low | (Test only) A Gantt chart was expected to be "wide", but Mermaid lays Gantt charts out to the column width, so they always fit | E2E (FR-1102) | The test uses a wide sequence diagram, and checks that the Gantt chart and the pie chart still fit |
 | T-26 | Medium | (Folder version) The update command rewrote `data/site.js` before exiting due to an error in the CSS | Unit test | It now reads and checks the CSS first, and if there is an error, it rewrites no files |
 | T-27 | Low | (Folder version) Running the update command without `--title` erased the previously specified title | Folder version E2E (export title) | If not specified, the previous value is carried over. The home document is also carried over if that document still exists |
 | T-13 | Medium | 5 accessibility defects: task list checkboxes had no name; horizontally scrolling tables could not be reached by keyboard; the search results list had no name; footnote back-links were distinguished by color only; the math error display was hard to read in the dark theme (2.54:1) | axe-core | All fixed. Arrow key operation for menus and tabs, and where focus returns after a dialog closes, were also added |
@@ -243,6 +253,19 @@ A note on T-08: the review had stated that Mermaid would be "used with a safe se
 | FR-802 | License display | e2e/export, e2e/startup, unit/build |  |
 | FR-901 | Error notification | e2e/open, e2e/startup |  |
 | FR-902 | When there are no documents | e2e/open |  |
+| FR-1101 | Distinct chart colors | e2e/fixes | Light and dark |
+| FR-1102 | Wide diagrams at natural size | e2e/fixes | 390px wide window |
+| FR-1103 | Scroll cue | e2e/fixes | Checked by the computed style, not by eye |
+| FR-1104 | Site title | e2e/fixes, e2e/open, e2e/export, e2e/security |  |
+| FR-1105 | Titles in the file list | e2e/fixes, e2e/fsa |  |
+| FR-1106 | Bold next to CJK text | — | **Not implemented** (waiting for the decision on the library) |
+| FR-1107 | External images per file | e2e/fixes, e2e/settings, e2e/embed |  |
+| FR-1108 | Drawer focus | e2e/fixes |  |
+| FR-1109 | Active item scrolled into view | e2e/fixes |  |
+| FR-1110 | `\label` ignored | e2e/fixes |  |
+| FR-1111 | Help for beginners, empty-folder message | e2e/fixes, e2e/open, e2e/fsa |  |
+| FR-1112 | Code font order | e2e/fixes | Real Windows / macOS not verified |
+| FR-1113 | Enter in search | e2e/fixes |  |
 | SEC-1 | Sanitizing | e2e/security, cross/smoke |  |
 | SEC-2 | ID prefix and removal of internal classes | e2e/security |  |
 | SEC-3 | style restrictions | e2e/render, e2e/security, unit/build, unit/core |  |

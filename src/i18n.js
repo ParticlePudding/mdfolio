@@ -84,7 +84,7 @@
     mermaidError: '図の記述に誤りがあります',
 
     scanning: 'フォルダを読み込んでいます… {0} 件',
-    noDocs: 'Markdown 文書が見つかりませんでした',
+    noDocs: 'Markdown 文書が見つかりませんでした。名前が .md で終わるファイルの入ったフォルダを選んでください（作り方はメニューの「使い方」にあります）',
     limitDocs: '文書が {0} 件を超えたため、超えた分は読み込んでいません',
     limitEntries: 'ファイルとフォルダが {0} 件を超えたため、途中で読み込みを打ち切りました',
     readFailed: '「{0}」を読み込めませんでした',
@@ -217,7 +217,7 @@
     mermaidError: 'The diagram has a syntax error',
 
     scanning: 'Scanning folder… {0} items',
-    noDocs: 'No Markdown documents were found',
+    noDocs: 'No Markdown documents were found. Choose a folder that contains files whose names end in .md ("How to use" in the menu explains how to make one)',
     limitDocs: 'More than {0} documents; the rest were not loaded',
     limitEntries: 'More than {0} files and folders; scanning stopped.',
     readFailed: 'Could not read "{0}"',

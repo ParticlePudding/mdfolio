@@ -216,6 +216,28 @@ Users can change the appearance of the body and the screen by placing `mdfolio.c
 - Even if `url()` in `mdfolio.css` contains an external address, it is not loaded by the CSP (SEC-10) while external images are not allowed.
 - When opened via `http(s)://`, the adjacent `mdfolio.css` is requested from the same server (once). It is the same origin as the page itself, so no new information is disclosed externally. If the file does not exist, the browser's developer console shows "not found", but this does not affect operation.
 
+### 3.11 Fixes from the user evaluation (specification 1.13)
+
+Twenty evaluators with different jobs used 1.3.1 with their own documents (2026-11-18). The following problems were confirmed by reproducing them, and are fixed. Requests that are new features are listed in the review record (section 11) and are not part of this version.
+
+| ID | Priority | Requirement |
+|---|---|---|
+| FR-1101 | Required | Category colors of diagrams (pie slices and legend swatches) come from the CSS variables `--chart-1` … `--chart-8`, which have clearly distinct hues in both the light and the dark theme. None of them equals the page background. `mdfolio.css` can override them |
+| FR-1102 | Required | A diagram that would have to be shrunk below half of its natural width to fit the column is shown at its natural size, and the reader scrolls it sideways. Other diagrams still shrink to fit (shrinking to about half keeps labels readable; below that, text falls to about 6px) |
+| FR-1103 | Required | Tables, diagrams and display math that are wider than the column show a shadow at the edge where more content is hidden, so the reader can tell that they can scroll |
+| FR-1104 | Required | The site title (header, browser tab, default title and file name in "Export as site") is chosen in this order: `title` in the settings → the title of the home document (front matter `title`, else its first heading) → the folder name. When the document title equals the site title, the browser tab shows it once |
+| FR-1105 | Required | The file list in the sidebar shows each document's title (front matter `title`, else its first heading) once it is known, and the file name until then. The path is shown as a tooltip |
+| FR-1106 | Required | Emphasis (`**` and `*`) works next to Chinese, Japanese and Korean text and punctuation, as in `**1.8%**の改善` (markdown-it-cjk-friendly) |
+| FR-1107 | Required | The "Show external images" choice is stored for each HTML file (keyed by the page's path), not shared by every mdfolio file opened from the same computer. Theme, language and sidebar state stay shared |
+| FR-1108 | Required | At narrow widths, while the sidebar drawer is open, the rest of the page cannot receive focus. Closing the drawer (Esc, the scrim, or the button) returns focus to the sidebar button when focus was in the drawer |
+| FR-1109 | Required | After moving to another document, the active item in the sidebar (Nav and Files) is scrolled into view |
+| FR-1110 | Required | In math, `\label{…}` is ignored instead of being shown as an error |
+| FR-1111 | Required | The help (English and Japanese) starts with a short section for people new to Markdown. The message shown when a folder has no Markdown documents says what to do next |
+| FR-1112 | Required | The code font lists common Latin monospace fonts before Japanese fonts, so that a backslash is not shown as a yen sign when the Latin fonts listed first are missing |
+| FR-1113 | Required | Pressing Enter in the search box right after typing opens the top result, even before the result list has appeared |
+
+In addition, the example `examples/mdfolio.css` defines every variable it changes for both the light and the dark theme, and explains that a variable set only in `:root` also applies to the dark theme.
+
 ## 4. Screen specification
 
 ### 4.1 Layout
@@ -348,7 +370,8 @@ Stored as JSON in `<script type="application/json" id="mdv-site">` in the HTML. 
 
 | Storage | Key | Contents |
 |---|---|---|
-| localStorage | `mdv:settings:v1` | Theme, language, external image permission, sidebar open/closed |
+| localStorage | `mdv:settings:v1` | Theme, language, sidebar open/closed |
+| localStorage | `mdv:external:<path of the HTML file>` | External image permission for this HTML file (FR-1107) |
 | IndexedDB (DB name `mdv`) | `last:<path of the HTML file>` | Handle and name of the last opened folder |
 
 Document contents themselves are not stored in the browser. Under `file://`, some browsers share storage with other local HTML files, so only the display settings and folder handle above are stored.
@@ -657,3 +680,4 @@ Pass criteria: all automated tests pass, and no console errors, CSP violations o
 | 1.10 | 2026-11-17 | Made it clear that users do not use Node.js. The command-line export is for developers and automation, and was removed from the user-facing instructions (README, samples, public pages) and the release zip (FR-604, AU-3) |
 | 1.11 | 2026-11-17 | Swapped the READMEs so that English is `README.md` and Japanese is `README.ja.md` (8.1, 8.7). The default app UI language (`auto`) is unchanged |
 | 1.12 | 2026-11-17 | Put English first so that the app can be widely used (the project owner's policy). Public pages: English at the top, Japanese under `ja/`, and `en/` as a redirect page (8.7). Change history and release notes in English (8.1, 8.8). The specification, review record, test report and source code comments are to be written in English |
+| 1.13 | 2026-11-18 | Fixes from the user evaluation by 20 evaluators (3.11: FR-1101 to FR-1113). External image permission is stored per HTML file (5.6). The example `mdfolio.css` defines the dark theme too |

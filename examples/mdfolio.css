@@ -1,34 +1,40 @@
 /*
- * mdfolio の見た目を変える CSS の例 / Example CSS for changing the look of mdfolio
+ * Example CSS for changing the look of mdfolio / mdfolio の見た目を変える CSS の例
  *
- * 使い方: このファイルを mdfolio.html（または書き出したサイトの HTML）と同じフォルダに
- *         「mdfolio.css」という名前で置き、HTML を開き直します。
  * Usage:  Put this file in the same folder as mdfolio.html (or an exported site) with the name
  *         "mdfolio.css", then reopen the HTML file.
+ * 使い方: このファイルを mdfolio.html（または書き出したサイトの HTML）と同じフォルダに
+ *         「mdfolio.css」という名前で置き、HTML を開き直します。
  *
- * 書き出したサイトに入れるには、書き出しの画面で「CSS を選ぶ」からこのファイルを選びます。
  * To include it in an exported site, choose this file with "Choose CSS" in the export dialog.
+ * 書き出したサイトに入れるには、書き出しの画面で「CSS を選ぶ」からこのファイルを選びます。
  *
- * 変えられる変数の一覧は、リポジトリの src/document.css にあります。
+ * Important: a variable set only in :root also applies to the dark theme. Whenever you change a
+ * color in :root, set the dark version in [data-theme="dark"] too, as below.
+ * 注意: :root だけで変えた変数は、ダークの配色にもそのまま効きます。:root で色を変えたら、
+ * 下のように [data-theme="dark"] にもダーク用の色を書いてください。
+ *
  * The full list of variables is in src/document.css in the repository.
+ * 変えられる変数の一覧は、リポジトリの src/document.css にあります。
  */
 
-/* ライトの配色 / Light colors */
+/* Light colors / ライトの配色 */
 :root {
-  --accent: #0B6E4F;        /* リンク・見出しの印・図の線 / links, heading marks, diagram lines */
+  --accent: #0B6E4F;        /* links, heading marks, diagram lines / リンク・見出しの印・図の線 */
   --accent-strong: #08543C;
   --accent-soft: #E3F2EC;
-  --desk: #F3F5F1;          /* 画面の地 / page background */
+  --desk: #F3F5F1;          /* page background / 画面の地 */
 }
 
-/* ダークの配色 / Dark colors */
+/* Dark colors / ダークの配色 */
 [data-theme="dark"] {
   --accent: #6FD3AE;
   --accent-strong: #97E2C6;
   --accent-soft: #17352B;
+  --desk: #0E1A16;
 }
 
-/* 本文の見た目 / Document body */
+/* Document body / 本文の見た目 */
 .mdv-prose h1 {
   border-bottom: 3px solid var(--accent);
   padding-bottom: 0.3em;

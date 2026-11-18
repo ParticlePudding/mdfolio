@@ -244,3 +244,28 @@ This records a review of SPEC.md 1.9 before implementation. The reviewer is the 
 | E-7 | Low | When embedded in another page (`srcdoc`), the relative path `mdfolio.css` is resolved against the location of the outer page | This only applies CSS belonging to the owner of the outer page, so there is no security problem. Treated as known behavior |
 | E-8 | Low | The folder edition sample on the public pages goes away | Instead, provide an "appearance sample" (the export sample with an `mdfolio.css` placed next to it) to show that the adjacent CSS changes the appearance |
 
+---
+
+## 11. Review of the fixes from the user evaluation (specification 1.13; 2026-11-18)
+
+Twenty evaluators, each with a different job (technical writer, security officer, accessibility auditor, city-office clerk, physics professor, data scientist, product manager, support lead, nurse educator, lawyer, open-source maintainer, designer, bakery owner, teacher, SRE, translator, QA engineer, hobbyist author, enterprise architect, consultant), built their own sample documents and used 1.3.1 in a headless browser. Average score 3.85 of 5; all 20 would use it; no critical issues. The reviewer (the implementer) reproduced the issues below before accepting them.
+
+| # | Severity | Finding | Decision |
+|---|---|---|---|
+| G-1 | High | The example `examples/mdfolio.css` sets `--desk` only in `:root`; in the dark theme the header and sidebar become light with light text (unreadable). Confirmed | Fix the example; define the dark theme too and explain the rule |
+| G-2 | Medium | Pie slices are shades of one color; one slice equals the page background (light and dark). Confirmed | FR-1101 |
+| G-3 | Medium | Wide diagrams (Gantt, wide flowcharts) are shrunk to about half; text is about 6px. Confirmed | FR-1102. A zoom view is a feature request (deferred) |
+| G-4 | Medium | The title defaults to the folder name (`docs`). Confirmed | FR-1104 |
+| G-5 | Medium | The file list shows file names, not titles (six evaluators). Confirmed | FR-1105 |
+| G-6 | Medium | `**1.8%**の` does not become bold (CommonMark's flanking rules do not suit Japanese). Confirmed | FR-1106, with the MIT-licensed plugin markdown-it-cjk-friendly |
+| G-7 | Medium | The external image permission is shared by every mdfolio file opened from disk (all `file://` pages share one storage area in Chromium). Confirmed in the code | FR-1107 |
+| G-8 | Medium | The active sidebar item stays off-screen on long lists. Confirmed (y=2255 in an 800px window) | FR-1109 |
+| G-9 | Medium | Wide tables give no cue on phones that columns are hidden. Confirmed that the table overflows | FR-1103 |
+| G-10 | Low | `\label{…}` is shown in red. Confirmed. The reported loss of `\gdef` between formulas was not reproduced | FR-1110 |
+| G-11 | Low | Enter right after typing a search does nothing. Confirmed | FR-1113 |
+| G-12 | Low | A backslash in code is shown as a yen sign when only Japanese fonts are available. Reported on Linux | FR-1112 |
+| G-13 | Low | The help assumes the reader knows Markdown; the empty-folder message gives no next step | FR-1111 |
+| G-14 | Low | Drawer focus: focus can move behind the scrim; Esc could lose focus. The Esc case was not reproduced, but the drawer is made robust | FR-1108 |
+
+Deferred feature requests (not in this version): printing or making a PDF of all documents at once; clickable cross-references in PDF; a broken-link and orphan-page check before export; search stemming, phrase search and more than 50 results; zoom for diagrams and images; backlinks; previous/next page links; choosing which files to export; line numbers and soft wrap for code; sticky table headers; ticking task lists; per-document `lang`; EUC-JP support.
+

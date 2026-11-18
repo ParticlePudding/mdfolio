@@ -19,7 +19,7 @@ describe('Markdown display', () => {
   test('front matter: not shown in the body; title becomes the document title (FR-208, FR-213)', async () => {
     await withPage(browser, async ({ page }) => {
       await openSyntax(page);
-      assert.equal(await page.title(), '記法の確認 - site');
+      assert.equal(await page.title(), '記法の確認 - テスト用サイト');
       const text = await page.textContent('.mdv-prose');
       assert.ok(!text.includes('author: tester'));
       assert.ok(!text.includes('title: 記法の確認'));

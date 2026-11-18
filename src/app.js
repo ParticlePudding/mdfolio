@@ -12,6 +12,9 @@
   const i18n = window.MDV.i18n;
 
   const SETTINGS_KEY = 'mdv:settings:v1';
+  // External image permission is kept per HTML file (FR-1107): every file:// page shares one storage area,
+  // so a shared value would turn external images on in every mdfolio file on the computer
+  const EXTERNAL_KEY = 'mdv:external:' + String(window.location.pathname || '');
   const IDB_NAME = 'mdv';
   const IDB_STORE = 'kv';
   const AUTO_REFRESH_MS = 2000;
@@ -141,8 +144,30 @@
     return new Promise((resolve) => setTimeout(resolve, 0));
   }
 
+  /**
+   * Site title (FR-1104): the title setting, else the title of the home document (front matter title or its
+   * first heading, once known), else the folder name.
+   */
   function siteTitle() {
-    return state.config.title || (state.set && state.set.name) || core.NAME;
+    if (state.config.title) return state.config.title;
+    const set = state.set;
+    if (!set) return core.NAME;
+    const home = set.home && set.entries.get(set.home);
+    return (home && home.title) || set.name || core.NAME;
+  }
+
+  /** Called when document titles become known: update the header, the tab title and the file list labels. */
+  function refreshTitles() {
+    if (!state.set) return;
+    ui.title.textContent = siteTitle();
+    if (state.view === 'welcome') document.title = siteTitle();
+    else if (state.currentEntry) document.title = tabTitle(state.currentEntry.title);
+    refreshTreeLabels();
+  }
+
+  function tabTitle(title) {
+    const site = siteTitle();
+    return title && title !== site ? title + ' - ' + site : site;
   }
 
   function reportError(err) {
@@ -166,19 +191,36 @@
   // ------------------------------------------------------------------ Settings
 
   function loadSettings() {
+    let v = {};
     try {
       const raw = window.localStorage.getItem(SETTINGS_KEY);
-      const v = raw ? JSON.parse(raw) : {};
-      return v && typeof v === 'object' ? v : {};
+      v = raw ? JSON.parse(raw) : {};
+      if (!v || typeof v !== 'object') v = {};
     } catch (e) {
-      return {};
+      v = {};
     }
+    // A shared value saved by 1.3.1 or earlier is removed; only this file's own choice is read
+    if ('externalImages' in v) {
+      delete v.externalImages;
+      try { window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(v)); } catch (e) { /* storage unavailable */ }
+    }
+    try {
+      const ext = window.localStorage.getItem(EXTERNAL_KEY);
+      if (ext === '1' || ext === '0') v.externalImages = ext === '1';
+    } catch (e) { /* storage unavailable */ }
+    return v;
   }
 
   /** Save settings. Keep working even where saving is not possible (FR-702). Returns whether saving succeeded. */
   function saveSettings() {
     try {
-      window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(state.settings));
+      const shared = Object.assign({}, state.settings);
+      delete shared.externalImages;
+      window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(shared));
+      if (typeof state.settings.externalImages === 'boolean') {
+        window.localStorage.setItem(EXTERNAL_KEY, state.settings.externalImages ? '1' : '0');
+        if (window.localStorage.getItem(EXTERNAL_KEY) === null) return false;
+      }
       return window.localStorage.getItem(SETTINGS_KEY) !== null;
     } catch (e) {
       return false;
@@ -531,11 +573,25 @@
     ui.sidebarBtn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
   }
 
+  /**
+   * While the narrow-width drawer is open, the content behind it cannot take focus (FR-1108).
+   * The header stays usable so that the sidebar button can close the drawer.
+   */
+  function setDrawerInert(open) {
+    if (open) ui.sheet.setAttribute('inert', '');
+    else ui.sheet.removeAttribute('inert');
+  }
+
   function toggleSidebar() {
     if (isNarrow()) {
       const open = !ui.app.classList.contains('is-drawer-open');
-      ui.app.classList.toggle('is-drawer-open', open);
-      ui.scrim.hidden = !open;
+      if (!open) { closeDrawer(); return; }
+      ui.app.classList.add('is-drawer-open');
+      ui.scrim.hidden = false;
+      setDrawerInert(true);
+      applySidebarState();
+      updateActiveLinks();
+      return;
     } else {
       state.settings.sidebar = state.settings.sidebar === false;
       saveSettings();
@@ -543,11 +599,19 @@
     applySidebarState();
   }
 
-  function closeDrawer() {
+  function closeDrawer(opts) {
     if (!ui.app.classList.contains('is-drawer-open')) return;
+    // When focus was inside the drawer, return it to the sidebar button so it is not lost (FR-1108).
+    // Not when a document was chosen in the drawer: the newly shown document handles focus then.
+    const navigating = !!(opts && opts.navigating);
+    const focusInside = ui.sidebar.contains(document.activeElement);
     ui.app.classList.remove('is-drawer-open');
     ui.scrim.hidden = true;
+    setDrawerInert(false);
     applySidebarState();
+    if (focusInside) {
+      if (navigating) { try { ui.main.focus({ preventScroll: true }); } catch (e) { ui.main.focus(); } } else ui.sidebarBtn.focus();
+    }
   }
 
   // ------------------------------------------------------------------ Document set
@@ -1362,7 +1426,8 @@
       }
       const display = el.classList.contains('math-display') || el.classList.contains('math-inline-display');
       try {
-        window.katex.render(tex, el, { displayMode: display, throwOnError: false, strict: 'ignore', trust: false, output: 'htmlAndMathml', errorColor: '#B3261E', maxExpand: 1000, maxSize: 50 });
+        // \label{...} is for LaTeX cross-references, which KaTeX does not support: ignore it rather than show an error (FR-1110)
+        window.katex.render(tex.replace(/\\label\{[^{}]*\}/g, ''), el, { displayMode: display, throwOnError: false, strict: 'ignore', trust: false, output: 'htmlAndMathml', errorColor: '#B3261E', maxExpand: 1000, maxSize: 50 });
       } catch (e) {
         el.classList.add('mdv-math-raw');
       }
@@ -1373,13 +1438,18 @@
     darkMode: false, background: '#FFFFFF', primaryColor: '#E3ECF8', primaryTextColor: '#17202B', primaryBorderColor: '#1D4F91',
     secondaryColor: '#F2F5F8', secondaryTextColor: '#17202B', secondaryBorderColor: '#5A6878',
     tertiaryColor: '#FFFFFF', tertiaryTextColor: '#17202B', tertiaryBorderColor: '#D3DAE3',
-    lineColor: '#3A4654', textColor: '#17202B', noteBkgColor: '#FFF6D6', noteTextColor: '#2B2300', noteBorderColor: '#C9A227'
+    lineColor: '#3A4654', textColor: '#17202B', noteBkgColor: '#FFF6D6', noteTextColor: '#2B2300', noteBorderColor: '#C9A227',
+    // Category colors (FR-1101); overridden by --chart-1 ... --chart-8 below
+    pie1: '#2F6DB5', pie2: '#D9822B', pie3: '#3A9A6A', pie4: '#C2455A', pie5: '#7A5BB5', pie6: '#2A9BB0', pie7: '#B08A1E', pie8: '#7A8696',
+    pieSectionTextColor: '#FFFFFF', pieStrokeColor: '#FFFFFF', pieOuterStrokeColor: '#D3DAE3'
   };
   const MERMAID_DARK = {
     darkMode: true, background: '#151F2C', primaryColor: '#1D2D42', primaryTextColor: '#DCE4EE', primaryBorderColor: '#8AB8F2',
     secondaryColor: '#1B2736', secondaryTextColor: '#DCE4EE', secondaryBorderColor: '#93A1B2',
     tertiaryColor: '#151F2C', tertiaryTextColor: '#DCE4EE', tertiaryBorderColor: '#2A3646',
-    lineColor: '#93A1B2', textColor: '#DCE4EE', noteBkgColor: '#3D3200', noteTextColor: '#FFF3C4', noteBorderColor: '#8A6D00'
+    lineColor: '#93A1B2', textColor: '#DCE4EE', noteBkgColor: '#3D3200', noteTextColor: '#FFF3C4', noteBorderColor: '#8A6D00',
+    pie1: '#6FA8EE', pie2: '#F0A45C', pie3: '#6CCB97', pie4: '#EE7F90', pie5: '#B39AF0', pie6: '#62C7DA', pie7: '#E2C25A', pie8: '#A9B4C2',
+    pieSectionTextColor: '#0F1722', pieStrokeColor: '#151F2C', pieOuterStrokeColor: '#2A3646'
   };
 
   /**
@@ -1390,7 +1460,9 @@
     background: '--sheet', primaryColor: '--accent-soft', primaryTextColor: '--ink', primaryBorderColor: '--accent',
     secondaryColor: '--code-bg', secondaryTextColor: '--ink', secondaryBorderColor: '--muted',
     tertiaryColor: '--sheet', tertiaryTextColor: '--ink', tertiaryBorderColor: '--rule',
-    lineColor: '--ink-soft', textColor: '--ink'
+    lineColor: '--ink-soft', textColor: '--ink',
+    pie1: '--chart-1', pie2: '--chart-2', pie3: '--chart-3', pie4: '--chart-4', pie5: '--chart-5', pie6: '--chart-6', pie7: '--chart-7', pie8: '--chart-8',
+    pieStrokeColor: '--sheet', pieOuterStrokeColor: '--rule', pieTitleTextColor: '--ink', pieLegendTextColor: '--ink'
   };
   const SIMPLE_COLOR = /^(#[0-9a-f]{3,4}|#[0-9a-f]{6}|#[0-9a-f]{8}|rgba?\([0-9.,%\s/]+\)|hsla?\([0-9.,%\sdeg/]+\))$/i;
 
@@ -1411,12 +1483,29 @@
     };
   }
 
+  /**
+   * A diagram that would have to shrink below half of its natural width is shown at its natural size,
+   * and the reader scrolls it sideways (FR-1102). Smaller diagrams keep shrinking to fit.
+   */
+  function fitWideDiagram(container) {
+    const svg = container.querySelector('svg');
+    const avail = container.clientWidth;
+    if (!svg || !avail) return;
+    const vb = svg.viewBox && svg.viewBox.baseVal;
+    const natural = (vb && vb.width) || parseFloat(svg.style.maxWidth) || 0;
+    if (natural * 0.5 <= avail) return;
+    container.classList.add('is-wide');
+    svg.setAttribute('width', String(Math.ceil(natural)));
+    svg.style.width = Math.ceil(natural) + 'px';
+  }
+
   async function renderMermaidInto(container, code, seq) {
     try {
       const out = await window.mermaid.render('mdv-mmd-' + (++state.mermaidSeq), code);
       if (seq !== state.renderSeq) return;
       container.className = 'mdv-mermaid';
       container.innerHTML = out.svg;
+      fitWideDiagram(container);
     } catch (e) {
       if (seq !== state.renderSeq) return;
       const msg = String((e && e.message) || e).split('\n').slice(0, 6).join('\n');
@@ -1554,7 +1643,9 @@
     ui.notice.textContent = opts.notice || '';
     setView(opts.view || 'doc');
     renderToc(opts.toc || [], opts.ctx);
-    document.title = opts.title ? opts.title + ' - ' + siteTitle() : siteTitle();
+    // The indexer may have learned the home title first, so the header is refreshed on every render too
+    ui.title.textContent = siteTitle();
+    document.title = tabTitle(opts.title);
     state.current = opts.entry ? opts.entry.path : null;
     state.currentEntry = opts.entry || null;
     updateActiveLinks();
@@ -1593,7 +1684,9 @@
       const h1 = toc.filter((x) => x.level === 1)[0];
       title = fm.data.title || (h1 && h1.text) || fallback;
     }
+    const known = entry.title;
     entry.title = title;
+    if (known !== title) refreshTitles();
     mountView({ node: node, toc: toc, ctx: ctx, title: title, metaPath: entry.path, metaDate: entry.mtime, notice: notice, fragment: fragment, nav: nav, entry: entry, pendingCode: pendingCode });
   }
 
@@ -1730,7 +1823,7 @@
     }
     const nav = { traversal: traversal, keepScroll: opts.keepScroll };
 
-    closeDrawer();
+    closeDrawer({ navigating: true });
     if (!opts.force) closeSearchPanel();
     if (route.type === 'help') { showHelp(route.fragment, nav); return; }
     if (!state.set) {
@@ -1778,10 +1871,24 @@
 
   // ------------------------------------------------------------------ Sidebar
 
+  /** Label in the file list (FR-1105): the document's title once known, else the file name without extension. */
+  function treeLabel(f) {
+    const entry = state.set && state.set.entries.get(f.path);
+    return (entry && entry.title) || core.stripDocExt(f.name);
+  }
+
+  function refreshTreeLabels() {
+    if (!state.set || !ui.sideTree) return;
+    ui.sideTree.querySelectorAll('a.mdv-tree-link[data-path]').forEach((a) => {
+      const label = treeLabel({ path: a.getAttribute('data-path'), name: core.basename(a.getAttribute('data-path')) });
+      if (a.textContent !== label) a.textContent = label;
+    });
+  }
+
   function renderTreeNode(node, depth) {
     const ul = h('ul', depth === 0 ? { class: 'mdv-tree' } : null);
     node.files.forEach((f) => {
-      ul.appendChild(h('li', null, h('a', { class: 'mdv-tree-link', href: core.buildRoute(f.path), title: f.path }, core.stripDocExt(f.name))));
+      ul.appendChild(h('li', null, h('a', { class: 'mdv-tree-link', href: core.buildRoute(f.path), title: f.path, 'data-path': f.path }, treeLabel(f))));
     });
     node.dirs.forEach((d) => {
       const details = h('details', { 'data-path': d.path }, [
@@ -1851,18 +1958,21 @@
         if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
       });
     });
-    const active = ui.sideTree.querySelector('a[aria-current="page"]');
-    if (active) {
-      let p = active.parentNode;
+    const treeActive = ui.sideTree.querySelector('a[aria-current="page"]');
+    if (treeActive) {
+      let p = treeActive.parentNode;
       while (p && p !== ui.sideTree) {
         if (p.nodeName === 'DETAILS') p.open = true;
         p = p.parentNode;
       }
-      if (!ui.sideTree.hidden && typeof active.scrollIntoView === 'function') {
-        const box = ui.sidebar.getBoundingClientRect();
-        const r = active.getBoundingClientRect();
-        if (r.top < box.top || r.bottom > box.bottom) active.scrollIntoView({ block: 'nearest' });
-      }
+    }
+    // Bring the active item of the visible list (Nav or Files) into view (FR-1109)
+    const active = !ui.sideNav.hidden ? ui.sideNav.querySelector('a[aria-current="page"]') : treeActive;
+    const sidebarShown = isNarrow() ? ui.app.classList.contains('is-drawer-open') : ui.app.getAttribute('data-sidebar') !== 'closed';
+    if (active && sidebarShown && typeof active.scrollIntoView === 'function') {
+      const box = ui.sidebar.getBoundingClientRect();
+      const r = active.getBoundingClientRect();
+      if (box.height && (r.top < box.top || r.bottom > box.bottom)) active.scrollIntoView({ block: 'nearest' });
     }
   }
 
@@ -1909,6 +2019,7 @@
       }
       set.indexing = false;
       onIndexProgress(set);
+      if (state.set === set) refreshTitles();
     })();
     set.indexPromise.catch(reportError);
   }
@@ -2011,7 +2122,15 @@
       ev.preventDefault();
       if (n) setActiveResult((state.search.active - 1 + n) % n);
     } else if (ev.key === 'Enter') {
-      if (!ui.searchPanel.hidden && n) { ev.preventDefault(); openResult(Math.max(state.search.active, 0)); }
+      // Right after typing, the delayed search may not have run yet: run it now so Enter opens the top result (FR-1113)
+      if (state.search.timer || ui.searchPanel.hidden || state.search.query !== ui.searchInput.value) {
+        clearTimeout(state.search.timer);
+        state.search.timer = null;
+        state.search.active = -1;
+        runSearch();
+      }
+      const count = state.search.results.length;
+      if (!ui.searchPanel.hidden && count) { ev.preventDefault(); openResult(Math.max(state.search.active, 0)); }
     } else if (ev.key === 'Escape') {
       ev.preventDefault();
       if (!ui.searchPanel.hidden) closeSearchPanel();
@@ -2413,7 +2532,11 @@
     ['wheel', 'touchmove', 'keydown', 'mousedown'].forEach((type) => {
       window.addEventListener(type, () => { state.userScrolled = true; }, { passive: true, capture: true });
     });
-    window.addEventListener('resize', applySidebarState);
+    window.addEventListener('resize', () => {
+      // Widening the window while the drawer is open must not leave the content inert
+      if (!isNarrow() && ui.app.classList.contains('is-drawer-open')) closeDrawer({ navigating: true });
+      applySidebarState();
+    });
     let resizeTimer = null;
     window.addEventListener('resize', () => {
       clearTimeout(resizeTimer);
@@ -2469,7 +2592,7 @@
     // Search
     ui.searchInput.addEventListener('input', () => {
       clearTimeout(state.search.timer);
-      state.search.timer = setTimeout(() => { state.search.active = -1; runSearch(); }, 150);
+      state.search.timer = setTimeout(() => { state.search.timer = null; state.search.active = -1; runSearch(); }, 150);
     });
     ui.searchInput.addEventListener('focus', () => { if (ui.searchInput.value.trim()) runSearch(); });
     ui.searchInput.addEventListener('keydown', onSearchKey);

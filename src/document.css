@@ -29,7 +29,8 @@
 :root {
   --font-sans: "Segoe UI", "Helvetica Neue", "BIZ UDPGothic", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", Meiryo, "Noto Sans CJK JP", "Noto Sans JP", sans-serif;
   --font-display: "BIZ UDPMincho", "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif CJK JP", "Noto Serif JP", Georgia, serif;
-  --font-mono: "Cascadia Mono", "Cascadia Code", Consolas, "SFMono-Regular", Menlo, "BIZ UDGothic", "MS Gothic", "Noto Sans Mono CJK JP", monospace;
+  /* Latin monospace fonts come before Japanese ones so that a backslash is not drawn as a yen sign (FR-1112) */
+  --font-mono: "Cascadia Mono", "Cascadia Code", Consolas, "SFMono-Regular", Menlo, "DejaVu Sans Mono", "Liberation Mono", "Noto Sans Mono", "Courier New", "BIZ UDGothic", "MS Gothic", "Noto Sans Mono CJK JP", monospace;
   --header-h: 52px;
   --side-w: 288px;
   --toc-w: 232px;
@@ -71,6 +72,16 @@
   --hl-add-bg: #DDF3E4;
   --hl-del-bg: #FBE3E1;
 
+  /* Category colors for diagrams (pie slices etc.; FR-1101). Distinct hues, none equal to the page background */
+  --chart-1: #2F6DB5;
+  --chart-2: #D9822B;
+  --chart-3: #3A9A6A;
+  --chart-4: #C2455A;
+  --chart-5: #7A5BB5;
+  --chart-6: #2A9BB0;
+  --chart-7: #B08A1E;
+  --chart-8: #7A8696;
+
   color-scheme: light;
 }
 
@@ -108,6 +119,15 @@
   --hl-builtin: #C3A6F5;
   --hl-add-bg: #17382A;
   --hl-del-bg: #45211F;
+
+  --chart-1: #6FA8EE;
+  --chart-2: #F0A45C;
+  --chart-3: #6CCB97;
+  --chart-4: #EE7F90;
+  --chart-5: #B39AF0;
+  --chart-6: #62C7DA;
+  --chart-7: #E2C25A;
+  --chart-8: #A9B4C2;
 
   color-scheme: dark;
 }
@@ -237,6 +257,15 @@
 /* Tables */
 
 .mdv-table-wrap { margin: 0 0 1.15em; overflow-x: auto; }
+/* Scroll cue (FR-1103): a shadow appears at an edge where more content is hidden. The "local" covers move with the content
+   and hide the "scroll" shadows when the content is scrolled to that edge */
+.mdv-table-wrap, .mdv-mermaid.is-wide, .math-display {
+  background:
+    linear-gradient(to right, var(--sheet) 30%, transparent) left / 32px 100% no-repeat local,
+    linear-gradient(to left, var(--sheet) 30%, transparent) right / 32px 100% no-repeat local,
+    radial-gradient(farthest-side at 0 50%, rgba(0, 0, 0, 0.22), transparent) left / 12px 100% no-repeat scroll,
+    radial-gradient(farthest-side at 100% 50%, rgba(0, 0, 0, 0.22), transparent) right / 12px 100% no-repeat scroll;
+}
 .mdv-table-wrap > table { margin: 0; }
 
 .mdv-prose table {
@@ -347,6 +376,9 @@
 
 .mdv-mermaid { margin: 0 0 1.15em; overflow-x: auto; text-align: center; }
 .mdv-mermaid svg { max-width: 100%; height: auto; }
+/* A diagram that would shrink below half is shown at its natural size and scrolled sideways (FR-1102) */
+.mdv-mermaid.is-wide { text-align: left; }
+.mdv-mermaid.is-wide svg { max-width: none !important; }
 .mdv-mermaid-error {
   margin: 0 0 1.15em;
   border: 1px solid var(--rule);
@@ -399,7 +431,7 @@
   }
   .mdv-prose { contain: none; margin: 0; padding: 0; }
   .mdv-prose pre, .mdv-plain { white-space: pre-wrap; word-break: break-all; overflow: visible; }
-  .mdv-table-wrap, .math-display, .mdv-mermaid { overflow: visible; }
+  .mdv-table-wrap, .math-display, .mdv-mermaid { overflow: visible; background: none; }
   .mdv-prose h1, .mdv-prose h2, .mdv-prose h3, .mdv-prose h4 { break-after: avoid; }
   .mdv-code, .mdv-prose pre, .mdv-prose table, .mdv-prose img, .mdv-mermaid, .markdown-alert { break-inside: avoid; }
   .mdv-prose a.mdv-ext::after { content: none; }

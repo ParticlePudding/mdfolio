@@ -14,6 +14,10 @@ after(async () => { await browser.close(); });
 
 const theme = (page) => page.getAttribute('html', 'data-theme');
 const stored = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('mdv:settings:v1') || '{}'));
+const storedExternal = (page) => page.evaluate(() => {
+  const v = localStorage.getItem('mdv:external:' + location.pathname);
+  return v === null ? undefined : v === '1';
+});
 const bodyBg = (page) => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
 
 describe('Theme (FR-501)', () => {
@@ -154,7 +158,7 @@ describe('External images (FR-210, SEC-5, SEC-10)', () => {
       assert.ok(await page.evaluate(() => document.activeElement.classList.contains('mdv-external-cancel')), 'initial focus is on Cancel');
       await page.click('.mdv-external-cancel');
       await page.waitForSelector('dialog.mdv-dialog-external', { state: 'detached' });
-      assert.equal((await stored(page)).externalImages, undefined);
+      assert.equal(await storedExternal(page), undefined);
       assert.equal(await locked(page), true);
       // Turn on and reload
       await clickMenu(page, 'menuExternalImages');
@@ -162,7 +166,8 @@ describe('External images (FR-210, SEC-5, SEC-10)', () => {
       await Promise.all([page.waitForEvent('load'), page.click('.mdv-external-run')]);
       await page.waitForFunction(() => window.MDV && window.MDV.app && window.MDV.app.state.view === 'welcome');
       assert.equal(await locked(page), false);
-      assert.equal((await stored(page)).externalImages, true);
+      assert.equal(await storedExternal(page), true);
+      assert.equal((await stored(page)).externalImages, undefined, 'not in the settings shared by every file:// page (FR-1103)');
       assert.ok((await page.textContent('.mdv-welcome-pending')).includes('other.md'), 'the location of the document being viewed stays in the URL');
       assert.deepEqual(sink.paths(), []);
       // Reopening the folder returns to the original document and shows the external images
@@ -182,7 +187,7 @@ describe('External images (FR-210, SEC-5, SEC-10)', () => {
       await page.waitForFunction(() => !document.querySelector('.mdv-prose img[alt="外部画像"]'));
       assert.equal(await page.locator('dialog.mdv-dialog-external').count(), 0);
       assert.equal(await locked(page), true);
-      assert.equal((await stored(page)).externalImages, false);
+      assert.equal(await storedExternal(page), false);
       assert.equal(await checked(page), 'false');
       assert.equal(await probe(page, sink.origin + '/after-off.png'), 'blocked');
       assert.equal(sink.hits.length, before, 'no requests after switching');

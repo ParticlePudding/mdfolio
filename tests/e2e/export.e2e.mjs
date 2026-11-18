@@ -73,7 +73,7 @@ describe('Export dialog (FR-601)', () => {
     await withPage(browser, async ({ page }) => {
       await loadFolder(page, fixture('site'));
       await openExportDialog(page);
-      assert.equal(await page.inputValue('.mdv-export-title'), 'site');
+      assert.equal(await page.inputValue('.mdv-export-title'), 'テスト用サイト');
       const options = await page.evaluate(() => Array.from(document.querySelectorAll('.mdv-export-home option')).map((o) => [o.value, o.selected]));
       assert.deepEqual(options.map((o) => o[0]), SITE_DOCS);
       assert.deepEqual(options.filter((o) => o[1]).map((o) => o[0]), ['README.md']);
@@ -237,7 +237,7 @@ describe('Site mode (FR-104, scenario S3)', () => {
       await loadFolder(page, fixture('site'));
       out = await exportSite(page, { title: '', home: 'guide/intro.md' });
     });
-    assert.equal(out.name, 'site.html', 'uses the folder name when the title is empty');
+    assert.equal(out.name, 'テスト用サイト.html', 'uses the site title (FR-1104) when the title is empty');
     assert.equal(readSite(out.file).config.home, 'guide/intro.md');
     await withPage(browser, { url: pathToFileURL(out.file).href }, async ({ page }) => {
       await waitHeading(page, 'イントロダクション');

@@ -158,8 +158,8 @@ describe('Scripts in documents never run (SEC-1, SEC-2, SEC-6, SEC-9)', () => {
     await withPage(browser, { allowErrors: true }, async ({ page, record }) => {
       await loadFolder(page, root);
       await waitIndexed(page);
-      assert.equal(await page.textContent('.mdv-title'), '<i>root<_i>');
-      assert.equal(await page.title(), 'ホーム - <i>root<_i>');
+      assert.equal(await page.textContent('.mdv-title'), 'ホーム');
+      assert.equal(await page.title(), 'ホーム');
       // Sidebar: navigation (_sidebar.md) and file list
       assert.equal(await page.locator('.mdv-sidenav a[href^="javascript" i]').count(), 0);
       await page.click('.mdv-side-tab[data-tab="files"]');
@@ -168,13 +168,13 @@ describe('Scripts in documents never run (SEC-1, SEC-2, SEC-6, SEC-9)', () => {
       assert.ok(tree.includes('<svg onload=window.__xss=1>'), 'same for the folder name');
       // Document with HTML in its headings
       await goTo(page, '#/title.md', '見出し');
-      assert.equal(await page.title(), '<script>window.__xss=1</script>前付けのタイトル - <i>root<_i>');
+      assert.equal(await page.title(), '<script>window.__xss=1</script>前付けのタイトル - ホーム');
       const toc = await page.evaluate(() => Array.from(document.querySelectorAll('.mdv-toc .mdv-toc-link')).map((a) => a.textContent));
       assert.deepEqual(toc, ['見出し 太字', '小見出し 斜体', 'もう一つ']);
       // Document with HTML in its file name
       await goTo(page, core.buildRoute(evil + '.md'));
       await page.waitForFunction((name) => document.querySelector('.mdv-doc-path').textContent === name, evil + '.md');
-      assert.equal(await page.title(), evil + ' - <i>root<_i>');
+      assert.equal(await page.title(), evil + ' - ホーム');
       // Search results, and the search term itself
       await page.fill('.mdv-search-input', 'アルファ');
       await page.waitForFunction(() => document.querySelectorAll('.mdv-search-item').length === 2);
@@ -190,7 +190,7 @@ describe('Scripts in documents never run (SEC-1, SEC-2, SEC-6, SEC-9)', () => {
       // Export dialog
       await clickMenu(page, 'menuExport');
       await page.waitForSelector('dialog.mdv-dialog-export[open]');
-      assert.equal(await page.inputValue('.mdv-export-title'), '<i>root<_i>');
+      assert.equal(await page.inputValue('.mdv-export-title'), 'ホーム');
       const options = await page.evaluate(() => Array.from(document.querySelectorAll('.mdv-export-home option')).map((o) => o.textContent));
       assert.ok(options.includes(evil + '.md'));
       assert.equal(await page.evaluate(chromeInjected), 0, 'no document-derived elements are created inside UI components');

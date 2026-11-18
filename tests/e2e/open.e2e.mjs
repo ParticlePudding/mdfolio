@@ -29,8 +29,8 @@ describe('Opening a folder (FR-101, FR-105, FR-106)', () => {
       await loadFolder(page, fixture('site'));
       assert.equal(await heading(page), 'テスト用サイト');
       assert.equal(await hash(page), '#/README.md');
-      assert.equal(await page.title(), 'テスト用サイト - site');
-      assert.equal(await page.textContent('.mdv-title'), 'site', 'the folder name becomes the site title');
+      assert.equal(await page.title(), 'テスト用サイト', 'the home document title is not repeated');
+      assert.equal(await page.textContent('.mdv-title'), 'テスト用サイト', 'the home document title becomes the site title (FR-1104)');
       const info = await setInfo(page);
       assert.equal(info.name, 'site');
       assert.equal(info.source, 'files');
@@ -52,9 +52,9 @@ describe('Opening a folder (FR-101, FR-105, FR-106)', () => {
       for (const p of ['assets/pixel.png', 'assets/data.csv', 'notes.txt']) {
         assert.ok(info.entries.includes(p), `${p} is kept as an attachment`);
       }
-      const tree = await page.evaluate(() => Array.from(document.querySelectorAll('.mdv-side-tree a')).map((a) => a.textContent));
-      assert.deepEqual(tree, ['README', 'bom', 'sjis', 'syntax', 'utf16', 'xss', 'index', 'intro', 'Setup', 'deep', '仕様書 v1.0']);
-      assert.ok(!tree.includes('notes'), 'non-Markdown files are not shown in the tree');
+      const tree = await page.evaluate(() => Array.from(document.querySelectorAll('.mdv-side-tree a')).map((a) => a.getAttribute('data-path')));
+      assert.deepEqual(tree, SITE_DOCS);
+      assert.ok(!tree.includes('notes.txt'), 'non-Markdown files are not shown in the tree');
     });
   });
 
@@ -257,7 +257,7 @@ describe('Replacing, and when there are no documents (FR-111, FR-902)', () => {
     await withPage(browser, async ({ page }) => {
       await page.locator('.mdv-input-dir').setInputFiles(fixture('nodocs'));
       await page.waitForSelector('.mdv-toast-error');
-      assert.deepEqual(await toasts(page), ['Markdown 文書が見つかりませんでした']);
+      assert.deepEqual(await toasts(page), ['Markdown 文書が見つかりませんでした。名前が .md で終わるファイルの入ったフォルダを選んでください（作り方はメニューの「使い方」にあります）']);
       assert.ok(await page.isVisible('.mdv-welcome'));
       assert.equal(await setInfo(page), null);
     });
@@ -282,8 +282,8 @@ describe('Replacing, and when there are no documents (FR-111, FR-902)', () => {
       await page.locator('.mdv-input-dir').setInputFiles(fixture('nav'));
       await waitHeading(page, 'ナビ付きサイト');
       assert.equal(await hash(page), '#/README.md');
-      assert.equal(await page.title(), 'ナビ付きサイト - nav');
-      assert.equal(await page.textContent('.mdv-title'), 'nav');
+      assert.equal(await page.title(), 'ナビ付きサイト');
+      assert.equal(await page.textContent('.mdv-title'), 'ナビ付きサイト');
       assert.equal(await page.inputValue('.mdv-search-input'), '', 'search is reset');
       const info = await setInfo(page);
       assert.deepEqual(info.docs, ['README.md', '_sidebar.md', 'a.md', 'b/c.md', 'b/unlisted.md']);
@@ -339,7 +339,7 @@ describe('Limits (FR-110)', () => {
       assert.equal(await page.textContent('.mdv-notice'), 'この文書は 10MB を超えるため、変換せずにテキストとして表示しています。');
       assert.ok((await page.evaluate(() => document.querySelector('pre.mdv-plain').textContent.slice(0, 12))).startsWith('# 巨大'));
       assert.equal(await page.locator('.mdv-prose h1').count(), 0, 'not converted as Markdown');
-      assert.equal(await page.title(), 'big - big');
+      assert.equal(await page.title(), 'big - 小さい文書');
       // The note disappears when returning to a normal document
       await goTo(page, '#/README.md', '小さい文書');
       assert.ok(await page.isHidden('.mdv-notice'));

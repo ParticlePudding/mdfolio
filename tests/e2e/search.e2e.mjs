@@ -246,7 +246,7 @@ describe('Highlighting matched words in the body (FR-403)', () => {
       assert.equal(r.count, 2);
       assert.equal(r.visible, true);
       assert.equal(await page.inputValue('.mdv-search-input'), '最初の概要 重複', 'the query is kept');
-      await page.click('.mdv-side-tree a:has-text("Setup")');
+      await page.click('.mdv-side-tree a[data-path="guide/Setup.md"]');
       await waitHeading(page, 'セットアップ');
       assert.equal(await page.locator('mark.mdv-hit').count(), 0);
     });

@@ -1,6 +1,6 @@
 # mdfolio — Claude Code 向けの引き継ぎメモ
 
-ローカルの HTML / JavaScript だけで動く Markdown 文書ビューア。現在の版は 1.3.0。変更の一覧は `CHANGELOG.md`（英語だけ。日本語版は作らない。依頼者の指示）。
+ローカルの HTML / JavaScript だけで動く Markdown 文書ビューア。現在の版は 1.3.1（その後の修正は CHANGELOG の Unreleased）。変更の一覧は `CHANGELOG.md`（英語だけ。日本語版は作らない。依頼者の指示）。
 詳しい仕様は `docs/SPEC.md`、設計判断の経緯は `docs/REVIEW.md`、テスト結果は `docs/TEST_REPORT.md`。
 
 ## 依頼者について・進め方
@@ -79,6 +79,17 @@ GitHub Actions（`.github/workflows/pages.yml`）が、ビルド → 単体テ�
 - 設定（`mdv-config`）: `allowDownloads` / `lockExternalImages` / `hosted` は埋め込み・公開ページ用
 - 数式（KaTeX）と図（Mermaid）は必要になったときに、埋め込みから同期的に読み込む（`ensureLib`）
 - 図の配色は CSS の変数（`--accent` など）から取る
+
+## 利用者評価（2026-11-18）とその対応
+
+- 職種の違う 20 人の評価者（エージェント）に 1.3.1 を使ってもらった。平均 3.85 / 5、致命的な問題なし。
+  確認できた指摘は REVIEW 11 章（G-1〜G-14）、仕様は SPEC 3.11（FR-1101〜FR-1113）、テストは `tests/e2e/fixes.e2e.mjs`。
+- **FR-1106（`**1.8%**の` のような日本語の隣の太字）は未実装**。markdown-it-cjk-friendly（MIT）を同梱する必要があり、
+  ライブラリの追加は依頼者の判断待ち（この環境では npm install が自動の許可で止められた）。
+- 機能の要望として見送ったもの（REVIEW 11 章に一覧）: 全文書の印刷、PDF へのリンク、リンク切れの検査、語形変化の検索、図の拡大、
+  被リンク、前後の文書へのリンク、書き出す文書の選択、コードの行番号・折り返し、表の見出しの固定、チェックリストの操作、文書ごとの言語、EUC-JP。
+- サイトの題名は 設定の title → ホーム文書の題名 → フォルダ名。ファイル一覧のラベルは文書の題名（テストではリンクを `data-path` で探す）。
+- 外部画像の許可は HTML ごと（`mdv:external:<ページのパス>`）。`file://` のページは Chromium では保存場所を共有するため。
 
 ## はまりどころ
 

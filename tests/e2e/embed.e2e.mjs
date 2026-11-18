@@ -63,7 +63,7 @@ describe('Setting that never loads external images (lockExternalImages: true)', 
   test('hides the toggle item; takes precedence over a saved "show" setting and allowExternalImages', async () => {
     sink.hits.length = 0;
     const dir = writeTree(tmpDir(), { 'README.md': `# 固定の確認\n\n![外部画像](${sink.origin}/external.png)\n` });
-    const init = () => { try { localStorage.setItem('mdv:settings:v1', JSON.stringify({ externalImages: true })); } catch (e) { /* ignore */ } };
+    const init = () => { try { localStorage.setItem('mdv:external:' + location.pathname, '1'); } catch (e) { /* ignore */ } };
     await withPage(browser, { url: viewerWithConfig({ lockExternalImages: true, allowExternalImages: true }), init, allowErrors: true }, async ({ page, record }) => {
       assert.equal(await page.evaluate(() => window.MDV.app.state.mediaLocked), true, 'blocked by the CSP from startup');
       await loadFolder(page, dir);

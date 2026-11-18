@@ -2,6 +2,23 @@
 
 mdfolio is a Markdown document viewer that runs entirely in your browser. It needs no server and no installation. Documents are processed on this device only and are never sent anywhere.
 
+## New to Markdown?
+
+Markdown is plain text with a few marks for formatting. You can write it in any text editor, such as Notepad (Windows) or TextEdit (Mac, in plain-text mode). Save the file with a name ending in `.md`, for example `recipe.md`, and put your files in one folder.
+
+```markdown
+# Bread recipe
+
+Ingredients:
+
+- 300 g flour
+- **1 tsp** salt
+
+Bake at 220 °C for 25 minutes.
+```
+
+`#` makes a heading, `-` makes a list item, and `**…**` makes text bold. More marks are listed under "Supported syntax" below.
+
 ## Open documents
 
 | To do this | Do this |

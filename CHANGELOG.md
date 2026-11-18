@@ -2,6 +2,29 @@
 
 Changes in each version of mdfolio. The details are in `docs/SPEC.md` (revision history), `docs/REVIEW.md`, and `docs/TEST_REPORT.md`.
 
+## Unreleased
+
+Fixes from an evaluation by 20 users.
+
+### Changed
+
+- The site title is now the title of the home document (unless set in the settings), instead of the folder name.
+- The file list shows document titles instead of file names. Hover to see the path.
+- "Show external images" is now remembered for each HTML file. Before, turning it on in one mdfolio file turned it on in every mdfolio file on the same computer. Turn it on again where you need it.
+- The help starts with a short introduction for people new to Markdown. The message for a folder without Markdown documents says what to do.
+
+### Fixed
+
+- Pie chart colors were shades of one color, and one slice could match the background. Diagrams now use eight distinct colors (`--chart-1` to `--chart-8`).
+- Very wide diagrams were shrunk until the text was unreadable. They are now shown at full size and scroll sideways.
+- Wide tables, diagrams and formulas show a shadow at the edge when more content is hidden.
+- In the dark theme, `examples/mdfolio.css` made the header and sidebar light with light text. It now defines dark colors too.
+- On narrow screens, the page behind the open sidebar could receive focus.
+- The active item in a long sidebar list now scrolls into view.
+- `\label{…}` in math is ignored instead of being shown as an error.
+- Pressing Enter right after typing a search now opens the top result.
+- A backslash in code could be shown as a yen sign when only Japanese fonts were available.
+
 ## 1.3.1 — 2026-11-17
 
 ### Changed
