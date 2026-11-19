@@ -483,7 +483,7 @@ The converted HTML is intended for trying out the app and publishing samples; fo
   <script type="application/json" id="mdv-res-katex-css">"…"</script>    <!-- KaTeX CSS (fonts included) -->
   <script type="application/json" id="mdv-lib-katex">"…"</script>        <!-- Lazily loaded library (stored as a string) -->
   <script type="application/json" id="mdv-lib-mermaid">"…"</script>
-  <script id="mdv-js-vendor">/* markdown-it, markdown-it-footnote, DOMPurify, highlight.js */</script>
+  <script id="mdv-js-vendor">/* markdown-it, markdown-it-footnote, markdown-it-cjk-friendly, DOMPurify, highlight.js */</script>
   <script id="mdv-js-app">/* App itself (core, md, i18n, app) */</script>
 </body>
 </html>
@@ -524,6 +524,7 @@ The converted HTML is intended for trying out the app and publishing samples; fo
 |---|---|---|
 | markdown-it | Markdown parser | MIT |
 | markdown-it-footnote | Footnotes | MIT |
+| markdown-it-cjk-friendly (with get-east-asian-width) | Emphasis next to Chinese, Japanese and Korean text (FR-1106) | MIT |
 | DOMPurify | HTML sanitizing | Apache-2.0 (dual-licensed with MPL-2.0; Apache-2.0 chosen) |
 | highlight.js | Syntax highlighting | BSD-3-Clause |
 | KaTeX (including fonts) | Math | MIT |
@@ -532,6 +533,7 @@ The converted HTML is intended for trying out the app and publishing samples; fo
 - Versions are the latest stable npm versions at the time of implementation, recorded in `vendor/manifest.json`.
 - The lightweight edition of Mermaid is used instead of the full edition, because the full edition bundles `elkjs` (EPL-2.0 or GPL-3.0-or-later), which adds obligations when redistributing, and because the lightweight edition is about half the size (verified with the actual files in review item RV-06).
 - The license notices of dependencies that each library includes internally are also included in the full license texts.
+- markdown-it-cjk-friendly is published only as an ES module. `tools/vendor.mjs` bundles it with its dependency into one script with esbuild (a maintainer-only tool, not included in the deliverables); the result is the same bytes for the same versions.
 - Tools used only for testing (Playwright, axe-core) are not included in the deliverables.
 
 ### 8.5 Build
@@ -680,4 +682,4 @@ Pass criteria: all automated tests pass, and no console errors, CSP violations o
 | 1.10 | 2026-11-17 | Made it clear that users do not use Node.js. The command-line export is for developers and automation, and was removed from the user-facing instructions (README, samples, public pages) and the release zip (FR-604, AU-3) |
 | 1.11 | 2026-11-17 | Swapped the READMEs so that English is `README.md` and Japanese is `README.ja.md` (8.1, 8.7). The default app UI language (`auto`) is unchanged |
 | 1.12 | 2026-11-17 | Put English first so that the app can be widely used (the project owner's policy). Public pages: English at the top, Japanese under `ja/`, and `en/` as a redirect page (8.7). Change history and release notes in English (8.1, 8.8). The specification, review record, test report and source code comments are to be written in English |
-| 1.13 | 2026-11-18 | Fixes from the user evaluation by 20 evaluators (3.11: FR-1101 to FR-1113). External image permission is stored per HTML file (5.6). The example `mdfolio.css` defines the dark theme too |
+| 1.13 | 2026-11-18 | Fixes from the user evaluation by 20 evaluators (3.11: FR-1101 to FR-1113). External image permission is stored per HTML file (5.6). The example `mdfolio.css` defines the dark theme too. Added markdown-it-cjk-friendly for FR-1106 (8.4) |

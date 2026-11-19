@@ -14,6 +14,7 @@ export const core = require(path.join(ROOT, 'src/core.js'));
 export const mdx = require(path.join(ROOT, 'src/md.js'));
 export const markdownit = require(path.join(ROOT, 'vendor/markdown-it/markdown-it.umd.min.js'));
 export const footnote = require(path.join(ROOT, 'vendor/markdown-it-footnote/markdown-it-footnote.min.js'));
+export const cjkFriendly = require(path.join(ROOT, 'vendor/markdown-it-cjk-friendly/markdown-it-cjk-friendly.min.js'));
 export const hljs = require(path.join(ROOT, 'vendor/highlightjs/highlight.min.js'));
 
 export function highlight(code, lang) {
@@ -24,5 +25,5 @@ export function highlight(code, lang) {
 }
 
 export function createRenderer(options = {}) {
-  return mdx.createRenderer({ markdownit, footnote, highlight, ...options });
+  return mdx.createRenderer({ markdownit, footnote, cjkFriendly, highlight, ...options });
 }

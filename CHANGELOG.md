@@ -23,6 +23,7 @@ Fixes from an evaluation by 20 users.
 - The active item in a long sidebar list now scrolls into view.
 - `\label{…}` in math is ignored instead of being shown as an error.
 - Pressing Enter right after typing a search now opens the top result.
+- Bold and italic did not work next to Japanese, Chinese or Korean text in some cases, such as `**1.8%**の`. They now work (new bundled library: markdown-it-cjk-friendly, MIT).
 - A backslash in code could be shown as a yen sign when only Japanese fonts were available.
 
 ## 1.3.1 — 2026-11-17

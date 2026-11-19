@@ -257,7 +257,7 @@ Twenty evaluators, each with a different job (technical writer, security officer
 | G-3 | Medium | Wide diagrams (Gantt, wide flowcharts) are shrunk to about half; text is about 6px. Confirmed | FR-1102. A zoom view is a feature request (deferred) |
 | G-4 | Medium | The title defaults to the folder name (`docs`). Confirmed | FR-1104 |
 | G-5 | Medium | The file list shows file names, not titles (six evaluators). Confirmed | FR-1105 |
-| G-6 | Medium | `**1.8%**の` does not become bold (CommonMark's flanking rules do not suit Japanese). Confirmed | FR-1106, with the MIT-licensed plugin markdown-it-cjk-friendly |
+| G-6 | Medium | `**1.8%**の` does not become bold (CommonMark's flanking rules do not suit Japanese). Confirmed | FR-1106, with the MIT-licensed plugin markdown-it-cjk-friendly (added with the requester's approval; its dependency get-east-asian-width is also MIT). Latin text keeps the CommonMark rules (checked by unit tests) |
 | G-7 | Medium | The external image permission is shared by every mdfolio file opened from disk (all `file://` pages share one storage area in Chromium). Confirmed in the code | FR-1107 |
 | G-8 | Medium | The active sidebar item stays off-screen on long lists. Confirmed (y=2255 in an 800px window) | FR-1109 |
 | G-9 | Medium | Wide tables give no cue on phones that columns are hidden. Confirmed that the table overflows | FR-1103 |

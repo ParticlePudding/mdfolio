@@ -2,10 +2,10 @@
   "name": "mdfolio",
   "version": "1.3.1",
   "file": "mdfolio.html",
-  "bytes": 4342531,
-  "sha256": "fbc8c5af944d7f478060290f07267eded256538c32510e0cfa7d737e94f58178",
+  "bytes": 4352356,
+  "sha256": "5084a4d7be015e1d0f6416b5108146a7bb82bf4fa60a8860739d6daa4974b54e",
   "without": [],
-  "csp": "default-src 'none'; script-src 'sha256-dcRAgsEz4TeMASNSI+H+F8tGUTG9gCWKHlzB47z8uMs=' 'sha256-i5wVlp5JZe4f//zfO6Xf1NF++66uDkbWlAnnifmHhTc=' 'sha256-+hQEmLjPyDAsvl58sb28H5Urw4s/oljt4J5z7b+adLw=' 'sha256-xB9SNgkbg/UkxJQPl6FrKxSnbyH/hK6k/WtmQh2KKpo='; style-src 'self' file: 'unsafe-inline'; img-src data: blob: http: https:; media-src data: blob: http: https:; font-src data:; connect-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; form-action 'none'; base-uri 'none'",
+  "csp": "default-src 'none'; script-src 'sha256-HUcweY84U+7SuqI9kjccMDks6/bsvsGMqKKnrvMTs00=' 'sha256-hUVPRpi5aZ2PkrSVcG43aLQHkw6nPMtQ4msFdUfJORA=' 'sha256-+hQEmLjPyDAsvl58sb28H5Urw4s/oljt4J5z7b+adLw=' 'sha256-xB9SNgkbg/UkxJQPl6FrKxSnbyH/hK6k/WtmQh2KKpo='; style-src 'self' file: 'unsafe-inline'; img-src data: blob: http: https:; media-src data: blob: http: https:; font-src data:; connect-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; form-action 'none'; base-uri 'none'",
   "blocks": [
     {
       "id": "mdv-config",
@@ -30,7 +30,7 @@
     {
       "id": "mdv-res-licenses",
       "type": "application/json",
-      "bytes": 101710
+      "bytes": 104742
     },
     {
       "id": "mdv-res-katex-css",
@@ -50,22 +50,22 @@
     {
       "id": "mdv-js-vendor",
       "type": "text/javascript",
-      "bytes": 356246
+      "bytes": 362795
     },
     {
       "id": "mdv-js-app",
       "type": "text/javascript",
-      "bytes": 196975
+      "bytes": 197219
     }
   ],
   "scripts": [
     {
       "id": "mdv-js-vendor",
-      "sha256Base64": "dcRAgsEz4TeMASNSI+H+F8tGUTG9gCWKHlzB47z8uMs="
+      "sha256Base64": "HUcweY84U+7SuqI9kjccMDks6/bsvsGMqKKnrvMTs00="
     },
     {
       "id": "mdv-js-app",
-      "sha256Base64": "i5wVlp5JZe4f//zfO6Xf1NF++66uDkbWlAnnifmHhTc="
+      "sha256Base64": "hUVPRpi5aZ2PkrSVcG43aLQHkw6nPMtQ4msFdUfJORA="
     },
     {
       "id": "mdv-lib-katex",
@@ -85,6 +85,11 @@
     {
       "name": "vendor/markdown-it-footnote/markdown-it-footnote.min.js",
       "bytes": 5624,
+      "escapes": 0
+    },
+    {
+      "name": "vendor/markdown-it-cjk-friendly/markdown-it-cjk-friendly.min.js",
+      "bytes": 6547,
       "escapes": 0
     },
     {
@@ -264,7 +269,7 @@
     },
     {
       "name": "src/md.js",
-      "bytes": 15662,
+      "bytes": 15906,
       "escapes": 0
     },
     {
@@ -287,6 +292,11 @@
     {
       "package": "markdown-it-footnote",
       "version": "4.0.0",
+      "license": "MIT"
+    },
+    {
+      "package": "markdown-it-cjk-friendly",
+      "version": "3.0.0",
       "license": "MIT"
     },
     {

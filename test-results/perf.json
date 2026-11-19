@@ -1,50 +1,50 @@
 {
-  "machine": "4 cores / Intel(R) Xeon(R) Processor @ 2.10GHz",
-  "viewerBytes": 4342531,
+  "machine": "4 cores / Intel(R) Xeon(R) Processor @ 2.30GHz",
+  "viewerBytes": 4352356,
   "measured": {
     "Startup (until the start screen is built)": {
-      "ms": 166,
+      "ms": 123,
       "limitMs": 1000,
-      "note": "Median of 7 runs. Max 181 ms"
+      "note": "Median of 7 runs. Max 141 ms"
     },
     "Startup (until first paint)": {
-      "ms": 212,
+      "ms": 160,
       "limitMs": 1000,
-      "note": "Median of 7 runs. Max 232 ms"
+      "note": "Median of 7 runs. Max 176 ms"
     },
     "1 MB document: display": {
-      "ms": 2114,
+      "ms": 1587,
       "limitMs": 3000,
-      "note": "1.00 MB, 1653 each of headings, tables and code blocks. Median of 5 runs. Max 2356 ms",
-      "maxMs": 2356
+      "note": "1.00 MB, 1653 each of headings, tables and code blocks. Median of 5 runs. Max 1690 ms",
+      "maxMs": 1690
     },
     "1 MB document: until code highlighting completes (reference)": {
-      "ms": 5522,
+      "ms": 3889,
       "limitMs": null,
       "note": "Processed bit by bit after display without blocking interaction. No target value"
     },
     "1,000 documents: tree display": {
-      "ms": 55,
+      "ms": 49,
       "limitMs": 2000,
       "note": "From \"Open folder\" until the list and the first document are shown"
     },
     "1,000 documents: indexing": {
-      "ms": 1144,
+      "ms": 997,
       "limitMs": 10000,
       "note": "From \"Open folder\" until the full-text search index is built"
     },
     "1,000 documents: search response": {
-      "ms": 174,
+      "ms": 176,
       "limitMs": 300,
-      "note": "From input until results are shown (including the 150 ms input debounce). Max over 5 search terms. Median 166 ms"
+      "note": "From input until results are shown (including the 150 ms input debounce). Max over 5 search terms. Median 164 ms"
     },
     "1,000 documents (real files): tree display": {
-      "ms": 415,
+      "ms": 452,
       "limitMs": 2000,
       "note": "Includes the time to hand over the files"
     },
     "1,000 documents (real files): indexing": {
-      "ms": 1670,
+      "ms": 1493,
       "limitMs": 10000,
       "note": "Includes the time to hand over the files"
     }

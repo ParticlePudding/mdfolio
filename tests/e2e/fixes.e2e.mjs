@@ -1,4 +1,4 @@
-// Fixes from the user evaluation (SPEC 3.11: FR-1101 to FR-1113; FR-1106 is not implemented yet)
+// Fixes from the user evaluation (SPEC 3.11: FR-1101 to FR-1113)
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -168,6 +168,18 @@ describe('Narrow screens: drawer and sidebar position (FR-1108, FR-1109)', () =>
         const r = a && a.getBoundingClientRect();
         return r && r.top >= box.top - 1 && r.bottom <= Math.min(box.bottom, window.innerHeight) + 1;
       }, null, { timeout: 5000 });
+    });
+  });
+});
+
+describe('Emphasis next to CJK text (FR-1106)', () => {
+  test('bold next to Japanese text works in the app', async () => {
+    const dir = writeTree(tmpDir(), { 'README.md': '# 太字\n\n改善は**1.8%**の向上で、これは**「重要」**です。\n' });
+    await withPage(browser, async ({ page }) => {
+      await loadFolder(page, dir);
+      const strong = await page.evaluate(() => Array.from(document.querySelectorAll('.mdv-prose strong')).map((e) => e.textContent));
+      assert.deepEqual(strong, ['1.8%', '「重要」']);
+      assert.ok(!(await page.textContent('.mdv-prose')).includes('**'));
     });
   });
 });

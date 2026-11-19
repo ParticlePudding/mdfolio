@@ -160,7 +160,7 @@ describe('Version and manifests', () => {
 
   test('The bundled libraries are unmodified and match the SHA-256 in the manifest (NFR-6)', () => {
     const ids = manifest.components.map((c) => c.id).sort();
-    assert.deepEqual(ids, ['dompurify', 'highlight.js', 'katex', 'markdown-it', 'markdown-it-footnote', 'mermaid']);
+    assert.deepEqual(ids, ['dompurify', 'highlight.js', 'katex', 'markdown-it', 'markdown-it-cjk-friendly', 'markdown-it-footnote', 'mermaid']);
     let files = 0;
     for (const c of manifest.components) {
       assert.ok(c.version && c.license && c.package, `name, version and license of ${c.id}`);

@@ -66,6 +66,31 @@
       "bundles": []
     },
     {
+      "id": "markdown-it-cjk-friendly",
+      "package": "markdown-it-cjk-friendly",
+      "version": "3.0.0",
+      "license": "MIT",
+      "role": "Emphasis next to Chinese, Japanese and Korean text for markdown-it",
+      "homepage": "https://github.com/tats-u/markdown-cjk-friendly",
+      "resolved": "https://registry.npmjs.org/markdown-it-cjk-friendly/-/markdown-it-cjk-friendly-3.0.0.tgz",
+      "integrity": "sha512-y4OkqwenFXmb1i3w7qfh9E60qNX6U4KzECke8N/7io9SARFSvbR/wde0q/l6/Az9doieLOIw7ZsbDSgl27DR4g==",
+      "files": [
+        {
+          "path": "markdown-it-cjk-friendly/markdown-it-cjk-friendly.min.js",
+          "source": "markdown-it-cjk-friendly/dist/index.js (bundled with esbuild 0.25.12)",
+          "bytes": 6547,
+          "sha256": "7a12124f464fa90d45e51754ac20ad0d3522edc517c5402497d47860fe6fa0dc"
+        }
+      ],
+      "bundles": [
+        {
+          "name": "get-east-asian-width",
+          "version": "1.7.0",
+          "license": "MIT"
+        }
+      ]
+    },
+    {
       "id": "dompurify",
       "package": "dompurify",
       "version": "3.4.17",

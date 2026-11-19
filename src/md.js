@@ -322,6 +322,7 @@
    * options:
    *   markdownit   the markdown-it function (defaults to the global)
    *   footnote     markdown-it-footnote (defaults to the global; no footnotes if absent)
+   *   cjkFriendly  markdown-it-cjk-friendly (defaults to the global): emphasis next to CJK text (FR-1106)
    *   highlight    function (code, lang) -> highlighted HTML (empty string if none)
    *   alertLabels  a function returning alert heading text, or an object
    */
@@ -342,6 +343,8 @@
 
     var footnote = options.footnote || root.markdownitFootnote;
     if (typeof footnote === 'function') md.use(footnote);
+    var cjkFriendly = options.cjkFriendly || root.markdownitCjkFriendly;
+    if (typeof cjkFriendly === 'function') md.use(cjkFriendly);
     md.use(mathPlugin);
     md.use(taskListPlugin);
     md.use(alertPlugin, options.alertLabels);

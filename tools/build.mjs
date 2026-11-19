@@ -108,6 +108,7 @@ const hljsExtra = (manifest.hljsExtraLanguages || []).map((l) => `highlightjs/la
 const vendorOrder = [
   'markdown-it/markdown-it.umd.min.js',
   'markdown-it-footnote/markdown-it-footnote.min.js',
+  'markdown-it-cjk-friendly/markdown-it-cjk-friendly.min.js',
   'dompurify/purify.min.js',
   'highlightjs/highlight.min.js',
   ...hljsExtra

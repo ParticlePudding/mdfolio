@@ -63,6 +63,20 @@ describe('CommonMark / GFM (FR-201)', () => {
   });
 });
 
+describe('Emphasis next to CJK text (FR-1106)', () => {
+  test('bold and italic work next to Japanese text and punctuation', () => {
+    assert.ok(render('改善は**1.8%**の向上でした。\n').includes('<strong>1.8%</strong>の'));
+    assert.ok(render('これは**「重要」**です。\n').includes('<strong>「重要」</strong>です'));
+    assert.ok(render('ここは*強調*した。\n').includes('<em>強調</em>した'));
+    assert.ok(render('**太字。**次の文\n').includes('<strong>太字。</strong>次'));
+  });
+  test('Latin text keeps the CommonMark rules', () => {
+    assert.equal(render('a**b**c and 2*3*4\n'), '<p>a<strong>b</strong>c and 2<em>3</em>4</p>\n');
+    assert.equal(render('snake_case_name\n'), '<p>snake_case_name</p>\n');
+    assert.equal(render('** not bold **\n'), '<p>** not bold **</p>\n');
+  });
+});
+
 describe('Footnotes (FR-202)', () => {
   test('references and definitions', () => {
     const html = render('本文[^1]と[^note]。\n\n[^1]: 最初の脚注。\n[^note]: 名前付き。\n');

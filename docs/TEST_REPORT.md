@@ -14,8 +14,8 @@
 ### Unreleased (fixes from the user evaluation)
 
 - 20 evaluators with different jobs used 1.3.1 with their own sample documents (average 3.85 / 5, no critical problems). Each report was checked by reproducing it; the confirmed ones are listed in [REVIEW.md](REVIEW.md) section 11 (G-1 to G-14) and fixed as FR-1101 to FR-1113.
-- All **397 automated tests passed** (187 unit, 210 browser). 12 browser tests were added (`tests/e2e/fixes.e2e.mjs`). 18 existing browser tests were updated for the intended changes: the site title is now the home document's title, the file list shows titles (tests now find sidebar items by their path), the empty-folder message is longer, and the external image choice is stored per file.
-- **FR-1106 (bold next to Japanese text) is not implemented**: it needs a new library (markdown-it-cjk-friendly, MIT), and adding it waits for the requester's decision.
+- All **400 automated tests passed** (189 unit, 211 browser). 2 unit tests and 13 browser tests were added (`tests/e2e/fixes.e2e.mjs`). 18 existing browser tests were updated for the intended changes: the site title is now the home document's title, the file list shows titles (tests now find sidebar items by their path), the empty-folder message is longer, and the external image choice is stored per file.
+- FR-1106 (bold next to Japanese text) uses a new library, markdown-it-cjk-friendly 3.0.0 (MIT), bundled with esbuild by `tools/vendor.mjs`. The existing vendored files were unchanged when the tool ran again, and two runs gave the same bytes. The unit tests confirm that without the plugin the reported text is not bold, and that Latin text keeps the CommonMark rules.
 - **Not verified**: Gecko and WebKit, real phones, and fonts on real Windows / macOS (FR-1112 was checked only by the order in the CSS).
 
 ### Unreleased (English-first project, translation of documents and comments)
@@ -258,7 +258,7 @@ A note on T-08: the review had stated that Mermaid would be "used with a safe se
 | FR-1103 | Scroll cue | e2e/fixes | Checked by the computed style, not by eye |
 | FR-1104 | Site title | e2e/fixes, e2e/open, e2e/export, e2e/security |  |
 | FR-1105 | Titles in the file list | e2e/fixes, e2e/fsa |  |
-| FR-1106 | Bold next to CJK text | — | **Not implemented** (waiting for the decision on the library) |
+| FR-1106 | Bold next to CJK text | unit/md, e2e/fixes |  |
 | FR-1107 | External images per file | e2e/fixes, e2e/settings, e2e/embed |  |
 | FR-1108 | Drawer focus | e2e/fixes |  |
 | FR-1109 | Active item scrolled into view | e2e/fixes |  |
