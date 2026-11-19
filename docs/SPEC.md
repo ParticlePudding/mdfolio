@@ -223,18 +223,18 @@ Twenty evaluators with different jobs used 1.3.1 with their own documents (2026-
 | ID | Priority | Requirement |
 |---|---|---|
 | FR-1101 | Required | Category colors of diagrams (pie slices and legend swatches) come from the CSS variables `--chart-1` … `--chart-8`, which have clearly distinct hues in both the light and the dark theme. None of them equals the page background. `mdfolio.css` can override them |
-| FR-1102 | Required | A diagram that would have to be shrunk below half of its natural width to fit the column is shown at its natural size, and the reader scrolls it sideways. Other diagrams still shrink to fit (shrinking to about half keeps labels readable; below that, text falls to about 6px) |
+| FR-1102 | Required | A diagram that would have to be shrunk below half of its natural width to fit the column is shown at its natural size, and the reader scrolls it sideways. Other diagrams still shrink to fit (shrinking to about half keeps labels readable; below that, text falls to about 6px). The decision is made again when the column width changes. When printing, every diagram shrinks to the page width |
 | FR-1103 | Required | Tables, diagrams and display math that are wider than the column show a shadow at the edge where more content is hidden, so the reader can tell that they can scroll |
 | FR-1104 | Required | The site title (header, browser tab, default title and file name in "Export as site") is chosen in this order: `title` in the settings → the title of the home document (front matter `title`, else its first heading) → the folder name. When the document title equals the site title, the browser tab shows it once |
 | FR-1105 | Required | The file list in the sidebar shows each document's title (front matter `title`, else its first heading) once it is known, and the file name until then. The path is shown as a tooltip |
 | FR-1106 | Required | Emphasis (`**` and `*`) works next to Chinese, Japanese and Korean text and punctuation, as in `**1.8%**の改善` (markdown-it-cjk-friendly) |
-| FR-1107 | Required | The "Show external images" choice is stored for each HTML file (keyed by the page's path), not shared by every mdfolio file opened from the same computer. Theme, language and sidebar state stay shared |
+| FR-1107 | Required | The "Show external images" choice is stored for each HTML file (keyed by the page's path), not shared by every mdfolio file opened from the same computer. Theme, language and sidebar state stay shared. A shared value saved by 1.3.1 or earlier is ignored but left in storage, because files of those versions still read it |
 | FR-1108 | Required | At narrow widths, while the sidebar drawer is open, the rest of the page cannot receive focus. Closing the drawer (Esc, the scrim, or the button) returns focus to the sidebar button when focus was in the drawer |
 | FR-1109 | Required | After moving to another document, the active item in the sidebar (Nav and Files) is scrolled into view |
-| FR-1110 | Required | In math, `\label{…}` is ignored instead of being shown as an error |
+| FR-1110 | Required | In math, `\label{…}` is ignored instead of being shown as an error. `\\label` (a line break followed by the text "label") is kept |
 | FR-1111 | Required | The help (English and Japanese) starts with a short section for people new to Markdown. The message shown when a folder has no Markdown documents says what to do next |
 | FR-1112 | Required | The code font lists common Latin monospace fonts before Japanese fonts, so that a backslash is not shown as a yen sign when the Latin fonts listed first are missing |
-| FR-1113 | Required | Pressing Enter in the search box right after typing opens the top result, even before the result list has appeared |
+| FR-1113 | Required | Pressing Enter in the search box right after typing opens the top result, even before the result list has appeared. The Enter that confirms an IME conversion does not (Safari sends it with keyCode 229) |
 
 In addition, the example `examples/mdfolio.css` defines every variable it changes for both the light and the dark theme, and explains that a variable set only in `:root` also applies to the dark theme.
 

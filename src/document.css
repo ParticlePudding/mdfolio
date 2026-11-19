@@ -432,6 +432,8 @@
   .mdv-prose { contain: none; margin: 0; padding: 0; }
   .mdv-prose pre, .mdv-plain { white-space: pre-wrap; word-break: break-all; overflow: visible; }
   .mdv-table-wrap, .math-display, .mdv-mermaid { overflow: visible; background: none; }
+  /* Wide diagrams scroll on screen (FR-1102); on paper they shrink to the page width */
+  .mdv-mermaid.is-wide svg { width: 100% !important; max-width: 100% !important; height: auto; }
   .mdv-prose h1, .mdv-prose h2, .mdv-prose h3, .mdv-prose h4 { break-after: avoid; }
   .mdv-code, .mdv-prose pre, .mdv-prose table, .mdv-prose img, .mdv-mermaid, .markdown-alert { break-inside: avoid; }
   .mdv-prose a.mdv-ext::after { content: none; }

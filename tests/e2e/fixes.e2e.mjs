@@ -60,6 +60,20 @@ describe('Diagrams (FR-1101, FR-1102)', () => {
       // Scroll cue (FR-1103)
       const bg = await page.evaluate(() => getComputedStyle(document.querySelector('.mdv-mermaid.is-wide')).backgroundImage);
       assert.ok(bg.includes('radial-gradient'), bg);
+      // On paper, a wide diagram shrinks to the page width
+      await page.emulateMedia({ media: 'print' });
+      const printed = await page.evaluate(() => { const c = document.querySelector('.mdv-mermaid.is-wide'); return { svg: c.querySelector('svg').getBoundingClientRect().width, box: c.clientWidth }; });
+      assert.ok(printed.svg <= printed.box + 1, 'fits the page when printed: ' + JSON.stringify(printed));
+      await page.emulateMedia({ media: 'screen' });
+      // Decided again when the window size changes
+      const wideCount = () => page.evaluate(() => document.querySelectorAll('.mdv-mermaid.is-wide').length);
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.waitForFunction(() => !document.querySelector('.mdv-mermaid.is-wide'), null, { timeout: 5000 });
+      const fitted = await page.evaluate(() => { const c = document.querySelector('.mdv-mermaid'); return { svg: c.querySelector('svg').getBoundingClientRect().width, box: c.clientWidth }; });
+      assert.ok(fitted.svg <= fitted.box + 1, 'fits a wide window again: ' + JSON.stringify(fitted));
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.waitForFunction(() => document.querySelectorAll('.mdv-mermaid.is-wide').length === 1, null, { timeout: 5000 });
+      assert.equal(await wideCount(), 1);
     });
   });
 });
@@ -110,7 +124,7 @@ describe('Site title and file list labels (FR-1104, FR-1105)', () => {
 });
 
 describe('External images are allowed per HTML file (FR-1107)', () => {
-  test('the choice saved for one file does not apply to another, and the old shared value is dropped', async () => {
+  test('the choice saved for one file does not apply to another; the old shared value is ignored but kept for older files', async () => {
     const a = viewerWithConfig({});
     const b = viewerWithConfig({});
     const pathB = new URL(b).pathname;
@@ -122,7 +136,9 @@ describe('External images are allowed per HTML file (FR-1107)', () => {
       await page.reload();
       await page.waitForSelector('.mdv-app');
       assert.equal(await page.evaluate(() => window.MDV.app.state.mediaLocked), true, 'file A: the old shared value and file B\'s choice are not used');
-      assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('mdv:settings:v1')).externalImages), undefined, 'the shared value is removed');
+      // Saving another setting (theme) keeps the value that files of 1.3.1 or earlier still read
+      await page.click('.mdv-btn-theme');
+      assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('mdv:settings:v1')).externalImages), true, 'the old shared value is kept');
       await page.goto(b);
       await page.waitForSelector('.mdv-app');
       assert.equal(await page.evaluate(() => window.MDV.app.state.mediaLocked), false, 'file B uses its own choice');
@@ -152,6 +168,14 @@ describe('Narrow screens: drawer and sidebar position (FR-1108, FR-1109)', () =>
       await waitHeading(page, '二番目');
       assert.equal(await inert(), false);
       assert.ok(await page.evaluate(() => !document.querySelector('.mdv-sidebar').contains(document.activeElement)), 'focus left the closed drawer');
+      // Widening the window closes the drawer but leaves focus in the (now always shown) sidebar
+      await page.click('.mdv-btn-sidebar');
+      await page.waitForSelector('.mdv-app.is-drawer-open');
+      await page.focus('.mdv-side-tree a[data-path="README.md"]');
+      await page.setViewportSize({ width: 1280, height: 844 });
+      await page.waitForFunction(() => !document.querySelector('.mdv-app').classList.contains('is-drawer-open'));
+      assert.equal(await inert(), false);
+      assert.equal(await page.evaluate(() => document.activeElement.getAttribute('data-path')), 'README.md');
     });
   });
 
@@ -193,6 +217,16 @@ describe('Math, search, help and fonts (FR-1110 to FR-1113)', () => {
       assert.equal(await page.locator('.mdv-prose .katex-error').count(), 0);
       assert.ok(!(await page.textContent('.mdv-prose .math-display')).includes('label'));
     });
+    // "\\label" is a line break followed by the text "label", not \label
+    const dir2 = writeTree(tmpDir(), { 'README.md': '# 数式\n\n$$\n\\begin{matrix} a \\\\label{b} \\end{matrix}\n$$\n\n$$\nx \\label{p}\\label{q}\n$$\n' });
+    await withPage(browser, async ({ page }) => {
+      await loadFolder(page, dir2);
+      await page.waitForFunction(() => document.querySelectorAll('.mdv-prose .math-display .katex').length === 2);
+      assert.equal(await page.locator('.mdv-prose .katex-error').count(), 0);
+      const texts = await page.evaluate(() => Array.from(document.querySelectorAll('.mdv-prose .math-display .katex-html')).map((e) => e.textContent));
+      assert.ok(texts[0].includes('label'), 'kept as text after a line break: ' + texts[0]);
+      assert.ok(!texts[1].includes('label') && !texts[1].includes('p'), 'two labels in a row are both ignored: ' + texts[1]);
+    });
   });
 
   test('Enter right after typing opens the top result', async () => {
@@ -204,6 +238,16 @@ describe('Math, search, help and fonts (FR-1110 to FR-1113)', () => {
       await page.keyboard.press('Enter');
       await waitHeading(page, '目的の文書');
       assert.equal(await heading(page), '目的の文書');
+      // The Enter that confirms an IME conversion (Safari: keyCode 229 after compositionend) does not open a result
+      await goTo(page, '#/README.md', 'ホーム');
+      await page.fill('.mdv-search-input', 'ゼータ');
+      await page.evaluate(() => {
+        const ev = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+        Object.defineProperty(ev, 'keyCode', { get: () => 229 });
+        document.querySelector('.mdv-search-input').dispatchEvent(ev);
+      });
+      await page.waitForTimeout(300);
+      assert.equal(await heading(page), 'ホーム');
     });
   });
 

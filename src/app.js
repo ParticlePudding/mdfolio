@@ -36,6 +36,7 @@
     view: 'welcome',       // welcome | doc | help | message
     current: null,         // Path of the document being displayed
     currentEntry: null,
+    viewTitle: '',         // Title of the current view (document, help, not found), for the browser tab
     pendingRoute: null,    // Where to go once the document set has loaded
     renderSeq: 0,
     navCounter: 0,
@@ -161,7 +162,7 @@
     if (!state.set) return;
     ui.title.textContent = siteTitle();
     if (state.view === 'welcome') document.title = siteTitle();
-    else if (state.currentEntry) document.title = tabTitle(state.currentEntry.title);
+    else document.title = tabTitle(state.currentEntry ? state.currentEntry.title : state.viewTitle);
     refreshTreeLabels();
   }
 
@@ -190,6 +191,8 @@
 
   // ------------------------------------------------------------------ Settings
 
+  let legacyExternalImages; // see loadSettings
+
   function loadSettings() {
     let v = {};
     try {
@@ -199,11 +202,10 @@
     } catch (e) {
       v = {};
     }
-    // A shared value saved by 1.3.1 or earlier is removed; only this file's own choice is read
-    if ('externalImages' in v) {
-      delete v.externalImages;
-      try { window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(v)); } catch (e) { /* storage unavailable */ }
-    }
+    // A shared value saved by 1.3.1 or earlier is ignored, but kept in storage (and when saving) because
+    // files of those versions on the same computer still read it
+    legacyExternalImages = v.externalImages;
+    delete v.externalImages;
     try {
       const ext = window.localStorage.getItem(EXTERNAL_KEY);
       if (ext === '1' || ext === '0') v.externalImages = ext === '1';
@@ -216,6 +218,7 @@
     try {
       const shared = Object.assign({}, state.settings);
       delete shared.externalImages;
+      if (legacyExternalImages !== undefined) shared.externalImages = legacyExternalImages;
       window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(shared));
       if (typeof state.settings.externalImages === 'boolean') {
         window.localStorage.setItem(EXTERNAL_KEY, state.settings.externalImages ? '1' : '0');
@@ -604,12 +607,13 @@
     // When focus was inside the drawer, return it to the sidebar button so it is not lost (FR-1108).
     // Not when a document was chosen in the drawer: the newly shown document handles focus then.
     const navigating = !!(opts && opts.navigating);
+    const keepFocus = !!(opts && opts.keepFocus);
     const focusInside = ui.sidebar.contains(document.activeElement);
     ui.app.classList.remove('is-drawer-open');
     ui.scrim.hidden = true;
     setDrawerInert(false);
     applySidebarState();
-    if (focusInside) {
+    if (focusInside && !keepFocus) {
       if (navigating) { try { ui.main.focus({ preventScroll: true }); } catch (e) { ui.main.focus(); } } else ui.sidebarBtn.focus();
     }
   }
@@ -1426,8 +1430,9 @@
       }
       const display = el.classList.contains('math-display') || el.classList.contains('math-inline-display');
       try {
-        // \label{...} is for LaTeX cross-references, which KaTeX does not support: ignore it rather than show an error (FR-1110)
-        window.katex.render(tex.replace(/\\label\{[^{}]*\}/g, ''), el, { displayMode: display, throwOnError: false, strict: 'ignore', trust: false, output: 'htmlAndMathml', errorColor: '#B3261E', maxExpand: 1000, maxSize: 50 });
+        // \label{...} is for LaTeX cross-references, which KaTeX does not support: ignore it rather than show an error (FR-1110).
+        // An even run of backslashes before "label" is line breaks (\\) followed by text, which is kept
+        window.katex.render(tex.replace(/(\\+)label\{[^{}]*\}/g, (m, bs) => (bs.length % 2 ? bs.slice(1) : m)), el, { displayMode: display, throwOnError: false, strict: 'ignore', trust: false, output: 'htmlAndMathml', errorColor: '#B3261E', maxExpand: 1000, maxSize: 50 });
       } catch (e) {
         el.classList.add('mdv-math-raw');
       }
@@ -1488,15 +1493,32 @@
    * and the reader scrolls it sideways (FR-1102). Smaller diagrams keep shrinking to fit.
    */
   function fitWideDiagram(container) {
-    const svg = container.querySelector('svg');
+    const svg = container.querySelector(':scope > svg');
+    if (!svg) return;
+    // Decided again when the column width changes (resize, rotation, sidebar), so undo an earlier decision first
+    if (container.classList.contains('is-wide')) {
+      container.classList.remove('is-wide');
+      const w = svg.getAttribute('data-mdv-width');
+      if (w === null || w === '') svg.removeAttribute('width'); else svg.setAttribute('width', w);
+      svg.style.width = svg.getAttribute('data-mdv-style-width') || '';
+    }
     const avail = container.clientWidth;
-    if (!svg || !avail) return;
+    if (!avail) return;
     const vb = svg.viewBox && svg.viewBox.baseVal;
     const natural = (vb && vb.width) || parseFloat(svg.style.maxWidth) || 0;
     if (natural * 0.5 <= avail) return;
+    if (!svg.hasAttribute('data-mdv-width')) {
+      svg.setAttribute('data-mdv-width', svg.getAttribute('width') || '');
+      svg.setAttribute('data-mdv-style-width', svg.style.width || '');
+    }
     container.classList.add('is-wide');
     svg.setAttribute('width', String(Math.ceil(natural)));
     svg.style.width = Math.ceil(natural) + 'px';
+  }
+
+  function refitDiagrams() {
+    if (!ui.prose) return;
+    ui.prose.querySelectorAll('.mdv-mermaid').forEach(fitWideDiagram);
   }
 
   async function renderMermaidInto(container, code, seq) {
@@ -1645,6 +1667,7 @@
     renderToc(opts.toc || [], opts.ctx);
     // The indexer may have learned the home title first, so the header is refreshed on every render too
     ui.title.textContent = siteTitle();
+    state.viewTitle = opts.title || '';
     document.title = tabTitle(opts.title);
     state.current = opts.entry ? opts.entry.path : null;
     state.currentEntry = opts.entry || null;
@@ -2113,7 +2136,9 @@
   }
 
   function onSearchKey(ev) {
-    if (ev.isComposing) return; // IME composition in progress (e.g. Japanese input)
+    // IME composition in progress (e.g. Japanese input). Safari sends the Enter that confirms a conversion
+    // after compositionend with isComposing false, but with keyCode 229
+    if (ev.isComposing || ev.keyCode === 229) return;
     const n = state.search.results.length;
     if (ev.key === 'ArrowDown') {
       ev.preventDefault();
@@ -2533,14 +2558,15 @@
       window.addEventListener(type, () => { state.userScrolled = true; }, { passive: true, capture: true });
     });
     window.addEventListener('resize', () => {
-      // Widening the window while the drawer is open must not leave the content inert
-      if (!isNarrow() && ui.app.classList.contains('is-drawer-open')) closeDrawer({ navigating: true });
+      // Widening the window while the drawer is open must not leave the content inert. The sidebar stays
+      // visible at the wider width, so focus stays where it is
+      if (!isNarrow() && ui.app.classList.contains('is-drawer-open')) closeDrawer({ keepFocus: true });
       applySidebarState();
     });
     let resizeTimer = null;
     window.addEventListener('resize', () => {
       clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(markScrollable, 200);
+      resizeTimer = setTimeout(() => { refitDiagrams(); markScrollable(); }, 200);
     });
     if (darkQuery) {
       const onChange = () => applyTheme();
