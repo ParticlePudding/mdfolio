@@ -2,7 +2,7 @@
 
 Changes in each version of mdfolio. The details are in `docs/SPEC.md` (revision history), `docs/REVIEW.md`, and `docs/TEST_REPORT.md`.
 
-## Unreleased
+## 1.4.2 — 2026-11-20
 
 ### Changed
 
