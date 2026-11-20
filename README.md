@@ -14,7 +14,7 @@ Open `mdfolio.html` (in `dist/`) and choose a folder with "Open folder". To try 
 
 **Change the look**: Place `mdfolio.css` in the same folder as `mdfolio.html`. See `examples/mdfolio.css` for an example.
 
-**Share**: "Export as site" in the menu (⋯) packs your documents into a single HTML file. To include your CSS, use "Choose CSS" in the export dialog. Zip the file before sending.
+**Share**: "Export as site" in the menu (⋯) packs your documents into a single HTML file. To include your CSS, use "Choose CSS" in the export dialog. Zip the file before sending: email and chat services sometimes change HTML attachments, and the file may then stop working.
 
 ## Features
 

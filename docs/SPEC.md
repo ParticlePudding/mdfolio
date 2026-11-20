@@ -90,7 +90,7 @@ Priority: **Required** = must be met in this version / **Recommended** = impleme
 | FR-106 | Required | **Exclusions**: folders and files whose names start with `.`, and `node_modules` folders, are not loaded (the app excludes them for every loading method) |
 | FR-107 | Required | **Character encoding**: automatically detect UTF-8 (with or without BOM), UTF-16 (with BOM) and Shift_JIS (CP932). Detection order: BOM → strict UTF-8 decode → strict Shift_JIS decode → UTF-8 (invalid bytes become replacement characters) |
 | FR-108 | Recommended | **Reopen last folder**: save the handle of a folder opened with `showDirectoryPicker`, so that next time it can be opened from the start screen with one click (plus the browser's permission prompt). If saving or restoring fails, simply do not show the feature; do not treat it as an error |
-| FR-109 | Recommended | **Reload**: the menu can rescan the folder and reload the displayed document. When opened with `showDirectoryPicker` (or a drop that provides a handle), detect changes to the displayed document file about every 2 seconds and automatically redisplay it while keeping the scroll position. With loading methods that have no handle, a file changed after it was chosen may not be reloadable; in that case, prompt the user to open it again |
+| FR-109 | Recommended | **Reload**: the menu can rescan the folder and reload the displayed document, keeping the document and its scroll position. When opened with `showDirectoryPicker` (or a drop that provides a handle), detect changes to the displayed document file about every 2 seconds and automatically redisplay it while keeping the scroll position. With loading methods that have no handle, a file changed after it was chosen may not be reloadable; in that case, prompt the user to open it again |
 | FR-110 | Required | **Limits**: up to 5,000 documents and up to 50,000 scanned files and folders. Anything beyond is not loaded, and the user is notified. Documents larger than 10MB are displayed as plain text without Markdown conversion |
 | FR-111 | Required | **Replacement**: if another folder or files are opened while a document set is open, replace the document set without confirmation and show the home document |
 | FR-112 | Required | **Single-file handling**: when only files (not a folder) are opened, images and link targets that were not chosen at the same time cannot be resolved. The image placeholder says that opening the folder will display it |
@@ -351,7 +351,7 @@ Stored as JSON in `<script type="application/json" id="mdv-site">` in the HTML. 
 ```json
 {
   "format": 1,
-  "generator": "mdfolio 1.0.1",
+  "generator": "mdfolio 1.4.0",
   "created": "2026-11-13T01:00:00.000Z",
   "name": "docs",
   "files": [
@@ -467,7 +467,7 @@ The converted HTML is intended for trying out the app and publishing samples; fo
   <meta http-equiv="Content-Security-Policy" content="…">
   <meta name="referrer" content="no-referrer">
   <meta name="color-scheme" content="light dark">
-  <meta name="generator" content="mdfolio 1.0.1">
+  <meta name="generator" content="mdfolio 1.4.0">
   <link rel="icon" href="data:image/svg+xml,…">                          <!-- Tab icon (kept inside the HTML) -->
   <title>…</title>
   <style id="mdv-style">/* App CSS */</style>
@@ -682,4 +682,5 @@ Pass criteria: all automated tests pass, and no console errors, CSP violations o
 | 1.10 | 2026-11-17 | Made it clear that users do not use Node.js. The command-line export is for developers and automation, and was removed from the user-facing instructions (README, samples, public pages) and the release zip (FR-604, AU-3) |
 | 1.11 | 2026-11-17 | Swapped the READMEs so that English is `README.md` and Japanese is `README.ja.md` (8.1, 8.7). The default app UI language (`auto`) is unchanged |
 | 1.12 | 2026-11-17 | Put English first so that the app can be widely used (the project owner's policy). Public pages: English at the top, Japanese under `ja/`, and `en/` as a redirect page (8.7). Change history and release notes in English (8.1, 8.8). The specification, review record, test report and source code comments are to be written in English |
+| 1.14 | 2026-11-20 | From an external code review: "Reload" of a folder keeps the scroll position (FR-109); moving focus within the header and its menu does not scroll the page; the check for an adjacent `mdfolio.css` gives up after 3 seconds; version in the examples of 8.2 |
 | 1.13 | 2026-11-18 | Fixes from the user evaluation by 20 evaluators (3.11: FR-1101 to FR-1113). External image permission is stored per HTML file (5.6). The example `mdfolio.css` defines the dark theme too. Added markdown-it-cjk-friendly for FR-1106 (8.4) |

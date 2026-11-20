@@ -127,6 +127,30 @@ describe('Reload (FR-109)', () => {
     });
   });
 
+  test('"Reload" keeps the document and its scroll position', async () => {
+    const spec = { name: 'notes', files: { 'README.md': '# ホーム\n', 'long.md': long('長い文書', '本文です。') } };
+    await withPage(browser, mockOptions(spec), async ({ page }) => {
+      await openMock(page);
+      await goTo(page, '#/long.md', '長い文書');
+      await page.evaluate(() => window.scrollTo(0, 600));
+      await page.waitForFunction(() => Math.abs(window.scrollY - 600) <= 2);
+      // Clicked through the DOM: Playwright's own click scrolls the page to bring the button into view
+      const y = await page.evaluate(() => {
+        document.querySelector('.mdv-btn-menu').click();
+        const y0 = window.scrollY;
+        window.__oldSet = window.MDV.app.state.set;
+        document.querySelector('.mdv-menu-item[data-action="menuReload"]').click();
+        return Math.abs(y0 - window.scrollY) <= 2 ? window.scrollY : -1;
+      });
+      assert.ok(Math.abs(y - 600) <= 2, 'focusing the menu in the sticky header does not scroll the page: ' + y);
+      await page.waitForFunction(() => window.MDV.app.state.set !== window.__oldSet && !!document.querySelector('.mdv-toast'));
+      await waitHeading(page, '長い文書');
+      assert.equal(await hash(page), '#/long.md');
+      const after = await page.evaluate(() => window.scrollY);
+      assert.ok(Math.abs(after - y) <= 2, `scroll position is kept: ${y} -> ${after}`);
+    });
+  });
+
   test('if all documents are gone, keeps the display and shows a notice', async () => {
     const spec = { name: 'notes', files: { 'README.md': '# ホーム\n' } };
     await withPage(browser, mockOptions(spec), async ({ page }) => {

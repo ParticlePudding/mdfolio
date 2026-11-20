@@ -2,6 +2,15 @@
 
 Changes in each version of mdfolio. The details are in `docs/SPEC.md` (revision history), `docs/REVIEW.md`, and `docs/TEST_REPORT.md`.
 
+## Unreleased
+
+### Fixed
+
+- "Reload" of a folder returned to the top of the document. It now keeps the position.
+- Using the menu (⋯) could scroll the page up when the menu closed.
+- If the browser never reported whether `mdfolio.css` exists, the export dialog could wait forever. It now stops waiting after 3 seconds.
+- The README now says why to zip a site before sending it.
+
 ## 1.4.0 — 2026-11-20
 
 Fixes from an evaluation by 20 users.

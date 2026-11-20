@@ -18,6 +18,7 @@
   const IDB_NAME = 'mdv';
   const IDB_STORE = 'kv';
   const AUTO_REFRESH_MS = 2000;
+  const USER_CSS_PROBE_MS = 3000;
   const SEARCH_LIMIT = 50;
   const ID_PREFIX = 'user-content-';
   const HIGHLIGHT_MAX_CHARS = 200000;   // Code blocks longer than this are not syntax-highlighted
@@ -169,6 +170,14 @@
   function tabTitle(title) {
     const site = siteTitle();
     return title && title !== site ? title + ' - ' + site : site;
+  }
+
+  /**
+   * Focus an element in the sticky header or its menu without scrolling. Chromium otherwise scrolls the page
+   * when focus moves to a sticky element (closing the menu jumped from deep in a document to near the top).
+   */
+  function focusNoScroll(el) {
+    try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); }
   }
 
   function reportError(err) {
@@ -438,7 +447,7 @@
     bind(label, (el) => { el.textContent = t(key); });
     btn.addEventListener('click', guard(() => {
       closeMenu();
-      ui.menuBtn.focus(); // The items get hidden, so move focus back to the menu button (also the return target when a dialog closes)
+      focusNoScroll(ui.menuBtn); // The items get hidden, so move focus back to the menu button (also the return target when a dialog closes)
       return action();
     }));
     return btn;
@@ -480,7 +489,7 @@
     ui.menu.hidden = false;
     ui.menuBtn.setAttribute('aria-expanded', 'true');
     const first = ui.menu.querySelector('.mdv-menu-item:not([hidden])');
-    if (first) first.focus();
+    if (first) focusNoScroll(first);
   }
 
   function closeMenu() {
@@ -614,7 +623,7 @@
     setDrawerInert(false);
     applySidebarState();
     if (focusInside && !keepFocus) {
-      if (navigating) { try { ui.main.focus({ preventScroll: true }); } catch (e) { ui.main.focus(); } } else ui.sidebarBtn.focus();
+      if (navigating) { try { ui.main.focus({ preventScroll: true }); } catch (e) { ui.main.focus(); } } else focusNoScroll(ui.sidebarBtn);
     }
   }
 
@@ -716,7 +725,16 @@
     const pending = state.pendingRoute;
     state.pendingRoute = null;
     ui.pending.hidden = true;
-    if (pending && set.entries.has(pending.path)) target = core.buildRoute(pending.path, pending.fragment);
+    if (pending && set.entries.has(pending.path)) {
+      target = core.buildRoute(pending.path, pending.fragment);
+      if (typeof pending.keepScroll === 'number') {
+        try {
+          history.replaceState(null, '', target);
+          handleRoute({ keepScroll: pending.keepScroll });
+          return true;
+        } catch (e) { /* fall back to a normal navigation */ }
+      }
+    }
     go(target, true);
     return true;
   }
@@ -1036,10 +1054,12 @@
     if (!set) return;
     if (set.rootHandle) {
       const route = core.parseRoute(location.hash);
+      const scrollY = window.scrollY;
       const fresh = newSet(set.name, 'handles');
       fresh.rootHandle = set.rootHandle;
       await scanDirHandle(fresh, set.rootHandle, '', null);
-      if (route.type === 'doc') state.pendingRoute = route;
+      // Come back to the same document at the same scroll position
+      if (route.type === 'doc') state.pendingRoute = Object.assign({}, route, { keepScroll: scrollY });
       if (installSet(fresh)) toast(t('reloaded'));
       return;
     }
@@ -2259,7 +2279,10 @@
     if (!link) return Promise.resolve(false);
     return new Promise((resolve) => {
       const probe = h('link', { rel: 'stylesheet', media: 'not all', href: link.getAttribute('href'), 'data-mdv-dyn': 'user-css-probe' });
-      const done = (ok) => { probe.remove(); resolve(ok); };
+      let settled = false;
+      const done = (ok) => { if (settled) return; settled = true; clearTimeout(timer); probe.remove(); resolve(ok); };
+      // If a browser fires neither event, treat the CSS as absent rather than waiting forever (the export dialog waits for this)
+      const timer = setTimeout(() => done(false), USER_CSS_PROBE_MS);
       probe.addEventListener('load', () => done(true));
       probe.addEventListener('error', () => done(false));
       document.head.appendChild(probe);
@@ -2589,8 +2612,8 @@
       else if (ev.key === 'ArrowUp') next = (i - 1 + items.length) % items.length;
       else if (ev.key === 'Home') next = 0;
       else if (ev.key === 'End') next = items.length - 1;
-      else if (ev.key === 'Tab') { ui.menuBtn.focus(); closeMenu(); return; }
-      if (next >= 0) { ev.preventDefault(); items[next].focus(); }
+      else if (ev.key === 'Tab') { focusNoScroll(ui.menuBtn); closeMenu(); return; }
+      if (next >= 0) { ev.preventDefault(); focusNoScroll(items[next]); }
     });
 
     ui.openFolderBtn.addEventListener('click', guard(openFolder));
@@ -2675,7 +2698,7 @@
         return;
       }
       if (ev.key === 'Escape') {
-        if (!ui.menu.hidden) { closeMenu(); ui.menuBtn.focus(); }
+        if (!ui.menu.hidden) { closeMenu(); focusNoScroll(ui.menuBtn); }
         if (!ui.searchPanel.hidden) closeSearchPanel();
         closeDrawer();
       }

@@ -320,3 +320,16 @@ describe('UI text (NFR-5)', () => {
     assert.equal(i18n.translate('ja', 'noSuchKey', []), 'noSuchKey');
   });
 });
+
+describe('Command-line arguments of the build', () => {
+  test('--out and --without without a value stop with a clear message', () => {
+    for (const args of [['--out'], ['--without'], ['--out', '--without', 'katex']]) {
+      let err = null;
+      try {
+        execFileSync(process.execPath, [path.join(ROOT, 'tools/build.mjs'), ...args], { cwd: ROOT, encoding: 'utf8', stdio: 'pipe' });
+      } catch (e) { err = e; }
+      assert.ok(err, args.join(' ') + ' must fail');
+      assert.match(String(err.stderr) + String(err.stdout), new RegExp(args[0] + ' needs a value'));
+    }
+  });
+});

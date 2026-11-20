@@ -269,3 +269,17 @@ Twenty evaluators, each with a different job (technical writer, security officer
 
 Deferred feature requests (not in this version): printing or making a PDF of all documents at once; clickable cross-references in PDF; a broken-link and orphan-page check before export; search stemming, phrase search and more than 50 results; zoom for diagrams and images; backlinks; previous/next page links; choosing which files to export; line numbers and soft wrap for code; sticky table headers; ticking task lists; per-document `lang`; EUC-JP support.
 
+## 12. External code review of 1.4.0 (2026-11-20)
+
+An outside review of 1.4.0 found no defects and made 8 suggestions. Each was checked against the code.
+
+| # | Suggestion | Check | Action |
+|---|---|---|---|
+| H-1 | `probeUserCss` waits forever if neither `load` nor `error` fires | Confirmed in the code (not seen in Chromium) | Gives up after 3 seconds and treats the CSS as absent |
+| H-2 | Heading extraction (`core.extractHeadings`) and heading IDs (`md.js`) use different text rules | Not a defect: `extractHeadings` only gives the title during indexing; the outline and IDs come from the rendered document, and the title is corrected when the document is shown | None |
+| H-3 | `tools/build.mjs --out` without a value fails with an internal error | Confirmed | Clear message for `--out` and `--without` without a value |
+| H-4 | `make-docs-site.mjs` leaves its temporary folder when the export fails | Confirmed | Removed in `finally` |
+| H-5 | "Reload" of a folder returns to the top of the page | Confirmed. Investigating it found a second, older problem: closing the menu moved focus to the menu button in the sticky header, and Chromium then scrolled the page (from 600px to 130px). This happened after every menu action | Reload keeps the scroll position; focus in the header and menu moves without scrolling |
+| H-6 | README: say why to zip a site before sending | Agreed | One sentence in both READMEs |
+| H-7 | The examples in SPEC 8.2 say `mdfolio 1.0.1` | Confirmed | Updated to 1.4.0 |
+| H-8 | Check the adjacent `mdfolio.css` in Firefox / Safari | Already in `tests/cross/smoke.mjs` since 1.3.0, but those engines are not available in this environment | Still not verified |

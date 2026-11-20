@@ -25,23 +25,27 @@ const work = fs.mkdtempSync(path.join(os.tmpdir(), 'mdfolio-docs-'));
 const readme = lang === 'en' ? 'README.md' : 'README.ja.md';
 const dropLangLine = (text) => text.replace(/^(?:\*\*English\*\* \| \[日本語\]\(README\.ja\.md\)|\[English\]\(README\.md\) \| \*\*日本語\*\*)\n+/, '');
 
-fs.writeFileSync(path.join(work, 'README.md'), dropLangLine(fs.readFileSync(path.join(ROOT, readme), 'utf8')));
-// The specification, review record and test report are in English, so they go only into the English documentation
-if (lang === 'en') {
-  for (const name of ['SPEC.md', 'REVIEW.md', 'TEST_REPORT.md']) fs.copyFileSync(path.join(ROOT, 'docs', name), path.join(work, name));
-  fs.writeFileSync(path.join(work, '_sidebar.md'), [
-    '- [Introduction (README)](README.md)',
-    '- Design records',
-    '  - [Specification](SPEC.md)',
-    '  - [Spec review record](REVIEW.md)',
-    '  - [Test report](TEST_REPORT.md)',
-    ''
-  ].join('\n'));
-}
-// Fix the modification times so that the same content always gives the same HTML
-const stamp = new Date(fs.statSync(path.join(ROOT, readme)).mtimeMs);
-for (const name of fs.readdirSync(work)) fs.utimesSync(path.join(work, name), stamp, stamp);
+// The temporary folder is removed even when the export fails
+try {
+  fs.writeFileSync(path.join(work, 'README.md'), dropLangLine(fs.readFileSync(path.join(ROOT, readme), 'utf8')));
+  // The specification, review record and test report are in English, so they go only into the English documentation
+  if (lang === 'en') {
+    for (const name of ['SPEC.md', 'REVIEW.md', 'TEST_REPORT.md']) fs.copyFileSync(path.join(ROOT, 'docs', name), path.join(work, name));
+    fs.writeFileSync(path.join(work, '_sidebar.md'), [
+      '- [Introduction (README)](README.md)',
+      '- Design records',
+      '  - [Specification](SPEC.md)',
+      '  - [Spec review record](REVIEW.md)',
+      '  - [Test report](TEST_REPORT.md)',
+      ''
+    ].join('\n'));
+  }
+  // Fix the modification times so that the same content always gives the same HTML
+  const stamp = new Date(fs.statSync(path.join(ROOT, readme)).mtimeMs);
+  for (const name of fs.readdirSync(work)) fs.utimesSync(path.join(work, name), stamp, stamp);
 
-const title = lang === 'en' ? 'mdfolio documentation' : 'mdfolio ドキュメント';
-process.stdout.write(execFileSync(process.execPath, [path.join(ROOT, 'tools/build-site.mjs'), work, '--out', out, '--title', title, '--lang', lang], { cwd: ROOT, encoding: 'utf8' }));
-fs.rmSync(work, { recursive: true, force: true });
+  const title = lang === 'en' ? 'mdfolio documentation' : 'mdfolio ドキュメント';
+  process.stdout.write(execFileSync(process.execPath, [path.join(ROOT, 'tools/build-site.mjs'), work, '--out', out, '--title', title, '--lang', lang], { cwd: ROOT, encoding: 'utf8' }));
+} finally {
+  fs.rmSync(work, { recursive: true, force: true });
+}

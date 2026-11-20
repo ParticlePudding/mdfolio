@@ -33,6 +33,7 @@ function parseArgs(argv) {
   const args = { out: 'dist/mdfolio.html', without: [] };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
+    if ((a === '--out' || a === '--without') && (i + 1 >= argv.length || argv[i + 1].startsWith('--'))) fail(a + ' needs a value');
     if (a === '--out') args.out = argv[++i];
     else if (a === '--without') args.without = String(argv[++i] || '').split(',').map((s) => s.trim()).filter(Boolean);
     else fail('Unknown argument: ' + a);
