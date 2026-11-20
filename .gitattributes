@@ -1,2 +1,3 @@
 # Left out of the source archives (zip / tar.gz) that GitHub attaches to each release
+/test-results export-ignore
 /test-results/** export-ignore
