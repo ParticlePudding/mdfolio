@@ -563,7 +563,7 @@ Remaining constraint (a browser rule): a page opened via `file://` can use adjac
 
 ### 8.7 Public pages and English documents (added in specification 1.5; English first since 1.12)
 
-mdfolio is meant to be widely used, not only by Japanese-speaking users (the project owner's policy; specification 1.12), and things visible from outside (README, public pages, change history, release notes) put English first. The specification, review record, test report and source code comments are also written in English. Communication with the project owner and the handover notes (CLAUDE.md) are in Japanese.
+mdfolio is meant to be widely used, not only by Japanese-speaking users (the project owner's policy; specification 1.12), and things visible from outside (README, public pages, change history, release notes) put English first. The specification, review record, test report and source code comments are also written in English. Communication with the project owner is in Japanese.
 
 #### Structure
 

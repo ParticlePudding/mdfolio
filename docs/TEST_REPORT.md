@@ -11,7 +11,7 @@
 
 ## 1. Conclusion
 
-### Unreleased (external code review of 1.4.0)
+### 1.4.1 (external code review of 1.4.0)
 
 - All **402 automated tests passed** (190 unit, 212 browser). Added: a unit test for build arguments without a value, and a browser test that "Reload" keeps the document and its scroll position and that opening the menu does not scroll the page.
 - The browser test fails without the fix (the page returned to 130px from 600px). The 3-second limit of the adjacent CSS check was checked only by reading the code: no browser here fails to fire the events.

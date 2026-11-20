@@ -2,7 +2,7 @@
 
 Changes in each version of mdfolio. The details are in `docs/SPEC.md` (revision history), `docs/REVIEW.md`, and `docs/TEST_REPORT.md`.
 
-## Unreleased
+## 1.4.1 — 2026-11-20
 
 ### Fixed
 
@@ -10,6 +10,10 @@ Changes in each version of mdfolio. The details are in `docs/SPEC.md` (revision 
 - Using the menu (⋯) could scroll the page up when the menu closed.
 - If the browser never reported whether `mdfolio.css` exists, the export dialog could wait forever. It now stops waiting after 3 seconds.
 - The README now says why to zip a site before sending it.
+
+### Changed
+
+- The source code archives on the release page no longer include test results (`test-results/`) or the maintainer's notes.
 
 ## 1.4.0 — 2026-11-20
 

@@ -53,7 +53,7 @@ describe('Release', () => {
       'sample-docs/guide/基本操作.md', 'sample-docs-en/guide/basics.md', 'sample.md', 'sample.en.md',
       'README.md', 'README.ja.md', 'CHANGELOG.md', 'LICENSE', 'THIRD-PARTY-NOTICES.txt']) assert.ok(names.includes(top + p), p);
     assert.ok(!names.includes(top + 'CHANGELOG.en.md'));
-    assert.ok(!names.some((n) => /node_modules|\/\.git\/|\/src\/|\/tests\//.test(n)), 'contains no development files');
+    assert.ok(!names.some((n) => /node_modules|\/\.git\/|\/src\/|\/tests\/|test-results|TEST_REPORT|CLAUDE\.md/.test(n)), 'contains no development files, test results or maintainer notes');
     assert.ok(!names.some((n) => n.startsWith(top + 'dist/mdfolio/')), 'does not contain the folder version (removed in 1.3.0)');
     assert.equal(CONTENTS.length, 11);
     assert.ok(!names.some((n) => n.startsWith(top + 'tools/')), 'it is for users, so it contains no Node.js tools');
