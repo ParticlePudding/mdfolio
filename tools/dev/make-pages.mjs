@@ -8,11 +8,11 @@
  *
  *   index.html            Landing page (English; no scripts; includes the full license notices)
  *   mdfolio.html          The viewer (dist/mdfolio.html; only one; the interface language follows the browser)
- *   sample-site.html      Export sample (sample-docs-en/; interface fixed to English)
+ *   sample-site.html      Export sample (sample-docs/; interface fixed to English)
  *   style/                Custom look sample (the export sample plus an mdfolio.css next to it, a copy of examples/mdfolio.css)
  *   mdfolio-docs.html     Documentation (README.md and the 3 documents in docs/)
  *   ja/index.html         Landing page (Japanese)
- *   ja/sample-site.html   Export sample (sample-docs/; interface fixed to Japanese)
+ *   ja/sample-site.html   Export sample (sample-docs-ja/; interface fixed to Japanese)
  *   ja/style/             Custom look sample (Japanese)
  *   ja/mdfolio-docs.html  Documentation (README.ja.md)
  *   en/index.html         Former location of the English landing page; redirects to the top (for old links; no scripts)
@@ -50,8 +50,8 @@ fs.copyFileSync(viewer, path.join(out, 'mdfolio.html'));
 fs.writeFileSync(path.join(out, '.nojekyll'), '');
 
 const LANGS = {
-  en: { dir: '', docs: 'sample-docs-en', title: 'mdfolio sample documents' },
-  ja: { dir: 'ja', docs: 'sample-docs', title: 'mdfolio サンプル文書' }
+  en: { dir: '', docs: 'sample-docs', title: 'mdfolio sample documents' },
+  ja: { dir: 'ja', docs: 'sample-docs-ja', title: 'mdfolio サンプル文書' }
 };
 for (const [lang, c] of Object.entries(LANGS)) {
   const at = (p) => path.join(out, c.dir, p);

@@ -50,7 +50,7 @@ describe('Release', () => {
     const top = `mdfolio-${version}/`;
     assert.ok(names.every((n) => n.startsWith(top)), 'there is one top-level folder');
     for (const p of ['dist/mdfolio.html', 'examples/mdfolio.css',
-      'sample-docs/guide/基本操作.md', 'sample-docs-en/guide/basics.md', 'sample.md', 'sample.en.md',
+      'sample-docs-ja/guide/基本操作.md', 'sample-docs/guide/basics.md', 'sample.ja.md', 'sample.md',
       'README.md', 'README.ja.md', 'CHANGELOG.md', 'LICENSE', 'THIRD-PARTY-NOTICES.txt']) assert.ok(names.includes(top + p), p);
     assert.ok(!names.includes(top + 'CHANGELOG.en.md'));
     assert.ok(!names.some((n) => /node_modules|\/\.git\/|\/src\/|\/tests\/|test-results|TEST_REPORT|CLAUDE\.md/.test(n)), 'contains no development files, test results or maintainer notes');

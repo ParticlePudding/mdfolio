@@ -38,7 +38,7 @@ export function sectionOf(text, ver) {
 // What goes into the distribution zip (same layout as the repository)
 export const CONTENTS = [
   'dist/mdfolio.html', 'examples/mdfolio.css',
-  'sample-docs', 'sample-docs-en', 'sample.md', 'sample.en.md',
+  'sample-docs-ja', 'sample-docs', 'sample.ja.md', 'sample.md',
   'README.md', 'README.ja.md', 'CHANGELOG.md', 'LICENSE', 'THIRD-PARTY-NOTICES.txt'
 ];
 

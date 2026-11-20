@@ -265,7 +265,7 @@ describe('Various inputs', () => {
 describe('English messages of the command-line export (FD-10)', () => {
   test('Shows the result, errors and --help in English', () => {
     const out = path.join(tmp(), 'site.html');
-    let r = run([path.join(ROOT, 'sample-docs-en'), '--out', out], { lang: 'en' });
+    let r = run([path.join(ROOT, 'sample-docs'), '--out', out], { lang: 'en' });
     assert.equal(r.code, 0, r.err);
     assert.ok(r.out.includes('Wrote ' + out));
     assert.match(r.out, /7 document\(s\), 3 attachment\(s\)/);

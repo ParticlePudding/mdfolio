@@ -1,8 +1,0 @@
-- [Introduction](README.md)
-- Guide
-  - [Basics](guide/basics.md)
-  - [Markdown syntax](guide/markdown-syntax.md)
-  - [Distributing documents](guide/distributing.md)
-- Reference
-  - [Settings](reference/settings.md)
-  - [Limitations](reference/limitations.md)

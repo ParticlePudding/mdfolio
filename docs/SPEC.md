@@ -449,8 +449,8 @@ The converted HTML is intended for trying out the app and publishing samples; fo
 |---|---|
 | `dist/mdfolio.html` | The viewer itself (single HTML). Distributing this alone is enough for it to work |
 | `sample-docs/` | Sample documents for trying out the app (folder) |
-| `sample-docs-en/` | English sample documents with the same content (8.7) |
-| `sample.md` `sample.en.md` | Sample documents for trying out the app (self-contained in one file; Japanese and English) |
+| `sample-docs-ja/` | Japanese sample documents with the same content (8.7) |
+| `sample.md` `sample.ja.md` | Sample documents for trying out the app (self-contained in one file; English and Japanese) |
 | `CHANGELOG.md` | Change history (English) |
 | `src/` `vendor/` `tools/` `tests/` | Source, bundled libraries, build and export tools, tests |
 | `docs/` | Specification, review record, test report |
@@ -570,19 +570,19 @@ mdfolio is meant to be widely used, not only by Japanese-speaking users (the pro
 ```
 (public pages)
   index.html              Landing page (English)
-  sample-site.html        Export sample (sample-docs-en/; English UI)
+  sample-site.html        Export sample (sample-docs/; English UI)
   style/                  Appearance sample (English)
   mdfolio-docs.html       Documentation (README.md, plus the specification, review record and test report)
   mdfolio.html            Viewer (only one; UI language follows the browser)
   ja/
     index.html            Landing page (Japanese)
-    sample-site.html      Export sample (sample-docs/; Japanese UI)
+    sample-site.html      Export sample (sample-docs-ja/; Japanese UI)
     style/                Appearance sample (Japanese)
     mdfolio-docs.html     Documentation (README.ja.md)
   en/index.html           Location of the English landing page in 1.2.0–1.3.0. Redirects to the top (for old links; no script)
 ```
 
-The repository contains the English README `README.md`, the Japanese README `README.ja.md`, the English sample documents `sample-docs-en/` and the Japanese sample documents `sample-docs/`.
+The repository contains the English README `README.md`, the Japanese README `README.ja.md`, the English sample documents `sample-docs/` and the Japanese sample documents `sample-docs-ja/`.
 
 #### Requirements
 
@@ -591,7 +591,7 @@ The repository contains the English README `README.md`, the Japanese README `REA
 | PG-1 | Required | Provide the public pages' landing page, export sample, appearance sample and documentation in both English and Japanese. English goes at the top (root), Japanese under `ja/`. `en/` contains a page that redirects to the top. There is one viewer, opened from both landing pages |
 | PG-2 | Required | At the top of each landing page, put a link to the landing page in the other language. Both landing pages have `hreflang` declarations pointing to each other. No automatic language-based routing (redirection by script) |
 | PG-3 | Required | The public pages' samples (export and appearance) and documentation fix the UI language to the language of the documents (setting `lang` to `ja` / `en`). If the user switches it in the menu, that choice is followed (5.6). The sample in the repository's `dist/` (`sample-site.html`) stays `auto`. The documentation (`dist/mdfolio-docs.html`) is the same as on the public pages, so it is fixed to `ja` |
-| PG-4 | Required | `sample-docs-en/` has the same structure as `sample-docs/` (number of documents, sidebar, images, attachments) and samples of the same features (links, search, tables, alerts, code, math, diagrams, footnotes, collapsible sections, front matter). File and folder names are in English. Samples specific to Japanese (such as full-width search terms) are replaced with samples that are meaningful in English |
+| PG-4 | Required | `sample-docs/` has the same structure as `sample-docs-ja/` (number of documents, sidebar, images, attachments) and samples of the same features (links, search, tables, alerts, code, math, diagrams, footnotes, collapsible sections, front matter). File and folder names are in English. Samples specific to Japanese (such as full-width search terms) are replaced with samples that are meaningful in English |
 | PG-5 | Required | When English documents name screen components, use the same words as the app's English UI (`en` in `src/i18n.js`) |
 | PG-6 | Required | Put links to each other at the top of `README.md` (English) and `README.ja.md` (Japanese). The Japanese documentation states that the specification, review record and test report are in English |
 | PG-7 | Required | Landing pages use no scripts and do not communicate externally (CSP `default-src 'none'`). Other pages keep the same security mechanisms as the distributed files |
@@ -606,7 +606,7 @@ GitHub's automation (GitHub Actions) updates the public pages and creates releas
 |---|---|---|
 | AU-1 | Required | When `main` is updated, run unit tests → build → assembly of the files to publish (`make-pages.mjs`), and replace the `gh-pages` branch. If any step fails, the public pages are not changed |
 | AU-2 | Required | When a tag starting with `v` (e.g. `v1.2.0`) is pushed, or when started manually from the GitHub Actions screen (creates the tag `v<package.json version>` on the latest `main`; stops if a release for the same version already exists), verify that the tag's version matches the version in `package.json`, and after unit tests and the build, create a GitHub release. The release notes use that version's section of the change history (`CHANGELOG.md`; English) |
-| AU-3 | Required | Two files are attached to the release: `mdfolio.html` (the single HTML edition; works on its own) and the distribution zip `mdfolio-<version>.zip`. The zip contains the single HTML edition, the appearance sample CSS (`examples/mdfolio.css`), the samples (`sample-docs/`, `sample-docs-en/`, `sample.md`, `sample.en.md`), `README.md`, `README.ja.md`, `CHANGELOG.md`, `LICENSE` and `THIRD-PARTY-NOTICES.txt`. Japanese file names are marked as UTF-8 (`make-zip.py`) |
+| AU-3 | Required | Two files are attached to the release: `mdfolio.html` (the single HTML edition; works on its own) and the distribution zip `mdfolio-<version>.zip`. The zip contains the single HTML edition, the appearance sample CSS (`examples/mdfolio.css`), the samples (`sample-docs-ja/`, `sample-docs/`, `sample.ja.md`, `sample.md`), `README.md`, `README.ja.md`, `CHANGELOG.md`, `LICENSE` and `THIRD-PARTY-NOTICES.txt`. Japanese file names are marked as UTF-8 (`make-zip.py`) |
 | AU-4 | Required | Permissions used by the automation are limited to what is needed to write to the `gh-pages` branch and create releases (`contents: write`). The only external service components (third-party actions) used are official GitHub ones (`actions/checkout`, `actions/setup-node`) |
 | AU-5 | Required | The distribution zip and release notes are assembled by `tools/dev/make-release.mjs`, so the same output can be produced locally |
 
@@ -682,5 +682,6 @@ Pass criteria: all automated tests pass, and no console errors, CSP violations o
 | 1.10 | 2026-11-17 | Made it clear that users do not use Node.js. The command-line export is for developers and automation, and was removed from the user-facing instructions (README, samples, public pages) and the release zip (FR-604, AU-3) |
 | 1.11 | 2026-11-17 | Swapped the READMEs so that English is `README.md` and Japanese is `README.ja.md` (8.1, 8.7). The default app UI language (`auto`) is unchanged |
 | 1.12 | 2026-11-17 | Put English first so that the app can be widely used (the project owner's policy). Public pages: English at the top, Japanese under `ja/`, and `en/` as a redirect page (8.7). Change history and release notes in English (8.1, 8.8). The specification, review record, test report and source code comments are to be written in English |
+| 1.15 | 2026-11-20 | Sample files named English-first: `sample-docs/` and `sample.md` are English, `sample-docs-ja/` and `sample.ja.md` are Japanese (8.7) |
 | 1.14 | 2026-11-20 | From an external code review: "Reload" of a folder keeps the scroll position (FR-109); moving focus within the header and its menu does not scroll the page; the check for an adjacent `mdfolio.css` gives up after 3 seconds; version in the examples of 8.2 |
 | 1.13 | 2026-11-18 | Fixes from the user evaluation by 20 evaluators (3.11: FR-1101 to FR-1113). External image permission is stored per HTML file (5.6). The example `mdfolio.css` defines the dark theme too. Added markdown-it-cjk-friendly for FR-1106 (8.4) |

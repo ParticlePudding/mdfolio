@@ -2,8 +2,8 @@
   "name": "mdfolio",
   "version": "1.4.1",
   "file": "mdfolio.html",
-  "bytes": 4355211,
-  "sha256": "2027daa22bf733d924d7914921d2c34d3e43aa80f9f20e79acbcf8dbbca78874",
+  "bytes": 4354916,
+  "sha256": "848aa8ab68a40bcb43ed4b7c5f8703300c93465c74b4fa992f435ed6f46f435a",
   "without": [],
   "csp": "default-src 'none'; script-src 'sha256-HUcweY84U+7SuqI9kjccMDks6/bsvsGMqKKnrvMTs00=' 'sha256-lWa2j0i4fr83ufGzE4V/c/sUjamrKe4dkLRuUxjVqjI=' 'sha256-+hQEmLjPyDAsvl58sb28H5Urw4s/oljt4J5z7b+adLw=' 'sha256-xB9SNgkbg/UkxJQPl6FrKxSnbyH/hK6k/WtmQh2KKpo='; style-src 'self' file: 'unsafe-inline'; img-src data: blob: http: https:; media-src data: blob: http: https:; font-src data:; connect-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; form-action 'none'; base-uri 'none'",
   "blocks": [
@@ -20,12 +20,12 @@
     {
       "id": "mdv-res-help-ja",
       "type": "application/json",
-      "bytes": 7972
+      "bytes": 7790
     },
     {
       "id": "mdv-res-help-en",
       "type": "application/json",
-      "bytes": 6210
+      "bytes": 6097
     },
     {
       "id": "mdv-res-licenses",

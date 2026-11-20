@@ -1,4 +1,4 @@
-// Checks for the sample documents (sample-docs/ and the English sample-docs-en/) (SPEC 8.7 PG-4, PG-8)
+// Checks for the sample documents (sample-docs-ja/ and the English sample-docs/) (SPEC 8.7 PG-4, PG-8)
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -6,7 +6,7 @@ import path from 'node:path';
 import { ROOT, createRenderer } from '../helpers/load.mjs';
 
 const r = createRenderer();
-const SETS = ['sample-docs', 'sample-docs-en'];
+const SETS = ['sample-docs-ja', 'sample-docs'];
 
 function walk(dir, base = dir) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
@@ -25,7 +25,7 @@ describe('Sample documents', () => {
   });
 
   test('English samples use no Japanese in file or folder names (PG-4)', () => {
-    for (const f of walk(path.join(ROOT, 'sample-docs-en'))) assert.match(f, /^[\x20-\x7e]+$/, f);
+    for (const f of walk(path.join(ROOT, 'sample-docs'))) assert.match(f, /^[\x20-\x7e]+$/, f);
   });
 
   test('English samples include the same syntax examples as the Japanese samples (PG-4)', () => {
@@ -44,7 +44,7 @@ describe('Sample documents', () => {
     assert.deepEqual(en, ja);
   });
 
-  test('Single-file samples (sample.md and sample.en.md): in-page heading links have targets, and both have the same structure', () => {
+  test('Single-file samples (sample.ja.md and sample.md): in-page heading links have targets, and both have the same structure', () => {
     const outline = (f) => {
       const text = fs.readFileSync(path.join(ROOT, f), 'utf8');
       const html = r.render(text);
@@ -53,7 +53,7 @@ describe('Sample documents', () => {
       }
       return { headings: text.match(/^#{1,3} /gm).map((h) => h.trim()), fences: text.match(/^```\w+$/gm), alerts: text.match(/^> \[!\w+\]/gm) };
     };
-    assert.deepEqual(outline('sample.en.md'), outline('sample.md'));
+    assert.deepEqual(outline('sample.md'), outline('sample.ja.md'));
   });
 
   for (const set of SETS) {

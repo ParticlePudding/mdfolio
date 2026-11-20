@@ -2,6 +2,13 @@
 
 Changes in each version of mdfolio. The details are in `docs/SPEC.md` (revision history), `docs/REVIEW.md`, and `docs/TEST_REPORT.md`.
 
+## Unreleased
+
+### Changed
+
+- The sample files are named English-first: the English samples are `sample-docs/` and `sample.md`, and the Japanese ones are `sample-docs-ja/` and `sample.ja.md` (before: `sample-docs-en/`, `sample.en.md`, `sample-docs/`, `sample.md`).
+- The README and the help no longer give advice about sending HTML files by email or chat.
+
 ## 1.4.1 — 2026-11-20
 
 ### Fixed

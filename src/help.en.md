@@ -48,7 +48,6 @@ If you open files only, images in the same folder cannot be shown. Open the whol
 
 - Images and attachments referenced by the documents are included (up to 20 MB each).
 - If no document uses math or diagrams, the code for those features is left out to keep the file small.
-- An HTML file sent as-is by email or chat may be altered in transit and stop working. Zip it first to be safe.
 
 ## Change the look
 

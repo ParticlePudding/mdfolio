@@ -14,7 +14,7 @@ let browser;
 before(async () => { browser = await launchBrowser(); });
 after(async () => { await browser.close(); });
 
-const SAMPLE = path.join(ROOT, 'sample-docs');
+const SAMPLE = path.join(ROOT, 'sample-docs-ja');
 const USER_CSS = ':root { --accent: #8A1C14; }\n.mdv-prose h2 { color: rgb(11, 110, 128); }\n';
 const ACCENT = 'rgb(138, 28, 20)';
 const H2 = 'rgb(11, 110, 128)';

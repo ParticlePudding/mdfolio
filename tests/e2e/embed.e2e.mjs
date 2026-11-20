@@ -22,7 +22,7 @@ before(async () => { browser = await launchBrowser(); sink = await startSink(); 
 after(async () => { await browser.close(); await sink.close(); });
 
 const menuActions = (target) => target.evaluate(() => Array.from(document.querySelectorAll('.mdv-menu-item')).filter((b) => !b.hidden).map((b) => b.getAttribute('data-action')));
-const SAMPLE_DOCS = path.join(ROOT, 'sample-docs');
+const SAMPLE_DOCS = path.join(ROOT, 'sample-docs-ja');
 
 describe('Setting that disables saving (allowDownloads: false)', () => {
   test('hides export; attachments are not saved and the user is told they cannot be saved', async () => {
@@ -256,7 +256,7 @@ describe('Behavior inside a sandboxed frame', () => {
       // Single-file sample
       const [chooser] = await Promise.all([page.waitForEvent('filechooser'), frame.click('.mdv-open-files')]);
       assert.equal(chooser.isMultiple(), true);
-      await chooser.setFiles(path.join(ROOT, 'sample.md'));
+      await chooser.setFiles(path.join(ROOT, 'sample.ja.md'));
       await frameHeading(frame, 'mdfolio サンプル（1 ファイル版）');
       await frame.waitForFunction(() => document.querySelectorAll('.mdv-mermaid svg').length === 2 && document.querySelectorAll('.katex').length >= 2);
       assert.equal(await frame.locator('.mdv-prose .mdv-ph, .mdv-prose .mdv-missing, .mdv-mermaid-error, .katex-error').count(), 0, 'the sample displays completely from a single file');
@@ -436,11 +436,11 @@ describe('Behavior inside a sandboxed frame', () => {
       assert.equal(await frame.evaluate(() => window.MDV.app.state.view), 'welcome');
       assert.equal(await frame.evaluate(() => { try { return typeof indexedDB.open('x'); } catch (e) { return e.name; } }), 'SecurityError', 'IndexedDB is also unavailable under these conditions');
       assert.equal(await frame.isVisible('.mdv-open-files'), true);
-      await frame.locator('.mdv-input-files').setInputFiles(path.join(ROOT, 'sample.md'));
+      await frame.locator('.mdv-input-files').setInputFiles(path.join(ROOT, 'sample.ja.md'));
       await frameHeading(frame, 'mdfolio サンプル（1 ファイル版）');
       await frame.waitForFunction(() => document.querySelectorAll('.mdv-mermaid svg').length === 2 && document.querySelectorAll('.katex').length >= 2);
       await frame.click('.mdv-toc a >> nth=2');
-      assert.equal((await frameUrl(frame)).startsWith('about:srcdoc#/sample.md#'), true);
+      assert.equal((await frameUrl(frame)).startsWith('about:srcdoc#/sample.ja.md#'), true);
       assert.deepEqual(record.errors, []);
     } finally {
       await close();

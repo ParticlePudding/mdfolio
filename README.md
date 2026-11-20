@@ -10,11 +10,11 @@ A Markdown document viewer that runs entirely in your browser. No server, instal
 
 ## How to use
 
-Open `mdfolio.html` (in `dist/`) and choose a folder with "Open folder". To try it, open `sample-docs-en`.
+Open `mdfolio.html` (in `dist/`) and choose a folder with "Open folder". To try it, open `sample-docs`.
 
 **Change the look**: Place `mdfolio.css` in the same folder as `mdfolio.html`. See `examples/mdfolio.css` for an example.
 
-**Share**: "Export as site" in the menu (⋯) packs your documents into a single HTML file. To include your CSS, use "Choose CSS" in the export dialog. Zip the file before sending: email and chat services sometimes change HTML attachments, and the file may then stop working.
+**Share**: "Export as site" in the menu (⋯) packs your documents into a single HTML file. To include your CSS, use "Choose CSS" in the export dialog.
 
 ## Features
 
@@ -38,11 +38,11 @@ Open `mdfolio.html` (in `dist/`) and choose a folder with "Open folder". To try 
 
 ## Settings
 
-Edit the line with `id="mdv-config"` in the HTML to change the title, language, theme, and more. See `sample-docs-en/reference/settings.md`.
+Edit the line with `id="mdv-config"` in the HTML to change the title, language, theme, and more. See `sample-docs/reference/settings.md`.
 
 ## Redistribution
 
-- `dist/mdfolio.html` and sites exported from it can be redistributed as-is. The required copyright and license notices are included in the HTML.
+- `dist/mdfolio.html` and the HTML files exported from Markdown can be redistributed as-is. The copyright and license notices are included in the HTML.
 
 ## For developers
 
