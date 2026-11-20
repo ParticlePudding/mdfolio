@@ -1,6 +1,6 @@
 # mdfolio — Claude Code 向けの引き継ぎメモ
 
-ローカルの HTML / JavaScript だけで動く Markdown 文書ビューア。現在の版は 1.3.1（その後の修正は CHANGELOG の Unreleased）。変更の一覧は `CHANGELOG.md`（英語だけ。日本語版は作らない。依頼者の指示）。
+ローカルの HTML / JavaScript だけで動く Markdown 文書ビューア。現在の版は 1.4.0。変更の一覧は `CHANGELOG.md`（英語だけ。日本語版は作らない。依頼者の指示）。
 詳しい仕様は `docs/SPEC.md`、設計判断の経緯は `docs/REVIEW.md`、テスト結果は `docs/TEST_REPORT.md`。
 
 ## 依頼者について・進め方

@@ -2,7 +2,7 @@
 
 Changes in each version of mdfolio. The details are in `docs/SPEC.md` (revision history), `docs/REVIEW.md`, and `docs/TEST_REPORT.md`.
 
-## Unreleased
+## 1.4.0 — 2026-11-20
 
 Fixes from an evaluation by 20 users.
 
@@ -23,7 +23,7 @@ Fixes from an evaluation by 20 users.
 - The active item in a long sidebar list now scrolls into view.
 - `\label{…}` in math is ignored instead of being shown as an error.
 - Pressing Enter right after typing a search now opens the top result.
-- Bold and italic did not work next to Japanese, Chinese or Korean text in some cases, such as `**1.8%**の`. They now work (new bundled library: markdown-it-cjk-friendly, MIT).
+- Bold and italic did not work next to Japanese, Chinese or Korean text in some cases, such as bold text ending in a symbol (`**1.8%**`) directly followed by Japanese. They now work (new bundled library: markdown-it-cjk-friendly, MIT).
 - A backslash in code could be shown as a yen sign when only Japanese fonts were available.
 
 ## 1.3.1 — 2026-11-17

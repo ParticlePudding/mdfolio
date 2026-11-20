@@ -2,16 +2,16 @@
 
 | Item | Details |
 |---|---|
-| Target | mdfolio 1.3.0 (single-HTML version `dist/mdfolio.html`, 4,338,005 bytes, SHA-256 `80bfb828…11503d836`) |
+| Target | mdfolio 1.4.0 (single-HTML version `dist/mdfolio.html`, 4,354,077 bytes, SHA-256 `9821ab91…e10e13a40c`) |
 | Basis | [SPEC.md](SPEC.md) 1.13 |
-| Dates | 2026-11-13 (1.0.1), 2026-11-15 (1.1.0), 2026-11-16 (re-run after the copyright holder name change in 1.1.0; 1.2.0), 2026-11-17 (1.3.0, 1.3.1), 2026-11-18 (fixes from the user evaluation) |
+| Dates | 2026-11-13 (1.0.1), 2026-11-15 (1.1.0), 2026-11-16 (re-run after the copyright holder name change in 1.1.0; 1.2.0), 2026-11-17 (1.3.0, 1.3.1), 2026-11-18 to 2026-11-20 (1.4.0: fixes from the user evaluation and the code review) |
 | Tested by | The implementer (Claude). **Not tested by a third party** |
 
 ---
 
 ## 1. Conclusion
 
-### Unreleased (fixes from the user evaluation)
+### 1.4.0 (fixes from the user evaluation)
 
 - 20 evaluators with different jobs used 1.3.1 with their own sample documents (average 3.85 / 5, no critical problems). Each report was checked by reproducing it; the confirmed ones are listed in [REVIEW.md](REVIEW.md) section 11 (G-1 to G-14) and fixed as FR-1101 to FR-1113.
 - All **400 automated tests passed** (189 unit, 211 browser). 2 unit tests and 13 browser tests were added (`tests/e2e/fixes.e2e.mjs`). 18 existing browser tests were updated for the intended changes: the site title is now the home document's title, the file list shows titles (tests now find sidebar items by their path), the empty-folder message is longer, and the external image choice is stored per file.
@@ -19,7 +19,7 @@
 - FR-1106 (bold next to Japanese text) uses a new library, markdown-it-cjk-friendly 3.0.0 (MIT), bundled with esbuild by `tools/vendor.mjs`. The existing vendored files were unchanged when the tool ran again, and two runs gave the same bytes. The unit tests confirm that without the plugin the reported text is not bold, and that Latin text keeps the CommonMark rules.
 - **Not verified**: Gecko and WebKit, real phones, and fonts on real Windows / macOS (FR-1112 was checked only by the order in the CSS).
 
-### Unreleased (English-first project, translation of documents and comments)
+### 1.3.1 (English-first project, translation of documents and comments)
 
 - The specification, review record, test report, source code comments, developer tool messages, and test names were translated into English. All automated tests pass after the translation: **385 tests** (unit 187, browser 198).
 - To confirm that the translation did not change the program, `src/app.js`, `src/core.js`, `src/md.js`, and `src/i18n.js` were parsed with a JavaScript parser and compared token by token with the previous version, ignoring comments: **no differences**. The CSS files were compared with comments removed.

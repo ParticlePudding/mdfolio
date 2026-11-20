@@ -4,7 +4,7 @@
 
 A Markdown document viewer that runs entirely in your browser. No server, installation, or tools such as Node.js needed.
 
-- Version: 1.3.1
+- Version: 1.4.0
 - Public page: https://particlepudding.github.io/mdfolio/
 - Bugs, requests, and English corrections: [Issues](https://github.com/ParticlePudding/mdfolio/issues)
 
