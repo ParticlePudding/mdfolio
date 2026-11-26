@@ -228,7 +228,6 @@ describe('Environments where storage is unavailable (FR-702, NFR-7)', () => {
       assert.ok(await page.isVisible('.mdv-welcome'));
       assert.ok(await page.isHidden('.mdv-open-last'));
       await page.click('.mdv-btn-theme');
-      await page.click('.mdv-btn-theme');
       assert.equal(await page.getAttribute('html', 'data-theme'), 'dark', 'switching works in place even when it cannot be saved');
       await loadFolder(page, fixture('site'));
       assert.equal(await heading(page), 'テスト用サイト');

@@ -216,7 +216,6 @@ export async function runSmoke(d, engine, log = console.log, shots = null) {
       await d.wait(headingIs, ['テスト用サイト'], 20000, 'home');
       const before = await d.exec(() => ({ theme: document.documentElement.getAttribute('data-theme'), lang: document.documentElement.lang }));
       await d.click('.mdv-btn-theme');
-      await d.click('.mdv-btn-theme');
       const dark = await d.exec(() => ({ theme: document.documentElement.getAttribute('data-theme'), bg: getComputedStyle(document.body).backgroundColor }));
       assert.deepEqual(dark, { theme: 'dark', bg: 'rgb(15, 23, 34)' });
       await d.click('.mdv-btn-menu');

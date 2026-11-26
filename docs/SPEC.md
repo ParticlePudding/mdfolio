@@ -157,7 +157,7 @@ Priority: **Required** = must be met in this version / **Recommended** = impleme
 
 | ID | Priority | Requirement |
 |---|---|---|
-| FR-501 | Required | Theme: switchable between auto (follow the OS setting) / light / dark. When switched, diagrams (Mermaid) are also redrawn with matching colors |
+| FR-501 | Required | Theme: light or dark. Without a choice (saved with the button, or `theme` in the settings block), the OS setting is used and followed when it changes. The button switches between light and dark and saves the choice. When switched, diagrams (Mermaid) are also redrawn with matching colors |
 | FR-502 | Required | UI language: Japanese / English. The default follows the browser's language setting |
 | FR-503 | Required | Switch the layout according to the screen width (4.1) |
 | FR-504 | Required | When printing, output only the body, always in light colors (hide the header, sidebar, table of contents and buttons) |
@@ -682,6 +682,7 @@ Pass criteria: all automated tests pass, and no console errors, CSP violations o
 | 1.10 | 2026-11-17 | Made it clear that users do not use Node.js. The command-line export is for developers and automation, and was removed from the user-facing instructions (README, samples, public pages) and the release zip (FR-604, AU-3) |
 | 1.11 | 2026-11-17 | Swapped the READMEs so that English is `README.md` and Japanese is `README.ja.md` (8.1, 8.7). The default app UI language (`auto`) is unchanged |
 | 1.12 | 2026-11-17 | Put English first so that the app can be widely used (the project owner's policy). Public pages: English at the top, Japanese under `ja/`, and `en/` as a redirect page (8.7). Change history and release notes in English (8.1, 8.8). The specification, review record, test report and source code comments are to be written in English |
+| 1.16 | 2026-11-26 | The theme button switches light <-> dark; without a choice the OS setting is used (FR-501) |
 | 1.15 | 2026-11-20 | Sample files named English-first: `sample-docs/` and `sample.md` are English, `sample-docs-ja/` and `sample.ja.md` are Japanese (8.7) |
 | 1.14 | 2026-11-20 | From an external code review: "Reload" of a folder keeps the scroll position (FR-109); moving focus within the header and its menu does not scroll the page; the check for an adjacent `mdfolio.css` gives up after 3 seconds; version in the examples of 8.2 |
 | 1.13 | 2026-11-18 | Fixes from the user evaluation by 20 evaluators (3.11: FR-1101 to FR-1113). External image permission is stored per HTML file (5.6). The example `mdfolio.css` defines the dark theme too. Added markdown-it-cjk-friendly for FR-1106 (8.4) |

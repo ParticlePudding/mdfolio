@@ -224,7 +224,6 @@ describe('Behavior inside a sandboxed frame', () => {
       assert.equal(await frame.locator('.mdv-download').count(), 0);
       // Theme switching and saving (settings can be saved inside the frame too)
       await frame.click('.mdv-btn-theme');
-      await frame.click('.mdv-btn-theme');
       assert.equal(await frame.evaluate(() => document.documentElement.getAttribute('data-theme')), 'dark');
       assert.equal(await frame.evaluate(() => JSON.parse(localStorage.getItem('mdv:settings:v1')).theme), 'dark');
       await page.waitForTimeout(300);
@@ -402,8 +401,7 @@ describe('Behavior inside a sandboxed frame', () => {
       await frame.waitForFunction(() => window.MDV.app.state.view === 'help');
       // Settings switch in place even though they cannot be saved
       await frame.click('.mdv-btn-theme');
-      await frame.click('.mdv-btn-theme');
-      assert.equal(await frame.evaluate(() => document.documentElement.getAttribute('data-theme')), 'dark', 'auto -> light -> dark');
+      assert.equal(await frame.evaluate(() => document.documentElement.getAttribute('data-theme')), 'dark', 'light -> dark');
       assert.equal((await frameUrl(frame)).startsWith('about:srcdoc#'), true, 'the frame did not navigate to another page');
       assert.deepEqual(record.errors, []);
     } finally {

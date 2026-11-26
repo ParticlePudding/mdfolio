@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { execFileSync } from 'node:child_process';
-import { launchBrowser, withPage, loadFolder, fixture, goTo, waitHeading, heading, clickMenu, openMenu, VIEWER, ROOT, tmpDir, writeTree, startSink } from '../helpers/e2e.mjs';
+import { launchBrowser, withPage, loadFolder, fixture, goTo, waitHeading, heading, clickMenu, openMenu, VIEWER, ROOT, tmpDir, writeTree, startSink, viewerWithConfig } from '../helpers/e2e.mjs';
 import { core } from '../helpers/load.mjs';
 
 let browser;
@@ -21,31 +21,46 @@ const storedExternal = (page) => page.evaluate(() => {
 const bodyBg = (page) => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
 
 describe('Theme (FR-501)', () => {
-  test('cycles auto -> light -> dark and carries over to the next visit', async () => {
+  test('starts with the system theme; the button switches light <-> dark and the choice carries over', async () => {
     await withPage(browser, async ({ page }) => {
+      // No choice yet: follows the OS setting, also when it changes
       assert.equal(await theme(page), 'light');
-      assert.equal(await page.getAttribute('.mdv-btn-theme', 'aria-label'), 'テーマ: 自動（OS の設定に合わせる）');
+      assert.equal(await page.getAttribute('.mdv-btn-theme', 'aria-label'), 'テーマ: ライト（押すとダークに切り替え）');
       assert.equal(await bodyBg(page), 'rgb(237, 241, 245)');
-      // Auto: follows the OS setting
       await page.emulateMedia({ colorScheme: 'dark' });
       await page.waitForFunction(() => document.documentElement.getAttribute('data-theme') === 'dark');
       assert.equal(await bodyBg(page), 'rgb(15, 23, 34)');
-      // Fixed to light: light even when the OS is dark
+      assert.equal(await page.getAttribute('.mdv-btn-theme', 'aria-label'), 'テーマ: ダーク（押すとライトに切り替え）');
+      // The button switches from what is shown, and the choice no longer follows the OS
       await page.click('.mdv-btn-theme');
       assert.equal(await theme(page), 'light');
-      assert.equal(await page.getAttribute('.mdv-btn-theme', 'aria-label'), 'テーマ: ライト');
-      // Fixed to dark
+      assert.equal((await stored(page)).theme, 'light');
       await page.emulateMedia({ colorScheme: 'light' });
       await page.click('.mdv-btn-theme');
       assert.equal(await theme(page), 'dark');
-      assert.equal(await page.getAttribute('.mdv-btn-theme', 'aria-label'), 'テーマ: ダーク');
+      await page.emulateMedia({ colorScheme: 'dark' });
+      await page.click('.mdv-btn-theme');
+      assert.equal(await theme(page), 'light', 'light even when the OS is dark');
+      await page.click('.mdv-btn-theme');
       assert.equal((await stored(page)).theme, 'dark');
+      await page.emulateMedia({ colorScheme: 'light' });
       await page.reload();
       await page.waitForSelector('.mdv-app');
-      assert.equal(await theme(page), 'dark', 'carried over after reload');
+      assert.equal(await theme(page), 'dark', 'carried over after reload, even when the OS is light');
+    });
+  });
+
+  test('an old saved "auto" counts as no choice; theme in the settings block sets the first theme', async () => {
+    const init = () => { try { localStorage.setItem('mdv:settings:v1', JSON.stringify({ theme: 'auto' })); } catch (e) { /* ignore */ } };
+    await withPage(browser, { colorScheme: 'dark', init }, async ({ page }) => {
+      assert.equal(await theme(page), 'dark');
       await page.click('.mdv-btn-theme');
-      assert.equal((await stored(page)).theme, 'auto');
       assert.equal(await theme(page), 'light');
+    });
+    await withPage(browser, { colorScheme: 'dark', url: viewerWithConfig({ theme: 'light' }) }, async ({ page }) => {
+      assert.equal(await theme(page), 'light', 'the settings block takes precedence over the OS');
+      await page.click('.mdv-btn-theme');
+      assert.equal(await theme(page), 'dark');
     });
   });
 
@@ -63,7 +78,6 @@ describe('Theme (FR-501)', () => {
       await page.waitForSelector('.mdv-mermaid svg .node rect');
       const fill = () => page.evaluate(() => getComputedStyle(document.querySelector('.mdv-mermaid svg .node rect')).fill);
       assert.equal(await fill(), 'rgb(227, 236, 248)');
-      await page.click('.mdv-btn-theme');
       await page.click('.mdv-btn-theme');
       assert.equal(await theme(page), 'dark');
       await page.waitForFunction(() => getComputedStyle(document.querySelector('.mdv-mermaid svg .node rect')).fill === 'rgb(29, 45, 66)');

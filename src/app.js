@@ -108,7 +108,6 @@
     search: '<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>',
     sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5V5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/>',
     moon: '<path d="M20 14.5A8 8 0 0 1 9.5 4a7 7 0 1 0 10.5 10.5z"/>',
-    auto: '<circle cx="12" cy="12" r="8.5"/><path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor"/>',
     more: '<circle cx="5" cy="12" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/><circle cx="19" cy="12" r="1.2" fill="currentColor"/>',
     folder: '<path d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2.5h7a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/>',
     file: '<path d="M7 3.5h7L18.5 8v11a1.5 1.5 0 0 1-1.5 1.5H7A1.5 1.5 0 0 1 5.5 19V5A1.5 1.5 0 0 1 7 3.5z"/><path d="M14 3.5V8h4.5"/>',
@@ -239,15 +238,19 @@
     }
   }
 
+  /**
+   * The chosen theme (FR-501): the user's choice saved with the button, else `theme` in the settings block.
+   * null when neither is light or dark: then the system theme is used (an old saved 'auto' counts as no choice).
+   */
   function themePref() {
-    const p = state.settings.theme || state.config.theme;
-    return p === 'light' || p === 'dark' ? p : 'auto';
+    const s = state.settings.theme;
+    if (s === 'light' || s === 'dark') return s;
+    const c = state.config.theme;
+    return c === 'light' || c === 'dark' ? c : null;
   }
 
   function effectiveTheme() {
-    const p = themePref();
-    if (p !== 'auto') return p;
-    return darkQuery && darkQuery.matches ? 'dark' : 'light';
+    return themePref() || (darkQuery && darkQuery.matches ? 'dark' : 'light');
   }
 
   function externalAllowed() {
@@ -276,18 +279,18 @@
     const changed = document.documentElement.getAttribute('data-theme') !== theme;
     document.documentElement.setAttribute('data-theme', theme);
     if (ui.themeBtn) {
-      const pref = themePref();
-      ui.themeBtn.replaceChildren(icon(pref === 'auto' ? 'auto' : pref === 'dark' ? 'moon' : 'sun'));
-      const label = t(pref === 'auto' ? 'themeAuto' : pref === 'dark' ? 'themeDark' : 'themeLight');
+      // The icon shows the current theme; the label also says what pressing the button does
+      ui.themeBtn.replaceChildren(icon(theme === 'dark' ? 'moon' : 'sun'));
+      const label = t(theme === 'dark' ? 'themeDark' : 'themeLight');
       ui.themeBtn.setAttribute('aria-label', label);
       ui.themeBtn.setAttribute('title', label);
     }
     if (changed) rerenderMermaid();
   }
 
-  function cycleTheme() {
-    const order = ['auto', 'light', 'dark'];
-    state.settings.theme = order[(order.indexOf(themePref()) + 1) % order.length];
+  /** The button switches between light and dark, starting from what is shown (the system theme if nothing was chosen). */
+  function toggleTheme() {
+    state.settings.theme = effectiveTheme() === 'dark' ? 'light' : 'dark';
     saveSettings();
     applyTheme();
   }
@@ -2598,7 +2601,7 @@
 
     ui.sidebarBtn.addEventListener('click', toggleSidebar);
     ui.scrim.addEventListener('click', closeDrawer);
-    ui.themeBtn.addEventListener('click', cycleTheme);
+    ui.themeBtn.addEventListener('click', toggleTheme);
     ui.menuBtn.addEventListener('click', () => { if (ui.menu.hidden) openMenu(); else closeMenu(); });
     ui.menuBtn.addEventListener('keydown', (ev) => {
       if (ev.key === 'ArrowDown' && ui.menu.hidden) { ev.preventDefault(); openMenu(); }

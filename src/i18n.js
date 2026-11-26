@@ -32,9 +32,8 @@
     searchNone: '「{0}」に一致する文書はありません',
     searchIndexing: '索引を作成中 {0} / {1}',
 
-    themeAuto: 'テーマ: 自動（OS の設定に合わせる）',
-    themeLight: 'テーマ: ライト',
-    themeDark: 'テーマ: ダーク',
+    themeLight: 'テーマ: ライト（押すとダークに切り替え）',
+    themeDark: 'テーマ: ダーク（押すとライトに切り替え）',
 
     menuOpenFolder: 'フォルダを開く',
     menuOpenFiles: 'ファイルを開く',
@@ -165,9 +164,8 @@
     searchNone: 'No documents match "{0}"',
     searchIndexing: 'Indexing {0} / {1}',
 
-    themeAuto: 'Theme: auto (follow system)',
-    themeLight: 'Theme: light',
-    themeDark: 'Theme: dark',
+    themeLight: 'Theme: light (press for dark)',
+    themeDark: 'Theme: dark (press for light)',
 
     menuOpenFolder: 'Open folder',
     menuOpenFiles: 'Open files',

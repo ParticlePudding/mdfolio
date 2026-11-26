@@ -38,7 +38,7 @@ If you open files only, images in the same folder cannot be shown. Open the whol
 
 - **Switch documents**: use the list on the left or links in the text. The browser's Back and Forward buttons work too.
 - **Search**: type in the search box at the top. `Ctrl+K` (`⌘K` on Mac) or `/` moves to the search box. All search terms must appear in a matching document. Search is case-insensitive and treats full-width and half-width characters as equivalent.
-- **Theme**: the button at the top right cycles through auto, light and dark.
+- **Theme**: the button at the top right switches between light and dark. At first, the theme follows your system setting.
 - **Print or save as PDF**: use the browser's print function. Only the document body is printed.
 - **Automatic refresh**: when a folder is open in Chrome or Edge, saving the document you are viewing updates the page automatically. Use "Reload" in the menu after adding or removing files.
 

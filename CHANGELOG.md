@@ -2,6 +2,12 @@
 
 Changes in each version of mdfolio. The details are in `docs/SPEC.md` (revision history), `docs/REVIEW.md`, and `docs/TEST_REPORT.md`.
 
+## Unreleased
+
+### Changed
+
+- The theme button switches between light and dark (before: auto, light, dark). Until you press it, the theme follows your system setting, as before. `theme` in the settings block still sets the first theme.
+
 ## 1.4.2 — 2026-11-20
 
 ### Changed

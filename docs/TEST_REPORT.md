@@ -11,6 +11,10 @@
 
 ## 1. Conclusion
 
+### Unreleased (theme button: light <-> dark)
+
+- All **403 automated tests passed** (190 unit, 213 browser). The theme test was rewritten: the system theme is used and followed until the button is pressed; the button switches from the shown theme; the choice is kept after a reload; an old saved "auto" counts as no choice; `theme` in the settings block sets the first theme.
+
 ### 1.4.1 (external code review of 1.4.0)
 
 - All **402 automated tests passed** (190 unit, 212 browser). Added: a unit test for build arguments without a value, and a browser test that "Reload" keeps the document and its scroll position and that opening the menu does not scroll the page.

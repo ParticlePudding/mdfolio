@@ -2,10 +2,10 @@
   "name": "mdfolio",
   "version": "1.4.2",
   "file": "mdfolio.html",
-  "bytes": 4354916,
-  "sha256": "36652ca51ed651983573dd47568685002299c9db980ab61ff28da427c8647960",
+  "bytes": 4355199,
+  "sha256": "566ca0070471c61cb201b3a7c2bc53a0d90d581edb56e59e3ea7c7905519a112",
   "without": [],
-  "csp": "default-src 'none'; script-src 'sha256-HUcweY84U+7SuqI9kjccMDks6/bsvsGMqKKnrvMTs00=' 'sha256-pGNVdqHwy/NYHz2oIJ9Nt1EpKnuiNDq2n0rFJ3O3pEc=' 'sha256-+hQEmLjPyDAsvl58sb28H5Urw4s/oljt4J5z7b+adLw=' 'sha256-xB9SNgkbg/UkxJQPl6FrKxSnbyH/hK6k/WtmQh2KKpo='; style-src 'self' file: 'unsafe-inline'; img-src data: blob: http: https:; media-src data: blob: http: https:; font-src data:; connect-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; form-action 'none'; base-uri 'none'",
+  "csp": "default-src 'none'; script-src 'sha256-HUcweY84U+7SuqI9kjccMDks6/bsvsGMqKKnrvMTs00=' 'sha256-c3slrlg2mhYvZcMByTHNv00rEiHn8UrSFQ8MNPXX5wU=' 'sha256-+hQEmLjPyDAsvl58sb28H5Urw4s/oljt4J5z7b+adLw=' 'sha256-xB9SNgkbg/UkxJQPl6FrKxSnbyH/hK6k/WtmQh2KKpo='; style-src 'self' file: 'unsafe-inline'; img-src data: blob: http: https:; media-src data: blob: http: https:; font-src data:; connect-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; form-action 'none'; base-uri 'none'",
   "blocks": [
     {
       "id": "mdv-config",
@@ -20,12 +20,12 @@
     {
       "id": "mdv-res-help-ja",
       "type": "application/json",
-      "bytes": 7790
+      "bytes": 7808
     },
     {
       "id": "mdv-res-help-en",
       "type": "application/json",
-      "bytes": 6097
+      "bytes": 6142
     },
     {
       "id": "mdv-res-licenses",
@@ -55,7 +55,7 @@
     {
       "id": "mdv-js-app",
       "type": "text/javascript",
-      "bytes": 199888
+      "bytes": 200108
     }
   ],
   "scripts": [
@@ -65,7 +65,7 @@
     },
     {
       "id": "mdv-js-app",
-      "sha256Base64": "pGNVdqHwy/NYHz2oIJ9Nt1EpKnuiNDq2n0rFJ3O3pEc="
+      "sha256Base64": "c3slrlg2mhYvZcMByTHNv00rEiHn8UrSFQ8MNPXX5wU="
     },
     {
       "id": "mdv-lib-katex",
@@ -274,12 +274,12 @@
     },
     {
       "name": "src/i18n.js",
-      "bytes": 16650,
+      "bytes": 16648,
       "escapes": 0
     },
     {
       "name": "src/app.js",
-      "bytes": 120479,
+      "bytes": 120701,
       "escapes": 0
     }
   ],

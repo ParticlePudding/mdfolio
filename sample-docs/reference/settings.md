@@ -16,7 +16,7 @@ You can change the default behavior by editing the settings block with the ID `m
 |---|---|---|
 | `title` | text | Site title. If empty, the folder name is used |
 | `lang` | `auto` / `ja` / `en` | Interface language |
-| `theme` | `auto` / `light` / `dark` | Theme |
+| `theme` | `auto` / `light` / `dark` | The theme shown at first. `auto` follows the system setting |
 | `home` | path of a document | First document to show. If empty, `README.md` |
 | `allowExternalImages` | `true` / `false` | Whether to show external images from the start |
 | `allowDownloads` | `true` / `false` | `false` hides actions that save files ("Export as site" and saving attachments) |

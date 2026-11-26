@@ -28,7 +28,7 @@ When you choose a result, the matching words in the text are highlighted.
 
 ## Change the view
 
-The button at the top right cycles through the available themes (auto, light, and dark). The menu (⋯) lets you switch the language, show external images, and reload.
+The button at the top right switches between the light and dark themes. At first, the theme follows your system setting. The menu (⋯) lets you switch the language, show external images, and reload.
 
 ## Print
 
