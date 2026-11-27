@@ -13,6 +13,7 @@
  *            kind: 'handles' (can be re-read; auto-update works) or 'files' (a snapshot chosen once).
  *            single: only files were chosen, not a folder. root: set when the result is one folder that can
  *            be scanned again and remembered. truncated: scanning stopped at core.LIMITS.maxEntries.
+ *            skipped: the number of folders, files or dropped items that could not be read and were left out.
  *            size / mtime are undefined when not known yet (read them with stat()).
  */
 (function (root) {
@@ -26,7 +27,13 @@
   function core() { return root.MDV.core; }
 
   function newResult(kind, name) {
-    return { kind: kind, name: name || '', single: false, root: null, items: [], truncated: false };
+    return { kind: kind, name: name || '', single: false, root: null, items: [], truncated: false, skipped: 0 };
+  }
+
+  /** Whether an error means the folder or file no longer exists (moved, deleted, or the handle is stale). */
+  function isGone(err) {
+    var name = err && err.name;
+    return name === 'NotFoundError' || name === 'InvalidStateError' || name === 'TypeMismatchError';
   }
 
   // ------------------------------------------------------------------ Scanning folders
@@ -34,20 +41,26 @@
   /**
    * Walk a directory handle breadth-first and add its files to result.items. counter.n counts every entry
    * (folders too) across calls, so that several dropped folders share one limit.
+   * A subfolder that cannot be read is skipped (counted in result.skipped); if the folder itself cannot be read, this rejects.
    */
   async function scanDirHandle(result, dirHandle, prefix, counter, onProgress) {
     var queue = [{ handle: dirHandle, prefix: prefix }];
     while (queue.length) {
       var item = queue.shift();
-      for await (var pair of item.handle.entries()) {
-        var name = pair[0];
-        var child = pair[1];
-        if (core().isIgnoredName(name)) continue;
-        counter.n++;
-        if (counter.n > core().LIMITS.maxEntries) { result.truncated = true; return; }
-        if (counter.n % PROGRESS_EVERY === 0 && onProgress) onProgress(counter.n);
-        if (child.kind === 'directory') queue.push({ handle: child, prefix: item.prefix + name + '/' });
-        else result.items.push({ path: item.prefix + name, ref: child });
+      try {
+        for await (var pair of item.handle.entries()) {
+          var name = pair[0];
+          var child = pair[1];
+          if (core().isIgnoredName(name)) continue;
+          counter.n++;
+          if (counter.n > core().LIMITS.maxEntries) { result.truncated = true; return; }
+          if (counter.n % PROGRESS_EVERY === 0 && onProgress) onProgress(counter.n);
+          if (child.kind === 'directory') queue.push({ handle: child, prefix: item.prefix + name + '/' });
+          else result.items.push({ path: item.prefix + name, ref: child });
+        }
+      } catch (e) {
+        if (item.handle === dirHandle) throw e;
+        result.skipped++;
       }
     }
   }
@@ -111,14 +124,17 @@
       count++;
       if (count > core().LIMITS.maxEntries) { result.truncated = true; return; }
       if (count % PROGRESS_EVERY === 0 && onProgress) onProgress(count);
+      // Folders and files that cannot be read are skipped and counted
       if (entry.isDirectory) {
-        var children = await readAllEntries(entry.createReader());
-        children.forEach(function (c) { queue.push({ entry: c, prefix: item.prefix + entry.name + '/' }); });
+        try {
+          var children = await readAllEntries(entry.createReader());
+          children.forEach(function (c) { queue.push({ entry: c, prefix: item.prefix + entry.name + '/' }); });
+        } catch (e) { result.skipped++; }
       } else {
         try {
           var file = await entryToFile(entry);
           result.items.push({ path: item.prefix + entry.name, ref: file, size: file.size, mtime: file.lastModified });
-        } catch (e) { /* skip files that cannot be read */ }
+        } catch (e) { result.skipped++; }
       }
     }
   }
@@ -140,27 +156,42 @@
         try { return Promise.race([Promise.resolve(it.getAsFileSystemHandle()).catch(function () { return null; }), timeout]); } catch (e) { return Promise.resolve(null); }
       });
     }
+    // One entry per dropped item (null where there is none), in the same order as items
+    var itemEntries = null;
     if (items.length && typeof items[0].webkitGetAsEntry === 'function') {
-      entries = items.map(function (it) { try { return it.webkitGetAsEntry(); } catch (e) { return null; } }).filter(Boolean);
+      itemEntries = items.map(function (it) { try { return it.webkitGetAsEntry(); } catch (e) { return null; } });
+      entries = itemEntries.filter(Boolean);
     }
 
     return (async function () {
-      var handles = handlePromises ? (await Promise.all(handlePromises)).filter(Boolean) : [];
+      var handleList = handlePromises ? await Promise.all(handlePromises) : [];
+      var handles = handleList.filter(Boolean);
       var result;
       if (handles.length) {
-        if (handles.length === 1 && handles[0].kind === 'directory') {
+        if (items.length === 1 && handles[0].kind === 'directory') {
           result = newResult('handles', handles[0].name);
           result.root = handles[0];
           await scanDirHandle(result, handles[0], '', { n: 0 }, onProgress);
         } else {
           result = newResult('handles', '');
-          result.single = !handles.some(function (x) { return x.kind === 'directory'; });
+          result.single = !handles.some(function (x) { return x.kind === 'directory'; }) &&
+            !(itemEntries || []).some(function (x, i) { return !handleList[i] && x && x.isDirectory; });
           var counter = { n: 0 };
-          for (var i = 0; i < handles.length; i++) {
-            var hd = handles[i];
+          for (var i = 0; i < items.length; i++) {
+            var hd = handleList[i];
+            if (!hd) {
+              // No handle for this item (timed out or refused): read it the other way, or count it as skipped
+              var fallback = itemEntries && itemEntries[i];
+              if (fallback) await scanEntries(result, [{ entry: fallback, prefix: '' }], onProgress);
+              else result.skipped++;
+              continue;
+            }
             if (core().isIgnoredName(hd.name)) continue;
-            if (hd.kind === 'directory') await scanDirHandle(result, hd, hd.name + '/', counter, onProgress);
-            else result.items.push({ path: hd.name, ref: hd });
+            if (hd.kind === 'directory') {
+              try { await scanDirHandle(result, hd, hd.name + '/', counter, onProgress); } catch (e) { result.skipped++; }
+            } else {
+              result.items.push({ path: hd.name, ref: hd });
+            }
           }
         }
       } else if (entries && entries.length) {
@@ -183,12 +214,19 @@
   // ------------------------------------------------------------------ Choosing folders and files
 
   var inputs = null;
+  var pickers = typeof WeakMap === 'function' ? new WeakMap() : null;
+
+  function needInputs() {
+    if (!inputs) throw new Error('source.createInputs() must be called before pickFolder() / pickFiles()');
+    return inputs;
+  }
 
   /**
    * Create the hidden <input type="file"> elements for folders and files and return them for the page to place.
    * onPick(result) receives what is chosen through them. It is a callback rather than a return value of
    * pickFolder / pickFiles because the input can be filled without our click (tests set its files directly).
-   * opts: { accept (for files), onPick }
+   * Call it once, before pickFolder / pickFiles. opts: { accept (for files), onPick, onError }
+   * onError(err) receives errors while reading what was picked (default: rethrow).
    */
   function createInputs(opts) {
     var dir = document.createElement('input');
@@ -205,12 +243,17 @@
     files.setAttribute('tabindex', '-1');
     files.setAttribute('aria-hidden', 'true');
     if (opts.accept) files.setAttribute('accept', opts.accept);
-    dir.addEventListener('change', function () {
-      if (dir.files && dir.files.length) opts.onPick(fromFileList(dir.files, true));
-    });
-    files.addEventListener('change', function () {
-      if (files.files && files.files.length) opts.onPick(fromFileList(files.files, false));
-    });
+    var deliver = function (list, stripRoot) {
+      try {
+        opts.onPick(fromFileList(list, stripRoot));
+      } catch (e) {
+        if (opts.onError) opts.onError(e); else throw e;
+      }
+    };
+    // An empty folder is delivered too (as an empty result), so that the app can say there are no documents.
+    // Cancelling the dialog fires no change event, because the value is cleared before each click
+    dir.addEventListener('change', function () { if (dir.files) deliver(dir.files, true); });
+    files.addEventListener('change', function () { if (files.files && files.files.length) deliver(files.files, false); });
     inputs = { dir: dir, files: files };
     return [dir, files];
   }
@@ -230,37 +273,49 @@
       }
       if (handle) return { root: handle, name: handle.name };
     }
-    inputs.dir.value = '';
+    needInputs().dir.value = '';
     inputs.dir.click();
     return null;
   }
 
   /** Choose files. The result arrives through onPick. */
   function pickFiles() {
-    inputs.files.value = '';
+    needInputs().files.value = '';
     inputs.files.click();
   }
 
   /**
-   * Choose one file with a temporary <input> placed in opts.mount (e.g. a dialog).
+   * Choose one file with an <input> placed in opts.mount (e.g. a dialog), reused for every pick in that mount.
    * Resolves with { name, size, ref } or null (cancelled). opts: { mount, accept, className }
-   * The dialog opens synchronously, so call this directly from a click handler.
+   * The dialog opens synchronously, so call this directly from a click handler. A new pick settles an earlier
+   * one that is still waiting with null, for browsers that do not fire the input's cancel event.
    */
   function pickFile(opts) {
-    return new Promise(function (resolve) {
+    var mount = opts.mount || document.body;
+    var picker = pickers && pickers.get(mount);
+    if (!picker) {
       var input = document.createElement('input');
       input.type = 'file';
       input.hidden = true;
-      if (opts.className) input.className = opts.className;
-      if (opts.accept) input.setAttribute('accept', opts.accept);
-      var done = function (file) {
-        input.remove();
-        resolve(file ? { name: file.name, size: file.size, ref: file } : null);
+      picker = { input: input, resolve: null };
+      var settle = function (file) {
+        var resolve = picker.resolve;
+        picker.resolve = null;
+        input.value = '';
+        if (resolve) resolve(file ? { name: file.name, size: file.size, ref: file } : null);
       };
-      input.addEventListener('change', function () { done(input.files && input.files[0]); });
-      input.addEventListener('cancel', function () { done(null); });
-      (opts.mount || document.body).appendChild(input);
-      input.click();
+      input.addEventListener('change', function () { settle(input.files && input.files[0]); });
+      input.addEventListener('cancel', function () { settle(null); });
+      mount.appendChild(input);
+      if (pickers) pickers.set(mount, picker);
+    }
+    if (opts.className) picker.input.className = opts.className;
+    if (opts.accept) picker.input.setAttribute('accept', opts.accept); else picker.input.removeAttribute('accept');
+    if (picker.resolve) { var earlier = picker.resolve; picker.resolve = null; earlier(null); }
+    return new Promise(function (resolve) {
+      picker.resolve = resolve;
+      picker.input.value = '';
+      picker.input.click();
     });
   }
 
@@ -379,6 +434,7 @@
     pickFiles: pickFiles,
     pickFile: pickFile,
     fromDataTransfer: fromDataTransfer,
+    isGone: isGone,
     scanFolder: scanFolder,
     isLive: isLive,
     readFile: readFile,

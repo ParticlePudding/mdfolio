@@ -683,6 +683,7 @@ Pass criteria: all automated tests pass, and no console errors, CSP violations o
 | 1.10 | 2026-11-17 | Made it clear that users do not use Node.js. The command-line export is for developers and automation, and was removed from the user-facing instructions (README, samples, public pages) and the release zip (FR-604, AU-3) |
 | 1.11 | 2026-11-17 | Swapped the READMEs so that English is `README.md` and Japanese is `README.ja.md` (8.1, 8.7). The default app UI language (`auto`) is unchanged |
 | 1.12 | 2026-11-17 | Put English first so that the app can be widely used (the project owner's policy). Public pages: English at the top, Japanese under `ja/`, and `en/` as a redirect page (8.7). Change history and release notes in English (8.1, 8.8). The specification, review record, test report and source code comments are to be written in English |
+| 1.18 | 2026-11-27 | From the code review of `src/source.js`: unreadable subfolders and dropped items are skipped with a notice; "Reload" of a vanished folder reports it; the remembered folder is forgotten only when it is gone; an empty folder chosen with the input reports no documents |
 | 1.17 | 2026-11-27 | Internal structure: file input and output moved from `src/app.js` to `src/source.js` (8.3). No change in behavior |
 | 1.16 | 2026-11-26 | The theme button switches light <-> dark; without a choice the OS setting is used (FR-501) |
 | 1.15 | 2026-11-20 | Sample files named English-first: `sample-docs/` and `sample.md` are English, `sample-docs-ja/` and `sample.ja.md` are Japanese (8.7) |

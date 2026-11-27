@@ -121,6 +121,8 @@ describe('Embedding in exports (FR-1002 to 1005)', () => {
       await loadFolder(page, SAMPLE);
       await openExportDialog(page);
       assert.deepEqual(await cssState(page), { status: '埋め込む CSS: なし（内蔵の見た目で書き出します）', note: false, clear: false });
+      // A pick left unanswered (browsers without the cancel event) is settled by the next pick; one input is reused
+      await Promise.all([page.waitForEvent('filechooser'), page.click('.mdv-export-css-pick')]);
       await pickCss(page, ok);
       await page.waitForFunction(() => !document.querySelector('.mdv-export-css-clear').hidden);
       await page.click('.mdv-export-css-clear');
@@ -133,6 +135,7 @@ describe('Embedding in exports (FR-1002 to 1005)', () => {
       assert.ok(t.includes('bad.css には「</style」という文字列があるため、埋め込めません'), t);
       assert.ok(t.includes('big.css は大きすぎます（1MB まで）'), t);
       assert.equal((await cssState(page)).status, '埋め込む CSS: なし（内蔵の見た目で書き出します）');
+      assert.equal(await page.locator('.mdv-export-css-input').count(), 1, 'one file input, reused');
       const dl = await captureDownload(page, () => page.click('.mdv-export-run'), tmpDir());
       assert.equal(core.extractParts(fs.readFileSync(dl.file, 'utf8')).userCss, '');
     });

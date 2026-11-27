@@ -405,7 +405,8 @@
     // If something other than Markdown is chosen, report it at load time
     const pickInputs = source.createInputs({
       accept: coarsePointer() ? '' : core.DOC_EXTS.map((x) => '.' + x).join(',') + ',text/markdown',
-      onPick: guard(onPicked)
+      onPick: guard(onPicked),
+      onError: reportError
     });
     ui.dropVeil = h('div', { class: 'mdv-dropveil', hidden: true }, [
       bind(h('div', { class: 'mdv-dropveil-box' }), (el) => { el.textContent = t('dropHere'); })
@@ -653,7 +654,8 @@
       indexing: false,
       indexPromise: null,
       truncatedDocs: false,
-      truncatedEntries: false
+      truncatedEntries: false,
+      skipped: 0               // Folders or files that could not be read while opening
     };
   }
 
@@ -718,6 +720,7 @@
     startAutoRefresh();
     if (set.truncatedEntries) toast(t('limitEntries', core.LIMITS.maxEntries), { error: true });
     if (set.truncatedDocs) toast(t('limitDocs', core.LIMITS.maxDocs), { error: true });
+    if (set.skipped) toast(t('skippedItems', set.skipped), { error: true });
 
     if (opts.keepRoute) {
       handleRoute();
@@ -749,6 +752,7 @@
     set.single = result.single;
     set.root = result.root;
     set.truncatedEntries = result.truncated;
+    set.skipped = result.skipped || 0;
     result.items.forEach((it) => addEntry(set, it.path, { ref: it.ref, size: it.size, mtime: it.mtime }));
     return set;
   }
@@ -784,8 +788,12 @@
     installSet(setFromResult(result));
   }
 
+  function scanRoot(root) {
+    return withScanProgress((onProgress) => source.scanFolder(root, { onProgress: onProgress }));
+  }
+
   async function openRoot(root) {
-    const result = await withScanProgress((onProgress) => source.scanFolder(root, { onProgress: onProgress }));
+    const result = await scanRoot(root);
     if (installSet(setFromResult(result))) rememberFolder(root);
   }
 
@@ -859,18 +867,35 @@
     }).catch(() => { /* not shown in environments where it is unavailable */ });
   }
 
+  function forgetLastFolder() {
+    state.lastFolder = null;
+    ui.lastWrap.hidden = true;
+    source.forgetLastFolder().catch(() => {});
+  }
+
   async function openLastFolder() {
     const last = state.lastFolder;
     if (!last) return;
+    let granted;
     try {
-      if (!(await source.requestAccess(last.root))) { toast(t('permissionDenied'), { error: true }); return; }
-      await openRoot(last.root);
+      granted = await source.requestAccess(last.root);
     } catch (e) {
-      state.lastFolder = null;
-      ui.lastWrap.hidden = true;
-      source.forgetLastFolder().catch(() => {});
+      // The stored folder can no longer be used
+      forgetLastFolder();
       toast(t('lastFolderGone'), { error: true });
+      return;
     }
+    if (!granted) { toast(t('permissionDenied'), { error: true }); return; }
+    let result;
+    try {
+      result = await scanRoot(last.root);
+    } catch (e) {
+      // Forget the folder only when it is gone; other failures may pass, so keep it for next time
+      if (source.isGone(e)) forgetLastFolder();
+      toast(t('lastFolderGone'), { error: true });
+      return;
+    }
+    if (installSet(setFromResult(result))) rememberFolder(last.root);
   }
 
   // ------------------------------------------------------------------ Reload / auto-update (FR-109)
@@ -881,7 +906,14 @@
     if (set.root) {
       const route = core.parseRoute(location.hash);
       const scrollY = window.scrollY;
-      const fresh = setFromResult(await source.scanFolder(set.root));
+      let fresh;
+      try {
+        fresh = setFromResult(await source.scanFolder(set.root));
+      } catch (e) {
+        // Moved, deleted, or access withdrawn: keep showing what is open and say what to do
+        toast(t('folderGone'), { error: true });
+        return;
+      }
       // Come back to the same document at the same scroll position
       if (route.type === 'doc') state.pendingRoute = Object.assign({}, route, { keepScroll: scrollY });
       if (installSet(fresh)) toast(t('reloaded'));

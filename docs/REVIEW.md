@@ -283,3 +283,17 @@ An outside review of 1.4.0 found no defects and made 8 suggestions. Each was che
 | H-6 | README: say why to zip a site before sending | Agreed | One sentence in both READMEs |
 | H-7 | The examples in SPEC 8.2 say `mdfolio 1.0.1` | Confirmed | Updated to 1.4.0 |
 | H-8 | Check the adjacent `mdfolio.css` in Firefox / Safari | Already in `tests/cross/smoke.mjs` since 1.3.0, but those engines are not available in this environment | Still not verified |
+
+## 13. Code review of the move to `src/source.js` (2026-11-27)
+
+| # | Finding | Action |
+|---|---|---|
+| J-1 | Cancelling "Choose CSS" left a new hidden input and an unsettled promise each time in browsers without the input's `cancel` event | One input per mount is reused; a new pick settles the earlier one |
+| J-2 | Errors while reading what was picked with the inputs no longer reached the app's error notice | `createInputs` takes `onError` (the app's `reportError`) |
+| J-3 | `pickFolder` / `pickFiles` failed with a TypeError before `createInputs` | A clear error message, and the order is documented in FILE_IO.md |
+| J-4 | "Reload" of a moved or deleted folder showed a general error (older problem) | Says the folder could not be read; the display is kept |
+| J-5 | Dropped items without a handle were dropped silently (older problem) | Read with `webkitGetAsEntry` when possible; otherwise counted and reported |
+| J-6 | One unreadable subfolder made the whole scan fail (older problem) | Skipped and counted; only the folder itself failing stops the scan |
+| J-7 | "Reopen last folder" forgot the folder after any error (older problem) | Forgotten only when the error means the folder is gone (`isGone`) |
+| J-8 | An empty folder chosen with the folder input gave no message (older problem) | An empty result is delivered, and the usual "no documents" notice appears |
+

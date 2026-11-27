@@ -2,10 +2,10 @@
   "name": "mdfolio",
   "version": "1.4.2",
   "file": "mdfolio.html",
-  "bytes": 4364169,
-  "sha256": "fa4883ffeddc1c32ac5989434975607fa2c1e998bc4ec2d720a57e7417ba1601",
+  "bytes": 4368637,
+  "sha256": "906a0efc9404c22a2163e0f37e694b2bda9d9d620e03d11fb082fd996405a734",
   "without": [],
-  "csp": "default-src 'none'; script-src 'sha256-HUcweY84U+7SuqI9kjccMDks6/bsvsGMqKKnrvMTs00=' 'sha256-dUN9VtshFwQL323PU2O0cfZRk5/xmeFmO5t1iGu2yes=' 'sha256-+hQEmLjPyDAsvl58sb28H5Urw4s/oljt4J5z7b+adLw=' 'sha256-xB9SNgkbg/UkxJQPl6FrKxSnbyH/hK6k/WtmQh2KKpo='; style-src 'self' file: 'unsafe-inline'; img-src data: blob: http: https:; media-src data: blob: http: https:; font-src data:; connect-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; form-action 'none'; base-uri 'none'",
+  "csp": "default-src 'none'; script-src 'sha256-HUcweY84U+7SuqI9kjccMDks6/bsvsGMqKKnrvMTs00=' 'sha256-jF2NXK8sbXuP4SpXkuCVigMTP7uqKnqXfXVm1NnU2nk=' 'sha256-+hQEmLjPyDAsvl58sb28H5Urw4s/oljt4J5z7b+adLw=' 'sha256-xB9SNgkbg/UkxJQPl6FrKxSnbyH/hK6k/WtmQh2KKpo='; style-src 'self' file: 'unsafe-inline'; img-src data: blob: http: https:; media-src data: blob: http: https:; font-src data:; connect-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; form-action 'none'; base-uri 'none'",
   "blocks": [
     {
       "id": "mdv-config",
@@ -55,7 +55,7 @@
     {
       "id": "mdv-js-app",
       "type": "text/javascript",
-      "bytes": 209078
+      "bytes": 213546
     }
   ],
   "scripts": [
@@ -65,7 +65,7 @@
     },
     {
       "id": "mdv-js-app",
-      "sha256Base64": "dUN9VtshFwQL323PU2O0cfZRk5/xmeFmO5t1iGu2yes="
+      "sha256Base64": "jF2NXK8sbXuP4SpXkuCVigMTP7uqKnqXfXVm1NnU2nk="
     },
     {
       "id": "mdv-lib-katex",
@@ -274,17 +274,17 @@
     },
     {
       "name": "src/i18n.js",
-      "bytes": 16648,
+      "bytes": 17205,
       "escapes": 0
     },
     {
       "name": "src/source.js",
-      "bytes": 16425,
+      "bytes": 19333,
       "escapes": 0
     },
     {
       "name": "src/app.js",
-      "bytes": 113244,
+      "bytes": 114247,
       "escapes": 0
     }
   ],

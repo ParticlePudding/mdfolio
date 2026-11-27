@@ -304,3 +304,89 @@ describe('Checks with real folder handles (OPFS; FR-103, FR-108, FR-109)', () =>
     await page.close();
   });
 });
+
+describe('Read errors while opening (code review of source.js)', () => {
+  test('an unreadable subfolder is skipped with a notice; the rest opens', async () => {
+    const spec = { name: 'docs', files: { 'README.md': '# ホーム\n', 'ok/a.md': '# A\n', 'locked/b.md': '# B\n' } };
+    await withPage(browser, mockOptions(spec), async ({ page }) => {
+      await page.evaluate(() => { window.__mockFs.failDirs = { 'locked/': 'NotReadableError' }; });
+      await openMock(page);
+      assert.deepEqual(await page.evaluate(() => window.MDV.app.state.set.docs.slice()), ['README.md', 'ok/a.md']);
+      assert.ok((await toasts(page)).includes('読み込めなかったフォルダまたはファイルが 1 件あります（表示していません）'));
+    });
+  });
+
+  test('"Reload" of a folder that is gone keeps the display and says so', async () => {
+    await withPage(browser, mockOptions({ name: 'docs', files: { 'README.md': '# ホーム\n' } }), async ({ page }) => {
+      await openMock(page);
+      await page.evaluate(() => { window.__mockFs.failDirs = { '': 'NotFoundError' }; });
+      await clickMenu(page, 'menuReload');
+      await page.waitForSelector('.mdv-toast-error');
+      assert.deepEqual(await toasts(page), ['フォルダを読み込めませんでした。移動・削除されたか、アクセスが許可されていません。フォルダを開き直してください']);
+      assert.equal(await heading(page), 'ホーム');
+    });
+  });
+
+  test('"Reopen last folder" forgets the folder only when it is gone', async () => {
+    await withPage(browser, mockOptions({ name: 'docs', files: { 'README.md': '# ホーム\n' } }), async ({ page }) => {
+      const reopen = (errorName) => page.evaluate((name) => {
+        window.__forgot = 0;
+        window.MDV.source.forgetLastFolder = () => { window.__forgot++; return Promise.resolve(); };
+        window.__mockFs.failDirs = { '': name };
+        window.MDV.app.state.lastFolder = { root: window.__mockRoot(), name: 'docs' };
+        document.querySelector('.mdv-welcome-last').hidden = false;
+        document.querySelector('.mdv-open-last').click();
+      }, errorName);
+      await reopen('NotReadableError');
+      await page.waitForSelector('.mdv-toast-error');
+      assert.equal(await page.evaluate(() => window.__forgot), 0, 'kept after a failure that may pass');
+      assert.ok(await page.isVisible('.mdv-open-last'));
+      await reopen('NotFoundError');
+      await page.waitForFunction(() => window.__forgot === 1);
+      assert.ok(await page.isHidden('.mdv-open-last'), 'forgotten when the folder is gone');
+    });
+  });
+
+  test('a drop whose handle cannot be obtained is read another way, or reported', async () => {
+    await withPage(browser, mockOptions({ name: 'dropped', files: { 'README.md': '# 落としたフォルダ\n' } }), async ({ page }) => {
+      await page.evaluate(() => {
+        const fileEntry = (name, text) => ({ name, isFile: true, isDirectory: false, file: (ok) => ok(new File([text], name, { lastModified: 1700000000000 })) });
+        const items = [
+          { kind: 'file', getAsFileSystemHandle: async () => null, webkitGetAsEntry: () => fileEntry('loose.md', '# 別の方法で読んだ文書\n') },
+          { kind: 'file', getAsFileSystemHandle: async () => window.__mockRoot(), webkitGetAsEntry: () => null },
+          { kind: 'file', getAsFileSystemHandle: async () => null, webkitGetAsEntry: () => null }
+        ];
+        const ev = new Event('drop', { bubbles: true, cancelable: true });
+        Object.defineProperty(ev, 'dataTransfer', { value: { types: ['Files'], files: [], items } });
+        window.dispatchEvent(ev);
+      });
+      await page.waitForFunction(() => window.MDV.app.state.set);
+      assert.deepEqual(await page.evaluate(() => window.MDV.app.state.set.docs.slice()), ['loose.md', 'dropped/README.md']);
+      assert.ok((await toasts(page)).includes('読み込めなかったフォルダまたはファイルが 1 件あります（表示していません）'));
+    });
+  });
+
+  test('an empty folder chosen with the folder input says there are no documents', async () => {
+    const empty = tmpDir();
+    await withPage(browser, async ({ page }) => {
+      await page.locator('.mdv-input-dir').setInputFiles(empty);
+      await page.waitForSelector('.mdv-toast-error');
+      assert.ok((await toasts(page))[0].startsWith('Markdown 文書が見つかりませんでした'));
+    });
+  });
+
+  test('an error while reading picked files is reported instead of being lost', async () => {
+    await withPage(browser, { allowErrors: true }, async ({ page }) => {
+      await page.evaluate(() => {
+        const real = window.MDV.core;
+        window.MDV.core = Object.create(real, { LIMITS: { get() { throw new Error('boom'); } } });
+        window.__restoreCore = () => { window.MDV.core = real; };
+      });
+      await page.locator('.mdv-input-files').setInputFiles(fixture('site/README.md'));
+      await page.waitForSelector('.mdv-toast-error');
+      assert.ok((await toasts(page)).some((x) => x.includes('boom')));
+      await page.evaluate(() => window.__restoreCore());
+    });
+  });
+});
+

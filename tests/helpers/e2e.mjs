@@ -276,6 +276,8 @@ export function installMockPicker(spec) {
       name: name,
       entries: function () {
         const fsx = window.__mockFs;
+        // failDirs: { '<prefix>': '<DOMException name>' } makes that folder unreadable ('' is the root)
+        if (fsx.failDirs && fsx.failDirs[prefix]) throw new DOMException('mock', fsx.failDirs[prefix]);
         const seen = new Set();
         const items = [];
         Object.keys(fsx.files).forEach((p) => {

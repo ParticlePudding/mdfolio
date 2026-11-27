@@ -4,6 +4,15 @@ Changes in each version of mdfolio. The details are in `docs/SPEC.md` (revision 
 
 ## Unreleased
 
+### Fixed
+
+- A folder that could not be read inside the opened folder made the whole folder fail to open. It is now skipped, with a notice.
+- When some dropped items could not be read the usual way, they were left out without notice. They are now read another way when possible; otherwise a notice says how many were left out.
+- "Reload" of a folder that was moved or deleted showed a general error. It now says what happened and keeps the current display.
+- "Reopen last folder" forgot the folder after any error. It now forgets it only when the folder is gone.
+- Choosing an empty folder in Firefox / Safari showed nothing. It now says there are no Markdown documents.
+- Cancelling "Choose CSS" in the export dialog could leave an unused element behind in some browsers.
+
 ### Changed
 
 - Internal structure: file input and output moved to `src/source.js`, so that a native edition can replace it alone. No change in behavior, look, or saved data.

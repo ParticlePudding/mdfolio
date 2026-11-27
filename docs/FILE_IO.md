@@ -8,18 +8,19 @@ Every call to a browser file API is in `src/source.js`, published as `window.MDV
 |---|---|
 | `ref` | Where an item's contents come from. Opaque to app.js (in the browser: a file handle or a `File`) |
 | `root` | A folder that can be scanned again and remembered. Opaque to app.js (in the browser: a directory handle) |
-| result | `{ kind, name, single, root, items: [{ path, ref, size, mtime }], truncated }`. `kind` is `'handles'` (can be re-read; auto-update works) or `'files'` (a snapshot). `size` / `mtime` may be undefined (use `stat`) |
+| result | `{ kind, name, single, root, items: [{ path, ref, size, mtime }], truncated, skipped }`. `kind` is `'handles'` (can be re-read; auto-update works) or `'files'` (a snapshot). `size` / `mtime` may be undefined (use `stat`). `skipped` counts folders, files or dropped items that could not be read |
 
 ## Functions
 
 | Function | Does | Browser API used |
 |---|---|---|
-| `createInputs({ accept, onPick })` | Creates the hidden folder and file inputs; what they pick goes to `onPick(result)` | `<input type="file">` |
+| `createInputs({ accept, onPick, onError })` | Creates the hidden folder and file inputs; what they pick goes to `onPick(result)`, errors to `onError`. **Call it once, before `pickFolder` / `pickFiles`** | `<input type="file">` |
 | `pickFolder()` | Opens the folder picker. Returns `{ root, name }`, or `null` (cancelled, or fell back to the input) | `showDirectoryPicker` |
 | `pickFiles()` | Opens the file picker (result through `onPick`) | `<input type="file">` |
-| `pickFile({ mount, accept, className })` | Chooses one file (CSS in the export dialog). Returns `{ name, size, ref }` or `null` | `<input type="file">` |
+| `pickFile({ mount, accept, className })` | Chooses one file (CSS in the export dialog), reusing one input per `mount`. Returns `{ name, size, ref }` or `null` | `<input type="file">` |
 | `fromDataTransfer(dt, { onProgress })` | Reads a drop. Call it synchronously in the drop event | `getAsFileSystemHandle`, `webkitGetAsEntry` |
-| `scanFolder(root, { onProgress })` | Lists a folder (opening, reloading) | directory handle `entries()` |
+| `scanFolder(root, { onProgress })` | Lists a folder (opening, reloading). Unreadable subfolders are skipped; rejects if the folder itself cannot be read | directory handle `entries()` |
+| `isGone(err)` | Whether an error means the folder or file no longer exists (`NotFoundError` and similar) | — |
 | `isLive(ref)` | Whether the item can be re-read to see changes | — |
 | `readFile(ref)` / `readBytes(ref)` / `readText(ref)` | Reads contents (Blob / bytes with size, time and type / UTF-8 text) | `getFile`, `File` |
 | `stat(ref)` | `{ size, mtime }` for change detection | `getFile` |
