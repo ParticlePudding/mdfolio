@@ -10,13 +10,12 @@
   const core = window.MDV.core;
   const mdx = window.MDV.md;
   const i18n = window.MDV.i18n;
+  const source = window.MDV.source;
 
   const SETTINGS_KEY = 'mdv:settings:v1';
   // External image permission is kept per HTML file (FR-1107): every file:// page shares one storage area,
   // so a shared value would turn external images on in every mdfolio file on the computer
   const EXTERNAL_KEY = 'mdv:external:' + String(window.location.pathname || '');
-  const IDB_NAME = 'mdv';
-  const IDB_STORE = 'kv';
   const AUTO_REFRESH_MS = 2000;
   const USER_CSS_PROBE_MS = 3000;
   const SEARCH_LIMIT = 50;
@@ -400,18 +399,19 @@
 
     // Other permanent parts
     ui.toasts = h('div', { class: 'mdv-toasts', 'aria-live': 'polite' });
-    ui.dirInput = h('input', { class: 'mdv-hidden-input mdv-input-dir', type: 'file', webkitdirectory: true, multiple: true, tabindex: '-1', 'aria-hidden': 'true' });
+    // The hidden <input type="file"> elements for "Open folder" / "Open files" come from source.js.
     // On phones and tablets, do not filter by type (accept).
     // How the .md type is handled varies by device and storage app, and filtering can make Markdown files unselectable.
     // If something other than Markdown is chosen, report it at load time
-    const fileAttrs = { class: 'mdv-hidden-input mdv-input-files', type: 'file', multiple: true, tabindex: '-1', 'aria-hidden': 'true' };
-    if (!coarsePointer()) fileAttrs.accept = core.DOC_EXTS.map((x) => '.' + x).join(',') + ',text/markdown';
-    ui.fileInput = h('input', fileAttrs);
+    const pickInputs = source.createInputs({
+      accept: coarsePointer() ? '' : core.DOC_EXTS.map((x) => '.' + x).join(',') + ',text/markdown',
+      onPick: guard(onPicked)
+    });
     ui.dropVeil = h('div', { class: 'mdv-dropveil', hidden: true }, [
       bind(h('div', { class: 'mdv-dropveil-box' }), (el) => { el.textContent = t('dropHere'); })
     ]);
 
-    append(app, [skip, header, body, ui.scrim, ui.toasts, ui.dirInput, ui.fileInput, ui.dropVeil]);
+    append(app, [skip, header, body, ui.scrim, ui.toasts].concat(pickInputs, [ui.dropVeil]));
     root.replaceChildren(app);
   }
 
@@ -638,7 +638,7 @@
       name: name || '',
       source: source,          // handles | files | embedded
       single: false,           // Only files were opened, not a folder
-      rootHandle: null,
+      root: null,              // A folder that can be scanned again (source.js; opaque here)
       entries: new Map(),
       docCount: 0,
       docs: [],
@@ -671,8 +671,7 @@
       kind: kind,
       size: props.size === undefined ? null : props.size,
       mtime: props.mtime || 0,
-      file: props.file || null,
-      handle: props.handle || null,
+      ref: props.ref || null,  // Where the contents come from (source.js; opaque here). null for embedded data
       text: props.text === undefined ? null : props.text,
       base64: props.base64 === undefined ? null : props.base64,
       mime: props.mime || null,
@@ -742,180 +741,60 @@
     return true;
   }
 
-  // ---- Choosing folders and files
+  // ---- Opening folders and files (the file system is reached only through source.js)
 
-  async function openFolder() {
-    if (typeof window.showDirectoryPicker === 'function') {
-      let handle = null;
-      try {
-        handle = await window.showDirectoryPicker({ mode: 'read' });
-      } catch (e) {
-        if (e && e.name === 'AbortError') return; // The user cancelled
-        handle = null; // If unavailable or denied, fall back to the traditional method
-      }
-      if (handle) {
-        await openDirHandle(handle);
-        return;
-      }
-    }
-    ui.dirInput.value = '';
-    ui.dirInput.click();
+  /** Build a document set from what source.js read (a list of paths and where their contents come from). */
+  function setFromResult(result) {
+    const set = newSet(result.name, result.kind);
+    set.single = result.single;
+    set.root = result.root;
+    set.truncatedEntries = result.truncated;
+    result.items.forEach((it) => addEntry(set, it.path, { ref: it.ref, size: it.size, mtime: it.mtime }));
+    return set;
   }
 
-  function openFiles() {
-    ui.fileInput.value = '';
-    ui.fileInput.click();
-  }
-
-  async function openDirHandle(handle) {
-    const set = newSet(handle.name, 'handles');
-    set.rootHandle = handle;
+  /** Show the progress of scanning while fn(onProgress) runs. */
+  async function withScanProgress(fn) {
     const progress = toast(t('scanning', 0), { sticky: true });
     try {
-      await scanDirHandle(set, handle, '', (n) => progress.update(t('scanning', n)));
+      return await fn((n) => progress.update(t('scanning', n)));
     } finally {
       progress.remove();
     }
-    if (installSet(set)) rememberFolder(handle);
   }
 
-  async function scanDirHandle(set, rootHandle, rootPrefix, onProgress) {
-    const queue = [{ handle: rootHandle, prefix: rootPrefix }];
-    let count = set.scanCount || 0;
-    while (queue.length) {
-      const item = queue.shift();
-      for await (const pair of item.handle.entries()) {
-        const name = pair[0];
-        const child = pair[1];
-        if (core.isIgnoredName(name)) continue;
-        count++;
-        if (count > core.LIMITS.maxEntries) { set.truncatedEntries = true; set.scanCount = count; return; }
-        if (count % 200 === 0 && onProgress) onProgress(count);
-        if (child.kind === 'directory') queue.push({ handle: child, prefix: item.prefix + name + '/' });
-        else addEntry(set, item.prefix + name, { handle: child });
-      }
-    }
-    set.scanCount = count;
+  function rememberFolder(root) {
+    source.rememberFolder(root)
+      .then((last) => { state.lastFolder = last; })
+      .catch(() => { /* failing to save does not affect viewing */ });
   }
 
-  /** Build a document set from a list of Files obtained from <input> or a drop. */
-  function setFromFileList(files, stripRoot) {
-    const set = newSet('', 'files');
-    let name = '';
-    let count = 0;
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      let rel = file.webkitRelativePath || file.name;
-      if (stripRoot && file.webkitRelativePath) {
-        const cut = rel.indexOf('/');
-        if (cut >= 0) { name = name || rel.slice(0, cut); rel = rel.slice(cut + 1); }
-      }
-      count++;
-      if (count > core.LIMITS.maxEntries) { set.truncatedEntries = true; break; }
-      addEntry(set, rel, { file: file, size: file.size, mtime: file.lastModified });
-    }
-    set.name = name;
-    set.single = !name;
-    return set;
+  async function openFolder() {
+    const picked = await source.pickFolder();
+    // null: cancelled, or the <input> fallback was opened (its result arrives in onPicked)
+    if (picked) await openRoot(picked.root);
+  }
+
+  function openFiles() {
+    source.pickFiles();
+  }
+
+  /** What was chosen with the <input> elements (folder or files). */
+  function onPicked(result) {
+    installSet(setFromResult(result));
+  }
+
+  async function openRoot(root) {
+    const result = await withScanProgress((onProgress) => source.scanFolder(root, { onProgress: onProgress }));
+    if (installSet(setFromResult(result))) rememberFolder(root);
   }
 
   // ---- Drag and drop
 
-  function readAllEntries(reader) {
-    return new Promise((resolve, reject) => {
-      const all = [];
-      (function next() {
-        reader.readEntries((batch) => {
-          if (!batch.length) { resolve(all); return; }
-          for (let i = 0; i < batch.length; i++) all.push(batch[i]);
-          next();
-        }, reject);
-      })();
-    });
-  }
-
-  function entryToFile(entry) {
-    return new Promise((resolve, reject) => entry.file(resolve, reject));
-  }
-
-  /** Walk entries obtained via webkitGetAsEntry (drops in Firefox / Safari). */
-  async function scanEntries(set, rootEntries, onProgress) {
-    const queue = rootEntries.slice();
-    let count = 0;
-    while (queue.length) {
-      const item = queue.shift();
-      const entry = item.entry;
-      if (core.isIgnoredName(entry.name)) continue;
-      count++;
-      if (count > core.LIMITS.maxEntries) { set.truncatedEntries = true; return; }
-      if (count % 200 === 0 && onProgress) onProgress(count);
-      if (entry.isDirectory) {
-        const children = await readAllEntries(entry.createReader());
-        children.forEach((c) => queue.push({ entry: c, prefix: item.prefix + entry.name + '/' }));
-      } else {
-        try {
-          const file = await entryToFile(entry);
-          addEntry(set, item.prefix + entry.name, { file: file, size: file.size, mtime: file.lastModified });
-        } catch (e) { /* skip files that cannot be read */ }
-      }
-    }
-  }
-
   async function openDataTransfer(dt) {
-    // Extract everything needed while still inside the drop event (before the first await)
-    const items = dt.items ? Array.prototype.filter.call(dt.items, (it) => it.kind === 'file') : [];
-    const files = dt.files ? Array.prototype.slice.call(dt.files) : [];
-    let handlePromises = null;
-    let entries = null;
-    if (items.length && typeof items[0].getAsFileSystemHandle === 'function') {
-      // Set a timeout in case no handle is obtained or there is no response
-      const timeout = new Promise((resolve) => setTimeout(() => resolve(null), 3000));
-      handlePromises = items.map((it) => {
-        try { return Promise.race([Promise.resolve(it.getAsFileSystemHandle()).catch(() => null), timeout]); } catch (e) { return Promise.resolve(null); }
-      });
-    }
-    if (items.length && typeof items[0].webkitGetAsEntry === 'function') {
-      entries = items.map((it) => { try { return it.webkitGetAsEntry(); } catch (e) { return null; } }).filter(Boolean);
-    }
-
-    const progress = toast(t('scanning', 0), { sticky: true });
-    const onProgress = (n) => progress.update(t('scanning', n));
-    let set = null;
-    let remember = null;
-    try {
-      const handles = handlePromises ? (await Promise.all(handlePromises)).filter(Boolean) : [];
-      if (handles.length) {
-        if (handles.length === 1 && handles[0].kind === 'directory') {
-          set = newSet(handles[0].name, 'handles');
-          set.rootHandle = handles[0];
-          remember = handles[0];
-          await scanDirHandle(set, handles[0], '', onProgress);
-        } else {
-          set = newSet('', 'handles');
-          set.single = !handles.some((x) => x.kind === 'directory');
-          for (const hd of handles) {
-            if (core.isIgnoredName(hd.name)) continue;
-            if (hd.kind === 'directory') await scanDirHandle(set, hd, hd.name + '/', onProgress);
-            else addEntry(set, hd.name, { handle: hd });
-          }
-        }
-      } else if (entries && entries.length) {
-        if (entries.length === 1 && entries[0].isDirectory) {
-          set = newSet(entries[0].name, 'files');
-          const children = await readAllEntries(entries[0].createReader());
-          await scanEntries(set, children.map((c) => ({ entry: c, prefix: '' })), onProgress);
-        } else {
-          set = newSet('', 'files');
-          set.single = !entries.some((x) => x.isDirectory);
-          await scanEntries(set, entries.map((c) => ({ entry: c, prefix: '' })), onProgress);
-        }
-      } else {
-        set = setFromFileList(files, false);
-      }
-    } finally {
-      progress.remove();
-    }
-    if (installSet(set) && remember) rememberFolder(remember);
+    // source.fromDataTransfer takes what it needs from the drop synchronously, inside the drop event
+    const result = await withScanProgress((onProgress) => source.fromDataTransfer(dt, { onProgress: onProgress }));
+    if (installSet(setFromResult(result)) && result.root) rememberFolder(result.root);
   }
 
   // ---- Embedded data (site mode)
@@ -931,21 +810,14 @@
 
   // ---- Loading
 
-  async function entryFile(entry) {
-    if (entry.handle) return entry.handle.getFile();
-    if (entry.file) return entry.file;
-    throw new Error('no source');
-  }
-
-  /** Return the document's text. If fresh is true and there is a handle, re-read it from disk. */
+  /** Return the document's text. If fresh is true and the source can be re-read, read it again from disk. */
   async function readDocText(entry, fresh) {
-    if (entry.text !== null && !(fresh && entry.handle)) return entry.text;
-    const file = await entryFile(entry);
-    const bytes = new Uint8Array(await file.arrayBuffer());
-    entry.size = file.size;
-    entry.mtime = file.lastModified;
-    entry.tooLarge = file.size > core.LIMITS.maxDocBytes;
-    entry.text = core.detectAndDecode(bytes).text;
+    if (entry.text !== null && !(fresh && source.isLive(entry.ref))) return entry.text;
+    const read = await source.readBytes(entry.ref);
+    entry.size = read.size;
+    entry.mtime = read.mtime;
+    entry.tooLarge = read.size > core.LIMITS.maxDocBytes;
+    entry.text = core.detectAndDecode(read.bytes).text;
     return entry.text;
   }
 
@@ -953,7 +825,7 @@
     if (entry.base64 !== null) {
       return new Blob([core.base64ToBytes(entry.base64)], { type: entry.mime || core.mimeOf(entry.path) });
     }
-    return entryFile(entry);
+    return source.readFile(entry.ref);
   }
 
   function assetUrl(set, entry) {
@@ -968,18 +840,9 @@
     });
   }
 
-  function downloadBlob(blob, name) {
-    const url = URL.createObjectURL(blob);
-    const a = h('a', { href: url, download: name, class: 'mdv-hidden-input' });
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 30000);
-  }
-
   async function downloadEntry(entry) {
     try {
-      downloadBlob(await assetBlob(entry), entry.name);
+      source.save(await assetBlob(entry), entry.name);
     } catch (e) {
       toast(t('readFailed', entry.path), { error: true });
     }
@@ -987,48 +850,11 @@
 
   // ------------------------------------------------------------------ Last folder (FR-108)
 
-  function idbOpen() {
-    return new Promise((resolve, reject) => {
-      let req;
-      try { req = window.indexedDB.open(IDB_NAME, 1); } catch (e) { reject(e); return; }
-      req.onupgradeneeded = () => { req.result.createObjectStore(IDB_STORE); };
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => reject(req.error);
-      req.onblocked = () => reject(new Error('blocked'));
-    });
-  }
-
-  async function idbRun(mode, fn) {
-    const db = await idbOpen();
-    try {
-      return await new Promise((resolve, reject) => {
-        const tx = db.transaction(IDB_STORE, mode);
-        const req = fn(tx.objectStore(IDB_STORE));
-        tx.oncomplete = () => resolve(req ? req.result : undefined);
-        tx.onerror = () => reject(tx.error);
-        tx.onabort = () => reject(tx.error);
-      });
-    } finally {
-      db.close();
-    }
-  }
-
-  function lastKey() {
-    return 'last:' + location.pathname;
-  }
-
-  function rememberFolder(handle) {
-    idbRun('readwrite', (store) => store.put({ handle: handle, name: handle.name }, lastKey()))
-      .then(() => { state.lastFolder = { handle: handle, name: handle.name }; })
-      .catch(() => { /* failing to save does not affect viewing */ });
-  }
-
   function loadLastFolder() {
-    if (typeof window.showDirectoryPicker !== 'function' || !window.indexedDB) return;
-    idbRun('readonly', (store) => store.get(lastKey())).then((rec) => {
-      if (!rec || !rec.handle || typeof rec.handle.entries !== 'function') return;
-      state.lastFolder = { handle: rec.handle, name: rec.name || rec.handle.name };
-      ui.lastBtn.textContent = t('reopenLast', state.lastFolder.name);
+    source.lastFolder().then((last) => {
+      if (!last) return;
+      state.lastFolder = last;
+      ui.lastBtn.textContent = t('reopenLast', last.name);
       ui.lastWrap.hidden = false;
     }).catch(() => { /* not shown in environments where it is unavailable */ });
   }
@@ -1037,15 +863,12 @@
     const last = state.lastFolder;
     if (!last) return;
     try {
-      let perm = 'granted';
-      if (typeof last.handle.queryPermission === 'function') perm = await last.handle.queryPermission({ mode: 'read' });
-      if (perm !== 'granted' && typeof last.handle.requestPermission === 'function') perm = await last.handle.requestPermission({ mode: 'read' });
-      if (perm !== 'granted') { toast(t('permissionDenied'), { error: true }); return; }
-      await openDirHandle(last.handle);
+      if (!(await source.requestAccess(last.root))) { toast(t('permissionDenied'), { error: true }); return; }
+      await openRoot(last.root);
     } catch (e) {
       state.lastFolder = null;
       ui.lastWrap.hidden = true;
-      idbRun('readwrite', (store) => store.delete(lastKey())).catch(() => {});
+      source.forgetLastFolder().catch(() => {});
       toast(t('lastFolderGone'), { error: true });
     }
   }
@@ -1055,12 +878,10 @@
   async function reloadSet() {
     const set = state.set;
     if (!set) return;
-    if (set.rootHandle) {
+    if (set.root) {
       const route = core.parseRoute(location.hash);
       const scrollY = window.scrollY;
-      const fresh = newSet(set.name, 'handles');
-      fresh.rootHandle = set.rootHandle;
-      await scanDirHandle(fresh, set.rootHandle, '', null);
+      const fresh = setFromResult(await source.scanFolder(set.root));
       // Come back to the same document at the same scroll position
       if (route.type === 'doc') state.pendingRoute = Object.assign({}, route, { keepScroll: scrollY });
       if (installSet(fresh)) toast(t('reloaded'));
@@ -1090,12 +911,12 @@
   async function checkCurrentChanged() {
     const set = state.set;
     const entry = state.currentEntry;
-    if (state.refreshBusy || !set || !entry || !entry.handle || state.view !== 'doc' || document.visibilityState === 'hidden') return;
+    if (state.refreshBusy || !set || !entry || !source.isLive(entry.ref) || state.view !== 'doc' || document.visibilityState === 'hidden') return;
     state.refreshBusy = true;
     try {
-      const file = await entry.handle.getFile();
+      const now = await source.stat(entry.ref);
       if (state.set !== set || state.currentEntry !== entry) return;
-      if (file.lastModified === entry.mtime && file.size === entry.size) return;
+      if (now.mtime === entry.mtime && now.size === entry.size) return;
       const text = await readDocText(entry, true);
       if (state.set !== set || state.currentEntry !== entry) return;
       updateSearchEntry(set, entry, text);
@@ -2333,9 +2154,9 @@
       const entry = set.entries.get(ap);
       try {
         if (entry.size === null) {
-          const f = await entryFile(entry);
-          entry.size = f.size;
-          entry.mtime = f.lastModified;
+          const now = await source.stat(entry.ref);
+          entry.size = now.size;
+          entry.mtime = now.mtime;
         }
       } catch (e) { plan.skipped++; continue; }
       if (entry.size > core.LIMITS.maxAssetBytes) { plan.skipped++; continue; }
@@ -2358,11 +2179,13 @@
     const files = [];
     plan.docs.forEach((e) => files.push({ path: e.path, kind: 'doc', text: e.text, mtime: e.mtime }));
     for (const e of plan.assets) {
-      const blob = await assetBlob(e);
-      const bytes = new Uint8Array(await blob.arrayBuffer());
+      const read = e.base64 !== null
+        ? { bytes: core.base64ToBytes(e.base64), type: e.mime || core.mimeOf(e.path) }
+        : await source.readBytes(e.ref);
+      const bytes = read.bytes;
       // Decide the type from the extension (the type the browser reports varies with OS settings). Use the browser's value only when unknown
       const known = core.mimeOf(e.path);
-      const mime = known !== 'application/octet-stream' ? known : (blob.type || known);
+      const mime = known !== 'application/octet-stream' ? known : (read.type || known);
       files.push({ path: e.path, kind: 'asset', mime: mime, base64: core.bytesToBase64(bytes), mtime: e.mtime });
       await yieldToBrowser();
     }
@@ -2413,7 +2236,6 @@
       : inherited ? { text: inherited, label: t('exportCssInherited') } : null;
     const cssStatus = h('p', { class: 'mdv-export-css-status' });
     const cssNote = h('p', { class: 'mdv-dialog-note mdv-export-css-note', hidden: true }, t('exportCssAdjacentNote'));
-    const cssInput = h('input', { class: 'mdv-export-css-input', type: 'file', accept: '.css,text/css', hidden: true });
     const cssPick = h('button', { class: 'mdv-btn mdv-export-css-pick', type: 'button' }, t('exportCssPick'));
     const cssClear = h('button', { class: 'mdv-btn mdv-export-css-clear', type: 'button' }, t('exportCssClear'));
     const showCss = () => {
@@ -2421,26 +2243,27 @@
       cssClear.hidden = !embed;
       cssNote.hidden = !(adjacent.applied && adjacent.text === null && !(embed && embed.picked));
     };
-    cssPick.addEventListener('click', () => cssInput.click());
     cssClear.addEventListener('click', () => { embed = null; showCss(); });
-    cssInput.addEventListener('change', guard(async () => {
-      const file = cssInput.files && cssInput.files[0];
-      cssInput.value = '';
+    const cssField = h('div', { class: 'mdv-field mdv-export-css' });
+    cssPick.addEventListener('click', guard(async () => {
+      // source.pickFile opens the file dialog synchronously, inside this click
+      const file = await source.pickFile({ mount: cssField, accept: '.css,text/css', className: 'mdv-export-css-input' });
       if (!file) return;
       if (file.size > core.LIMITS.maxUserCssBytes) { toast(t('exportCssTooLarge', file.name), { error: true }); return; }
-      const text = (await file.text()).replace(/^\uFEFF/, '');
+      const text = (await source.readText(file.ref)).replace(/^\uFEFF/, '');
       if (/<\/style/i.test(text)) { toast(t('exportCssBad', file.name), { error: true }); return; }
       embed = { text: text, label: t('exportCssPicked', file.name), picked: true };
       showCss();
     }));
     showCss();
+    append(cssField, [
+      h('span', { class: 'mdv-field-label' }, t('exportCssLabel')),
+      cssStatus, h('div', { class: 'mdv-export-css-actions' }, [cssPick, cssClear]), cssNote
+    ]);
     append(d.body, [
       h('label', { class: 'mdv-field' }, [h('span', { class: 'mdv-field-label' }, t('exportSiteTitle')), titleInput]),
       h('label', { class: 'mdv-field' }, [h('span', { class: 'mdv-field-label' }, t('exportHome')), homeSelect]),
-      h('div', { class: 'mdv-field mdv-export-css' }, [
-        h('span', { class: 'mdv-field-label' }, t('exportCssLabel')),
-        cssStatus, h('div', { class: 'mdv-export-css-actions' }, [cssPick, cssClear]), cssInput, cssNote
-      ]),
+      cssField,
       summary, warn
     ]);
     append(d.foot, [cancel, run]);
@@ -2455,7 +2278,7 @@
       const title = titleInput.value.trim() || siteTitle();
       const name = core.sanitizeFileName(title, 'site') + '.html';
       buildSiteHtml(set, plan, title, homeSelect.value, embed ? embed.text : '').then((html) => {
-        downloadBlob(new Blob([html], { type: 'text/html' }), name);
+        source.save(new Blob([html], { type: 'text/html' }), name);
         d.dialog.close();
         toast(t('exported', name));
       }).catch((e) => {
@@ -2622,12 +2445,6 @@
     ui.openFolderBtn.addEventListener('click', guard(openFolder));
     ui.openFilesBtn.addEventListener('click', guard(openFiles));
     ui.lastBtn.addEventListener('click', guard(openLastFolder));
-    ui.dirInput.addEventListener('change', guard(() => {
-      if (ui.dirInput.files && ui.dirInput.files.length) installSet(setFromFileList(ui.dirInput.files, true));
-    }));
-    ui.fileInput.addEventListener('change', guard(() => {
-      if (ui.fileInput.files && ui.fileInput.files.length) installSet(setFromFileList(ui.fileInput.files, false));
-    }));
 
     [ui.tabNav, ui.tabFiles].forEach((tab) => {
       tab.addEventListener('click', () => { state.sideTab = tab.getAttribute('data-tab'); applySideTab(); updateActiveLinks(); });

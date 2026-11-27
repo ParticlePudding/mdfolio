@@ -504,7 +504,8 @@ The converted HTML is intended for trying out the app and publishing samples; fo
 | `src/core.js` | DOM-independent processing (path resolution, routes, slugs, search, front matter, encoding detection, tree building, site data, HTML assembly) |
 | `src/md.js` | markdown-it configuration and extensions (task lists, alerts, math, Mermaid, heading IDs, reference extraction) |
 | `src/i18n.js` | UI text (Japanese and English) |
-| `src/app.js` | Screen and interaction (loading, rendering, navigation, search UI, export) |
+| `src/source.js` | File input and output: folder and file pickers, drag and drop, reading, change detection, saving (downloads), the remembered folder. The only place that calls browser file APIs ([FILE_IO.md](FILE_IO.md)) |
+| `src/app.js` | Screen and interaction (document sets, text decoding, rendering, navigation, search UI, export) |
 | `src/app.css` | Styles |
 | `src/help.ja.md` `src/help.en.md` | Help documents |
 | `tools/build.mjs` | Build (generates `dist/mdfolio.html`) |
@@ -682,6 +683,7 @@ Pass criteria: all automated tests pass, and no console errors, CSP violations o
 | 1.10 | 2026-11-17 | Made it clear that users do not use Node.js. The command-line export is for developers and automation, and was removed from the user-facing instructions (README, samples, public pages) and the release zip (FR-604, AU-3) |
 | 1.11 | 2026-11-17 | Swapped the READMEs so that English is `README.md` and Japanese is `README.ja.md` (8.1, 8.7). The default app UI language (`auto`) is unchanged |
 | 1.12 | 2026-11-17 | Put English first so that the app can be widely used (the project owner's policy). Public pages: English at the top, Japanese under `ja/`, and `en/` as a redirect page (8.7). Change history and release notes in English (8.1, 8.8). The specification, review record, test report and source code comments are to be written in English |
+| 1.17 | 2026-11-27 | Internal structure: file input and output moved from `src/app.js` to `src/source.js` (8.3). No change in behavior |
 | 1.16 | 2026-11-26 | The theme button switches light <-> dark; without a choice the OS setting is used (FR-501) |
 | 1.15 | 2026-11-20 | Sample files named English-first: `sample-docs/` and `sample.md` are English, `sample-docs-ja/` and `sample.ja.md` are Japanese (8.7) |
 | 1.14 | 2026-11-20 | From an external code review: "Reload" of a folder keeps the scroll position (FR-109); moving focus within the header and its menu does not scroll the page; the check for an adjacent `mdfolio.css` gives up after 3 seconds; version in the examples of 8.2 |

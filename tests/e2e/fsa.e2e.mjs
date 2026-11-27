@@ -254,7 +254,7 @@ describe('Checks with real folder handles (OPFS; FR-103, FR-108, FR-109)', () =>
     // Open
     await page.click('.mdv-open-folder');
     await waitHeading(page, 'OPFS のホーム');
-    const info = await page.evaluate(() => { const s = window.MDV.app.state.set; return { source: s.source, name: s.name, docs: s.docs.slice(), handle: Object.prototype.toString.call(s.rootHandle) }; });
+    const info = await page.evaluate(() => { const s = window.MDV.app.state.set; return { source: s.source, name: s.name, docs: s.docs.slice(), handle: Object.prototype.toString.call(s.root) }; });
     assert.deepEqual(info, { source: 'handles', name: 'docs', docs: ['README.md', 'sub/a.md'], handle: '[object FileSystemDirectoryHandle]' });
     await page.waitForFunction(() => { const i = document.querySelector('.mdv-prose img'); return i && i.complete && i.naturalWidth === 64; });
     await page.click('.mdv-prose a:has-text("下の階層")');

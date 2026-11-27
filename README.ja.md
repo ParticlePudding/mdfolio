@@ -60,7 +60,7 @@ npm test             # ビルド → 単体テスト → ブラウザーでの�
 node tools/build-site.mjs <文書フォルダ> --out site.html --title "手順書" --css mdfolio.css
 ```
 
-仕様は `docs/SPEC.md`、変更履歴は `CHANGELOG.md` にあります（どちらも英語）。
+仕様は `docs/SPEC.md`、変更履歴は `CHANGELOG.md` にあります（どちらも英語）。ファイルの読み書きはすべて `src/source.js` を通します（`docs/FILE_IO.md`）。
 
 ## ライセンス
 

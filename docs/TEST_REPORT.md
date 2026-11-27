@@ -11,6 +11,11 @@
 
 ## 1. Conclusion
 
+### Unreleased (file input and output moved to src/source.js)
+
+- All **403 automated tests passed** (190 unit, 213 browser) after the move, with no change to any test except one that read the internal field `rootHandle` (now `root`). `src/app.js` no longer contains `showDirectoryPicker`, `getFile(`, `webkitGetAsEntry`, `getAsFileSystemHandle`, `indexedDB` or `.download =`.
+- **Not verified**: the WebKit and Gecko checks (`npm run test:webkit` / `test:gecko`); those engines are not available in this environment.
+
 ### Unreleased (theme button: light <-> dark)
 
 - All **403 automated tests passed** (190 unit, 213 browser). The theme test was rewritten: the system theme is used and followed until the button is pressed; the button switches from the shown theme; the choice is kept after a reload; an old saved "auto" counts as no choice; `theme` in the settings block sets the first theme.

@@ -60,7 +60,7 @@ To automate exports, you can also export from the command line:
 node tools/build-site.mjs <document folder> --out site.html --title "Handbook" --css mdfolio.css
 ```
 
-The specification is in `docs/SPEC.md`, and the changelog is in `CHANGELOG.md`.
+The specification is in `docs/SPEC.md`, and the changelog is in `CHANGELOG.md`. All file access goes through `src/source.js` (see `docs/FILE_IO.md`).
 
 ## License
 

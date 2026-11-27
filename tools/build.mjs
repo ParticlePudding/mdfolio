@@ -118,7 +118,7 @@ for (const f of vendorOrder) if (!vendorFiles.has(f)) fail(`${f} is not listed i
 
 const vendorJs = vendorOrder.map((f) => forInline('vendor/' + f, read('vendor/' + f))).join(';\n');
 
-const appSources = ['src/core.js', 'src/md.js', 'src/i18n.js', 'src/app.js'];
+const appSources = ['src/core.js', 'src/md.js', 'src/i18n.js', 'src/source.js', 'src/app.js'];
 const appJs = appSources.map((f) => {
   const text = read(f);
   assertCleanSource(f, text);

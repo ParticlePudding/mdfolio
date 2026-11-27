@@ -56,7 +56,7 @@ describe('Structure of the build output (SPEC 8.2)', () => {
     assert.ok(!html.startsWith(bom));
     // Our own sources contain no line separators or no-break spaces
     const bad = [0x2028, 0x2029, 0x00A0, 0xFEFF, 0x200B].map((c) => String.fromCharCode(c));
-    for (const f of ['src/core.js', 'src/md.js', 'src/i18n.js', 'src/app.js', 'src/app.css', 'src/document.css', 'tools/build.mjs', 'tools/build-site.mjs', 'tools/vendor.mjs']) {
+    for (const f of ['src/core.js', 'src/md.js', 'src/i18n.js', 'src/source.js', 'src/app.js', 'src/app.css', 'src/document.css', 'tools/build.mjs', 'tools/build-site.mjs', 'tools/vendor.mjs']) {
       const text = read(f);
       for (const ch of bad) assert.ok(!text.includes(ch), `${f} contains U+${ch.charCodeAt(0).toString(16).toUpperCase()}`);
       assert.ok(!text.includes('\r'), `${f} uses LF`);
@@ -135,7 +135,7 @@ describe('Scripts and CSP (SEC-3)', () => {
   });
 
   test('The app scripts do not rely on eval or external loading', () => {
-    const app = read('src/app.js') + read('src/core.js') + read('src/md.js') + read('src/i18n.js');
+    const app = read('src/app.js') + read('src/source.js') + read('src/core.js') + read('src/md.js') + read('src/i18n.js');
     assert.ok(!/\beval\s*\(/.test(app));
     assert.ok(!/new\s+Function\s*\(/.test(app));
     assert.ok(!/\bfetch\s*\(|XMLHttpRequest|WebSocket|sendBeacon|EventSource|importScripts/.test(app), 'uses no networking features');
