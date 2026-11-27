@@ -12,7 +12,7 @@
   'use strict';
 
   var NAME = 'mdfolio';
-  var VERSION = '1.4.2';
+  var VERSION = '1.5.0';
   var SITE_FORMAT = 1;
 
   var DOC_EXTS = ['md', 'markdown', 'mdown', 'mkd', 'mkdn', 'mdwn', 'mdtxt', 'mdtext'];

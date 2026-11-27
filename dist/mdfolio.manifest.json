@@ -1,11 +1,11 @@
 {
   "name": "mdfolio",
-  "version": "1.4.2",
+  "version": "1.5.0",
   "file": "mdfolio.html",
-  "bytes": 4368637,
-  "sha256": "906a0efc9404c22a2163e0f37e694b2bda9d9d620e03d11fb082fd996405a734",
+  "bytes": 4369896,
+  "sha256": "f5f10fb2a852e524ff96996c776a5b72412cc723089f27dd63d92b8d60429688",
   "without": [],
-  "csp": "default-src 'none'; script-src 'sha256-HUcweY84U+7SuqI9kjccMDks6/bsvsGMqKKnrvMTs00=' 'sha256-jF2NXK8sbXuP4SpXkuCVigMTP7uqKnqXfXVm1NnU2nk=' 'sha256-+hQEmLjPyDAsvl58sb28H5Urw4s/oljt4J5z7b+adLw=' 'sha256-xB9SNgkbg/UkxJQPl6FrKxSnbyH/hK6k/WtmQh2KKpo='; style-src 'self' file: 'unsafe-inline'; img-src data: blob: http: https:; media-src data: blob: http: https:; font-src data:; connect-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; form-action 'none'; base-uri 'none'",
+  "csp": "default-src 'none'; script-src 'sha256-HUcweY84U+7SuqI9kjccMDks6/bsvsGMqKKnrvMTs00=' 'sha256-gP6kbIrVNi9lskodZIg09f0+QL4pwHObq/OtDBfE+xM=' 'sha256-+hQEmLjPyDAsvl58sb28H5Urw4s/oljt4J5z7b+adLw=' 'sha256-xB9SNgkbg/UkxJQPl6FrKxSnbyH/hK6k/WtmQh2KKpo='; style-src 'self' file: 'unsafe-inline'; img-src data: blob: http: https:; media-src data: blob: http: https:; font-src data:; connect-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; form-action 'none'; base-uri 'none'",
   "blocks": [
     {
       "id": "mdv-config",
@@ -55,7 +55,7 @@
     {
       "id": "mdv-js-app",
       "type": "text/javascript",
-      "bytes": 213546
+      "bytes": 214805
     }
   ],
   "scripts": [
@@ -65,7 +65,7 @@
     },
     {
       "id": "mdv-js-app",
-      "sha256Base64": "jF2NXK8sbXuP4SpXkuCVigMTP7uqKnqXfXVm1NnU2nk="
+      "sha256Base64": "gP6kbIrVNi9lskodZIg09f0+QL4pwHObq/OtDBfE+xM="
     },
     {
       "id": "mdv-lib-katex",
@@ -274,17 +274,17 @@
     },
     {
       "name": "src/i18n.js",
-      "bytes": 17205,
+      "bytes": 17434,
       "escapes": 0
     },
     {
       "name": "src/source.js",
-      "bytes": 19333,
+      "bytes": 20143,
       "escapes": 0
     },
     {
       "name": "src/app.js",
-      "bytes": 114247,
+      "bytes": 114467,
       "escapes": 0
     }
   ],

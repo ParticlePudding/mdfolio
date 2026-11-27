@@ -880,9 +880,8 @@
     try {
       granted = await source.requestAccess(last.root);
     } catch (e) {
-      // The stored folder can no longer be used
-      forgetLastFolder();
-      toast(t('lastFolderGone'), { error: true });
+      // Forget the stored folder only when it is gone; asking for permission can also fail for reasons that pass
+      if (source.isGone(e)) { forgetLastFolder(); toast(t('lastFolderGone'), { error: true }); } else toast(t('lastFolderFailed'), { error: true });
       return;
     }
     if (!granted) { toast(t('permissionDenied'), { error: true }); return; }
@@ -891,8 +890,7 @@
       result = await scanRoot(last.root);
     } catch (e) {
       // Forget the folder only when it is gone; other failures may pass, so keep it for next time
-      if (source.isGone(e)) forgetLastFolder();
-      toast(t('lastFolderGone'), { error: true });
+      if (source.isGone(e)) { forgetLastFolder(); toast(t('lastFolderGone'), { error: true }); } else toast(t('lastFolderFailed'), { error: true });
       return;
     }
     if (installSet(setFromResult(result))) rememberFolder(last.root);
@@ -906,14 +904,15 @@
     if (set.root) {
       const route = core.parseRoute(location.hash);
       const scrollY = window.scrollY;
-      let fresh;
+      let scanned;
       try {
-        fresh = setFromResult(await source.scanFolder(set.root));
+        scanned = await source.scanFolder(set.root);
       } catch (e) {
         // Moved, deleted, or access withdrawn: keep showing what is open and say what to do
         toast(t('folderGone'), { error: true });
         return;
       }
+      const fresh = setFromResult(scanned);
       // Come back to the same document at the same scroll position
       if (route.type === 'doc') state.pendingRoute = Object.assign({}, route, { keepScroll: scrollY });
       if (installSet(fresh)) toast(t('reloaded'));

@@ -289,9 +289,13 @@ export function installMockPicker(spec) {
           seen.add(child);
           items.push([child, i < 0 ? fileHandle(p) : dirHandle(child, prefix + child + '/')]);
         });
+        // failDirsAfter: { '<prefix>': n } makes listing that folder fail after n entries
+        const failAfter = fsx.failDirsAfter && fsx.failDirsAfter[prefix];
         return (async function* () {
           let n = 0;
+          let given = 0;
           for (const it of items) {
+            if (failAfter !== undefined && given++ >= failAfter) throw new DOMException('mock', 'NotReadableError');
             if (fsx.slow && ++n % 100 === 0) await new Promise((r) => setTimeout(r, fsx.slow));
             yield it;
           }

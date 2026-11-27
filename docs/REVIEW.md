@@ -297,3 +297,15 @@ An outside review of 1.4.0 found no defects and made 8 suggestions. Each was che
 | J-7 | "Reopen last folder" forgot the folder after any error (older problem) | Forgotten only when the error means the folder is gone (`isGone`) |
 | J-8 | An empty folder chosen with the folder input gave no message (older problem) | An empty result is delivered, and the usual "no documents" notice appears |
 
+## 14. Second code review of `src/source.js` (2026-11-27, before 1.5.0)
+
+| # | Finding | Action |
+|---|---|---|
+| K-1 | Firefox / Safari drops: an item without an entry was still lost without notice, and a folder dropped with it was taken as the root | Counted as skipped; the single-folder case is decided by the number of dropped items |
+| K-2 | Items read the other way in a drop ignored the shared entry limit; after the limit, later items were still added | One counter for the whole drop; the loop stops when the limit is reached |
+| K-3 | "Reopen last folder" still forgot the folder after any error while asking for permission | Forgotten only when `isGone`; other failures say "try again" (new message) |
+| K-4 | A folder that failed partway through listing was half shown | A folder's contents are added only after it was listed completely |
+| K-5 | `isGone` counted InvalidStateError, which can pass | Only NotFoundError and TypeMismatchError |
+| K-6 | The try in "Reload" also caught errors of building the set | Only the scan is inside the try |
+| K-7 | A browser that fires `change` with no files on cancel would show "no documents" | Not changed: the value is cleared before each click, so a cancel fires no change. Not verified on real Firefox / Safari |
+

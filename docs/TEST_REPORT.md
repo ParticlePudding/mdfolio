@@ -11,17 +11,17 @@
 
 ## 1. Conclusion
 
-### Unreleased (code review of src/source.js)
+### 1.5.0 (code review of src/source.js)
 
-- All **410 automated tests passed** (191 unit, 219 browser). Added: a unit test that `source.js` loads without a browser and reports the call order clearly, and browser tests for each finding of REVIEW section 13 (J-1 to J-8, except J-3, which the unit test covers). The mock folder used by the tests can now make a folder unreadable (`failDirs`).
+- All **411 automated tests passed** (191 unit, 220 browser), after the second review (REVIEW section 14). The tests for K-1 and K-4 were confirmed to fail without the fix. Added: a unit test that `source.js` loads without a browser and reports the call order clearly, and browser tests for each finding of REVIEW section 13 (J-1 to J-8, except J-3, which the unit test covers). The mock folder used by the tests can now make a folder unreadable (`failDirs`).
 - **Not verified**: whether real Firefox / Safari fire a change event for an empty folder or on cancel (J-8 relies on cancel firing none); the browsers without the input's `cancel` event (J-1); WebKit and Gecko in general.
 
-### Unreleased (file input and output moved to src/source.js)
+### 1.5.0 (file input and output moved to src/source.js)
 
 - All **403 automated tests passed** (190 unit, 213 browser) after the move, with no change to any test except one that read the internal field `rootHandle` (now `root`). `src/app.js` no longer contains `showDirectoryPicker`, `getFile(`, `webkitGetAsEntry`, `getAsFileSystemHandle`, `indexedDB` or `.download =`.
 - **Not verified**: the WebKit and Gecko checks (`npm run test:webkit` / `test:gecko`); those engines are not available in this environment.
 
-### Unreleased (theme button: light <-> dark)
+### 1.5.0 (theme button: light <-> dark)
 
 - All **403 automated tests passed** (190 unit, 213 browser). The theme test was rewritten: the system theme is used and followed until the button is pressed; the button switches from the shown theme; the choice is kept after a reload; an old saved "auto" counts as no choice; `theme` in the settings block sets the first theme.
 

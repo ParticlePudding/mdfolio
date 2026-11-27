@@ -307,12 +307,13 @@ describe('Checks with real folder handles (OPFS; FR-103, FR-108, FR-109)', () =>
 
 describe('Read errors while opening (code review of source.js)', () => {
   test('an unreadable subfolder is skipped with a notice; the rest opens', async () => {
-    const spec = { name: 'docs', files: { 'README.md': '# ホーム\n', 'ok/a.md': '# A\n', 'locked/b.md': '# B\n' } };
+    const spec = { name: 'docs', files: { 'README.md': '# ホーム\n', 'ok/a.md': '# A\n', 'locked/b.md': '# B\n', 'half/c.md': '# C\n', 'half/d.md': '# D\n' } };
     await withPage(browser, mockOptions(spec), async ({ page }) => {
-      await page.evaluate(() => { window.__mockFs.failDirs = { 'locked/': 'NotReadableError' }; });
+      await page.evaluate(() => { window.__mockFs.failDirs = { 'locked/': 'NotReadableError' }; window.__mockFs.failDirsAfter = { 'half/': 1 }; });
       await openMock(page);
+      // 'half/' fails after its first entry: left out as a whole, like 'locked/'
       assert.deepEqual(await page.evaluate(() => window.MDV.app.state.set.docs.slice()), ['README.md', 'ok/a.md']);
-      assert.ok((await toasts(page)).includes('読み込めなかったフォルダまたはファイルが 1 件あります（表示していません）'));
+      assert.ok((await toasts(page)).includes('読み込めなかったフォルダまたはファイルが 2 件あります（表示していません）'));
     });
   });
 
@@ -329,18 +330,28 @@ describe('Read errors while opening (code review of source.js)', () => {
 
   test('"Reopen last folder" forgets the folder only when it is gone', async () => {
     await withPage(browser, mockOptions({ name: 'docs', files: { 'README.md': '# ホーム\n' } }), async ({ page }) => {
-      const reopen = (errorName) => page.evaluate((name) => {
+      const reopen = (errorName, permissionError) => page.evaluate(([name, permError]) => {
         window.__forgot = 0;
         window.MDV.source.forgetLastFolder = () => { window.__forgot++; return Promise.resolve(); };
         window.__mockFs.failDirs = { '': name };
-        window.MDV.app.state.lastFolder = { root: window.__mockRoot(), name: 'docs' };
+        const root = window.__mockRoot();
+        if (permError) root.queryPermission = async () => { throw new DOMException('mock', permError); };
+        window.MDV.app.state.lastFolder = { root: root, name: 'docs' };
         document.querySelector('.mdv-welcome-last').hidden = false;
+        document.querySelectorAll('.mdv-toast').forEach((x) => x.remove());
         document.querySelector('.mdv-open-last').click();
-      }, errorName);
+      }, [errorName, permissionError || null]);
+      const failed = '前回のフォルダを開けませんでした。少し待ってから、もう一度お試しください';
       await reopen('NotReadableError');
       await page.waitForSelector('.mdv-toast-error');
+      assert.deepEqual(await toasts(page), [failed]);
       assert.equal(await page.evaluate(() => window.__forgot), 0, 'kept after a failure that may pass');
       assert.ok(await page.isVisible('.mdv-open-last'));
+      // Asking for permission can fail for a reason that passes (e.g. no user activation): kept too
+      await reopen('', 'SecurityError');
+      await page.waitForSelector('.mdv-toast-error');
+      assert.deepEqual(await toasts(page), [failed]);
+      assert.equal(await page.evaluate(() => window.__forgot), 0);
       await reopen('NotFoundError');
       await page.waitForFunction(() => window.__forgot === 1);
       assert.ok(await page.isHidden('.mdv-open-last'), 'forgotten when the folder is gone');
@@ -362,6 +373,27 @@ describe('Read errors while opening (code review of source.js)', () => {
       });
       await page.waitForFunction(() => window.MDV.app.state.set);
       assert.deepEqual(await page.evaluate(() => window.MDV.app.state.set.docs.slice()), ['loose.md', 'dropped/README.md']);
+      assert.ok((await toasts(page)).includes('読み込めなかったフォルダまたはファイルが 1 件あります（表示していません）'));
+    });
+  });
+
+  test('Firefox / Safari drop: an item without an entry is reported, and a folder dropped with it is not taken as the root', async () => {
+    await withPage(browser, async ({ page }) => {
+      await page.evaluate(() => {
+        const fileEntry = (name, text) => ({ name, isFile: true, isDirectory: false, file: (ok) => ok(new File([text], name, { lastModified: 1700000000000 })) });
+        const dirEntry = (name, children) => ({ name, isFile: false, isDirectory: true,
+          createReader: () => { let done = false; return { readEntries: (ok) => { const b = done ? [] : children; done = true; setTimeout(() => ok(b), 0); } }; } });
+        const items = [
+          { kind: 'file', webkitGetAsEntry: () => dirEntry('folder', [fileEntry('README.md', '# 落としたフォルダ\n')]) },
+          { kind: 'file', webkitGetAsEntry: () => null }
+        ];
+        const ev = new Event('drop', { bubbles: true, cancelable: true });
+        Object.defineProperty(ev, 'dataTransfer', { value: { types: ['Files'], files: [], items } });
+        window.dispatchEvent(ev);
+      });
+      await page.waitForFunction(() => window.MDV.app.state.set);
+      const info = await page.evaluate(() => ({ name: window.MDV.app.state.set.name, docs: window.MDV.app.state.set.docs.slice() }));
+      assert.deepEqual(info, { name: '', docs: ['folder/README.md'] });
       assert.ok((await toasts(page)).includes('読み込めなかったフォルダまたはファイルが 1 件あります（表示していません）'));
     });
   });

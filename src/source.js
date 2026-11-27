@@ -30,10 +30,13 @@
     return { kind: kind, name: name || '', single: false, root: null, items: [], truncated: false, skipped: 0 };
   }
 
-  /** Whether an error means the folder or file no longer exists (moved, deleted, or the handle is stale). */
+  /**
+   * Whether an error means the folder or file no longer exists (moved or deleted). InvalidStateError is not
+   * included: the File System Access API also uses it when files changed while being read, which may pass.
+   */
   function isGone(err) {
     var name = err && err.name;
-    return name === 'NotFoundError' || name === 'InvalidStateError' || name === 'TypeMismatchError';
+    return name === 'NotFoundError' || name === 'TypeMismatchError';
   }
 
   // ------------------------------------------------------------------ Scanning folders
@@ -47,21 +50,32 @@
     var queue = [{ handle: dirHandle, prefix: prefix }];
     while (queue.length) {
       var item = queue.shift();
+      // A folder's contents are added only after it has been listed completely, so that a folder that fails
+      // partway through is left out as a whole (and counted once)
+      var files = [];
+      var dirs = [];
       try {
         for await (var pair of item.handle.entries()) {
           var name = pair[0];
           var child = pair[1];
           if (core().isIgnoredName(name)) continue;
           counter.n++;
-          if (counter.n > core().LIMITS.maxEntries) { result.truncated = true; return; }
+          if (counter.n > core().LIMITS.maxEntries) {
+            result.truncated = true;
+            Array.prototype.push.apply(result.items, files);
+            return;
+          }
           if (counter.n % PROGRESS_EVERY === 0 && onProgress) onProgress(counter.n);
-          if (child.kind === 'directory') queue.push({ handle: child, prefix: item.prefix + name + '/' });
-          else result.items.push({ path: item.prefix + name, ref: child });
+          if (child.kind === 'directory') dirs.push({ handle: child, prefix: item.prefix + name + '/' });
+          else files.push({ path: item.prefix + name, ref: child });
         }
       } catch (e) {
         if (item.handle === dirHandle) throw e;
         result.skipped++;
+        continue;
       }
+      Array.prototype.push.apply(result.items, files);
+      Array.prototype.push.apply(queue, dirs);
     }
   }
 
@@ -113,17 +127,19 @@
     return new Promise(function (resolve, reject) { entry.file(resolve, reject); });
   }
 
-  /** Walk entries obtained via webkitGetAsEntry (drops in Firefox / Safari). */
-  async function scanEntries(result, rootEntries, onProgress) {
+  /**
+   * Walk entries obtained via webkitGetAsEntry (drops in Firefox / Safari). counter.n is shared with the other
+   * items of the same drop, so that the whole drop has one limit.
+   */
+  async function scanEntries(result, rootEntries, counter, onProgress) {
     var queue = rootEntries.slice();
-    var count = 0;
     while (queue.length) {
       var item = queue.shift();
       var entry = item.entry;
       if (core().isIgnoredName(entry.name)) continue;
-      count++;
-      if (count > core().LIMITS.maxEntries) { result.truncated = true; return; }
-      if (count % PROGRESS_EVERY === 0 && onProgress) onProgress(count);
+      counter.n++;
+      if (counter.n > core().LIMITS.maxEntries) { result.truncated = true; return; }
+      if (counter.n % PROGRESS_EVERY === 0 && onProgress) onProgress(counter.n);
       // Folders and files that cannot be read are skipped and counted
       if (entry.isDirectory) {
         try {
@@ -177,12 +193,12 @@
           result.single = !handles.some(function (x) { return x.kind === 'directory'; }) &&
             !(itemEntries || []).some(function (x, i) { return !handleList[i] && x && x.isDirectory; });
           var counter = { n: 0 };
-          for (var i = 0; i < items.length; i++) {
+          for (var i = 0; i < items.length && !result.truncated; i++) {
             var hd = handleList[i];
             if (!hd) {
               // No handle for this item (timed out or refused): read it the other way, or count it as skipped
               var fallback = itemEntries && itemEntries[i];
-              if (fallback) await scanEntries(result, [{ entry: fallback, prefix: '' }], onProgress);
+              if (fallback) await scanEntries(result, [{ entry: fallback, prefix: '' }], counter, onProgress);
               else result.skipped++;
               continue;
             }
@@ -195,14 +211,16 @@
           }
         }
       } else if (entries && entries.length) {
-        if (entries.length === 1 && entries[0].isDirectory) {
+        if (items.length === 1 && entries[0].isDirectory) {
           result = newResult('files', entries[0].name);
           var children = await readAllEntries(entries[0].createReader());
-          await scanEntries(result, children.map(function (c) { return { entry: c, prefix: '' }; }), onProgress);
+          await scanEntries(result, children.map(function (c) { return { entry: c, prefix: '' }; }), { n: 0 }, onProgress);
         } else {
           result = newResult('files', '');
           result.single = !entries.some(function (x) { return x.isDirectory; });
-          await scanEntries(result, entries.map(function (c) { return { entry: c, prefix: '' }; }), onProgress);
+          // Dropped items with no entry cannot be read: count them
+          result.skipped += itemEntries.length - entries.length;
+          await scanEntries(result, entries.map(function (c) { return { entry: c, prefix: '' }; }), { n: 0 }, onProgress);
         }
       } else {
         result = fromFileList(files, false);
